@@ -2,6 +2,7 @@
   "index": "Introduction",
   "another": "Another Page",
   "advanced": "Advanced (A Folder)",
+  "docker-workshop-ja": "Dockerワークショップ",
   "about": {
     "title": "About",
     "type": "page"
