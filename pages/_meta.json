@@ -1,11 +1,11 @@
 {
-  "index": "Introduction",
-  "another": "Another Page",
-  "advanced": "Advanced (A Folder)",
+  "index": "Home",
   "docker-workshop-ja": "Dockerワークショップ",
   "about": {
-    "title": "About",
-    "type": "page"
+    "title": "About me",
+    "type": "page",
+    "href": "https://tadashi0713.dev",
+    "newWindow": true
   },
   "contact": {
     "title": "Contact ↗",

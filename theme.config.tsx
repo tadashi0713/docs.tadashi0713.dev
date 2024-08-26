@@ -6,9 +6,6 @@ const config: DocsThemeConfig = {
   project: {
     link: 'https://github.com/tadashi0713/doc',
   },
-  chat: {
-    link: 'https://discord.com',
-  },
   docsRepositoryBase: 'https://github.com/tadashi0713/doc/tree/main',
   footer: {
     text: 'tadashi0713 Docs',
