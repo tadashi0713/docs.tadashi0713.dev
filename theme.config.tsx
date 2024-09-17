@@ -7,9 +7,15 @@ const config: DocsThemeConfig = {
     link: 'https://github.com/tadashi0713/doc',
   },
   docsRepositoryBase: 'https://github.com/tadashi0713/doc/tree/main',
+  useNextSeoProps() {
+    return {
+      titleTemplate: "%s | tadashi0713 Docs"
+    };
+  },
   footer: {
     text: 'tadashi0713 Docs',
   },
+  faviconGlyph: '📚',
 }
 
 export default config
