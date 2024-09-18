@@ -1,33 +1,37 @@
-This 45-minute workshop contains step-by-step instructions on how to get started with Docker. This workshop shows you how to:
+この45分間のワークショップでは、Dockerを始めるためのステップバイステップの手順を提供します。このワークショップでは次のことを学びます。
 
-- Build and run an image as a container.
-- Share images using Docker Hub.
-- Deploy Docker applications using multiple containers with a database.
-- Run applications using Docker Compose.
+- イメージを作成し、コンテナとして実行する方法
+- Docker Hub を使ってイメージを共有する方法
+- データベースを含む複数のコンテナを使用してDockerアプリケーションをデプロイする方法
+- Docker Compose を使用してアプリケーションを実行する方法
 
 > [!NOTE]
 >
-> For a quick introduction to Docker and the benefits of containerizing your
-> applications, see [Getting started](https://docs.docker.com/get-started/introduction/).
+> Dockerの簡単な紹介やアプリケーションのコンテナ化の利点については、
+> [Getting started](https://docs.docker.com/get-started/introduction/) を参照してください。
 
-## What is a container?
+## コンテナとは？
 
-A container is a sandboxed process running on a host machine that is isolated from all other processes running on that host machine. That isolation leverages [kernel namespaces and cgroups](https://medium.com/@saschagrunert/demystifying-containers-part-i-kernel-space-2c53d6979504),
-features that have been in Linux for a long time. Docker makes these capabilities approachable and easy to use. To summarize, a container:
+コンテナとは、ホストマシン上で実行されているサンドボックス化されたプロセスであり、そのホストマシン上で実行されている他のすべてのプロセスから隔離されています。この隔離は、Linuxに長い間存在している[カーネルのネームスペースとcgroups](https://medium.com/@saschagrunert/demystifying-containers-part-i-kernel-space-2c53d6979504)を活用しています。Dockerはこれらの機能を使いやすくしています。要約すると、コンテナとは次のようなものです。
 
 - Is a runnable instance of an image. You can create, start, stop, move, or delete a container using the Docker API or CLI.
 - Can be run on local machines, virtual machines, or deployed to the cloud.
 - Is portable (and can be run on any OS).
 - Is isolated from other containers and runs its own software, binaries, configurations, etc.
 
-If you're familiar with `chroot`, then think of a container as an extended version of `chroot`. The filesystem comes from the image. However, a container adds additional isolation not available when using chroot.
+- イメージの実行可能なインスタンスです。Docker API または CLI を使用して、コンテナを作成、開始、停止、移動、または削除できます。
+- ローカルマシン、仮想マシン、またはクラウドにデプロイして実行できます。
+- ポータブルであり、任意のOS上で実行できます。
+- 他のコンテナから隔離されており、独自のソフトウェア、バイナリ、設定などを実行します。
 
-## What is an image?
+`chroot` に慣れている場合は、コンテナを `chroot` の拡張版と考えてください。ファイルシステムはイメージから提供されます。ただし、コンテナはchrootでは利用できない追加の隔離を提供します。
 
-A running container uses an isolated filesystem. This isolated filesystem is provided by an image, and the image must contain everything needed to run an application - all dependencies, configurations, scripts, binaries, etc. The image also contains other configurations for the container, such as environment variables, a default command to run, and other metadata.
+## イメージとは？
 
-## Next steps
+実行中のコンテナは、隔離されたファイルシステムを使用します。この隔離されたファイルシステムはイメージによって提供され、イメージにはアプリケーションを実行するために必要なすべてのもの（依存関係、設定、スクリプト、バイナリなど）が含まれていなければなりません。イメージには、環境変数、デフォルトの実行コマンド、その他のメタデータなど、コンテナに関するその他の設定も含まれています。
 
-In this section, you learned about containers and images.
+## 次のステップ
+
+このセクションでは、コンテナとイメージについて学びました。
 
 次に、シンプルなアプリケーションをコンテナ化し、これらの概念を実際に体験してみましょう。
