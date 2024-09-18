@@ -1,6 +1,7 @@
+import Image from 'next/image'
 import { Tabs } from 'nextra/components'
 
-In [part 4](./05_persisting_data.md), you used a volume mount to persist the
+In [part 4](./05_persisting_data), you used a volume mount to persist the
 data in your database. A volume mount is a great choice when you need somewhere
 persistent to store your application data.
 
@@ -40,7 +41,7 @@ work.
 
 1. Verify that your `getting-started-app` directory is in a directory defined in
 Docker Desktop's file sharing setting. This setting defines which parts of your
-filesystem you can share with containers. For details about accessing the setting, see [File sharing](/manuals/desktop/settings.md#file-sharing).
+filesystem you can share with containers. For details about accessing the setting, see [File sharing](https://docs.docker.com/manuals/desktop/settings#file-sharing).
 
 2. Open a terminal and change directory to the `getting-started-app`
    directory.
@@ -380,7 +381,7 @@ Update your app on your host machine and see the changes reflected in the contai
    restarts the server. It might take a few seconds for the Node server to
    restart. If you get an error, try refreshing after a few seconds.
 
-   {/* ![Screenshot of updated label for Add button](images/updated-add-button.webp) */}
+   <Image src="/docker-workshop-ja/updated-add-button.webp" alt="Screenshot of updated label for Add button" width="1152" height="226" />
 
 3. Feel free to make any other changes you'd like to make. Each time you make a
    change and save a file, the change is reflected in the container because of
@@ -401,7 +402,7 @@ types and storage drivers for handling more complex and specialized use cases.
 
 Related information:
 
- - [docker CLI reference](/reference/cli/docker/)
+ - [docker CLI reference](https://docs.docker.com/reference/cli/docker/)
  - [Manage data in Docker](https://docs.docker.com/storage/)
 
 ## Next steps

@@ -1,3 +1,5 @@
+import Image from 'next/image'
+
 Now that you've built an image, you can share it. To share Docker images, you have to use a Docker
 registry. The default registry is Docker Hub and is where all of the images you've used have come from.
 
@@ -19,7 +21,7 @@ To push an image, you first need to create a repository on Docker Hub.
 
 In the following image, you can see an example Docker command from Docker Hub. This command will push to this repository.
 
-{/* ![Docker command with push example](images/push-command.webp) */}
+<Image src="/docker-workshop-ja/push-command.webp" alt="Docker command with push example" width="996" height="280" />
 
 
 ## Push the image
@@ -79,7 +81,7 @@ new instance that has never seen this container image. To do this, you will use 
 
 4. Select the **ADD NEW INSTANCE** option on the left side bar. If you don't see it, make your browser a little wider. After a few seconds, a terminal window opens in your browser.
 
-    {/* ![Play with Docker add new instance](images/pwd-add-new-instance.webp) */}
+    <Image src="/docker-workshop-ja/pwd-add-new-instance.webp" alt="Play with Docker add new instance" width="2052" height="1128" />
 
 5. In the terminal, start your freshly pushed app.
 
@@ -100,7 +102,7 @@ new instance that has never seen this container image. To do this, you will use 
     > on all interfaces of the host, making it available to the outside world.
     >
     > For more information about how port mapping works, see
-    > [Networking](/engine/network/_index.md#published-ports).
+    > [Networking](https://docs.docker.com/engine/network/#published-ports).
 
 6. Select the 3000 badge when it appears.
 
@@ -116,9 +118,9 @@ can use the latest version of the image.
 
 Related information:
 
- - [docker CLI reference](/reference/cli/docker/)
- - [Multi-platform images](/build/building/multi-platform.md)
- - [Docker Hub overview](/docker-hub/_index.md)
+ - [docker CLI reference](https://docs.docker.com/reference/cli/docker/)
+ - [Multi-platform images](https://docs.docker.com/build/building/multi-platform)
+ - [Docker Hub overview](https://docs.docker.com/docker-hub/)
 
 ## Next steps
 

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Tabs } from 'nextra/components'
 
 In case you didn't notice, your todo list is empty every single time
@@ -55,7 +56,7 @@ With the previous experiment, you saw that each container starts from the image 
 While containers can create, update, and delete files, those changes are lost when you remove the container 
 and Docker isolates all changes to that container. With volumes, you can change all of this.
 
-[Volumes](/engine/storage/volumes.md) provide the ability to connect specific filesystem paths of 
+[Volumes](https://docs.docker.com/engine/storage/volumes) provide the ability to connect specific filesystem paths of 
 the container back to the host machine. If you mount a directory in the container, changes in that
 directory are also seen on the host machine. If you mount that same directory across container restarts, you'd see
 the same files.
@@ -109,7 +110,7 @@ You can create the volume and start the container using the CLI or Docker Deskto
     > ```
     >
     > For more details about Git Bash's syntax differences, see
-    > [Working with Git Bash](../../desktop/troubleshoot/topics/#working-with-git-bash).
+    > [Working with Git Bash](https://docs.docker.com/desktop/troubleshoot/topics/#working-with-git-bash).
   </Tabs.Tab>
   <Tabs.Tab>
     To create a volume:
@@ -146,8 +147,7 @@ You can create the volume and start the container using the CLI or Docker Deskto
 
 1. Once the container starts up, open the app and add a few items to your todo list.
 
-    {/* ![Items added to todo list](images/items-added.webp) */}
-    
+    <Image src="/docker-workshop-ja/items-added.webp" alt="Items added to todo list" width="1234" height="644" />
 
 2. Stop and remove the container for the todo app. Use Docker Desktop or `docker ps` to get the ID and then `docker rm -f <id>` to remove it.
 
@@ -191,8 +191,8 @@ In this section, you learned how to persist container data.
 
 Related information:
 
- - [docker CLI reference](/reference/cli/docker/)
- - [Volumes](/engine/storage/volumes.md)
+ - [docker CLI reference](https://docs.docker.com/reference/cli/docker/)
+ - [Volumes](https://docs.docker.com/engine/storage/volumes)
 
 ## Next steps
 

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Tabs } from 'nextra/components'
 
 Up to this point, you've been working with single container apps. But, now you will add MySQL to the
@@ -12,8 +13,7 @@ container or run it separately?" In general, each container should do one thing 
 
 And there are more reasons. So, like the following diagram, it's best to run your app in multiple containers.
 
-{/* ![Todo App connected to MySQL container](images/multi-container.webp?w=350h=250) */}
-
+<Image src="/docker-workshop-ja/multi-container.webp" alt="Todo App connected to MySQL container" width="350" height="250" />
 
 ## Container networking
 
@@ -292,8 +292,8 @@ At this point, you have an application that now stores its data in an external d
 container. You learned a little bit about container networking and service discovery using DNS.
 
 Related information:
- - [docker CLI reference](/reference/cli/docker/)
- - [Networking overview](/manuals/engine/network/_index.md)
+ - [docker CLI reference](https://docs.docker.com/reference/cli/docker/)
+ - [Networking overview](https://docs.docker.com/manuals/engine/network/)
 
 ## Next steps
 
