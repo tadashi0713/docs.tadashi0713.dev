@@ -5,5 +5,8 @@
   "04_sharing_app": "Part 3: アプリケーションを共有する",
   "05_persisting_data": "Part 4: DB を保持する",
   "06_bind_mounts": "Part 5: Bind マウントを利用する",
-  "07_multi_container": "Part 6: マルチコンテナアプリケーション"
+  "07_multi_container": "Part 6: マルチコンテナアプリケーション",
+  "08_using_compose": "Part 7: Docker Compose を利用する",
+  "09_image_best": "Part 8: イメージビルドのベストプラクティス",
+  "10_what_next": "Part 9: 次のステップ"
 }
