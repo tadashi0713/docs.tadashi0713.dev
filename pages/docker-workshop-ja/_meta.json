@@ -4,5 +4,6 @@
   "03_updating_app": "Part 2: アプリケーションを更新する",
   "04_sharing_app": "Part 3: アプリケーションを共有する",
   "05_persisting_data": "Part 4: DB を保持する",
-  "06_bind_mounts": "Part 5: Bind マウントを利用する"
+  "06_bind_mounts": "Part 5: Bind マウントを利用する",
+  "07_multi_container": "Part 6: マルチコンテナアプリケーション"
 }
