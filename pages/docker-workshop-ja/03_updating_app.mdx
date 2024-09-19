@@ -1,61 +1,60 @@
 import { Tabs } from 'nextra/components'
 
-In [part 2](./02_our_app), you containerized a todo application. In this part, you'll update the application and image. You'll also learn how to stop and remove a container.
+[パート1](./02_our_app) では、todoアプリケーションをコンテナ化しました。このパートでは、アプリケーションとイメージを更新します。また、コンテナの停止および削除方法についても学びます。
 
-## Update the source code
+## ソースコードを更新する
 
-In the following steps, you'll change the "empty text" when you don't have any todo list items to "You have no todo items yet! Add one above!"
+次の手順では、todoリストにアイテムがない場合の空のテキストを "You have no todo items yet! Add one above!" に変更します。
 
-
-1. In the `src/static/js/app.js` file, update line 56 to use the new empty text.
+1. `src/static/js/app.js` ファイルの56行目を新しい空のテキストに変更します。
 
    ```diff
    - <p className="text-center">No items yet! Add one above!</p>
    + <p className="text-center">You have no todo items yet! Add one above!</p>
    ```
 
-2. Build your updated version of the image, using the `docker build` command.
+2. `docker build` コマンドを使用して、更新されたバージョンのイメージをビルドします。
 
    ```console
    $ docker build -t getting-started .
    ```
 
-3. Start a new container using the updated code.
+3. 更新されたコードを使用して、新しいコンテナを起動します。
 
    ```console
    $ docker run -dp 127.0.0.1:3000:3000 getting-started
    ```
 
-You probably saw an error like this:
+おそらく次のようなエラーが表示されたでしょう：
 
 ```console
 docker: Error response from daemon: driver failed programming external connectivity on endpoint laughing_burnell 
 (bb242b2ca4d67eba76e79474fb36bb5125708ebdabd7f45c8eaf16caaabde9dd): Bind for 127.0.0.1:3000 failed: port is already allocated.
 ```
 
-The error occurred because you aren't able to start the new container while your old container is still running. The reason is that the old container is already using the host's port 3000 and only one process on the machine (containers included) can listen to a specific port. To fix this, you need to remove the old container.
+このエラーは、古いコンテナがまだ実行されている状態では新しいコンテナを起動できないために発生しました。原因は、古いコンテナがすでにホストのポート3000を使用しており、マシン上の（コンテナを含む）1つのプロセスのみが特定のポートをリッスンできるためです。この問題を解決するには、古いコンテナを削除する必要があります。
 
-## Remove the old container
+## 古いコンテナを削除する
 
-To remove a container, you first need to stop it. Once it has stopped, you can remove it. You can remove the old container using the CLI or Docker Desktop's graphical interface. Choose the option that you're most comfortable with.
+コンテナを削除するには、まず停止させる必要があります。コンテナが停止したら削除できます。CLIまたはDocker Desktopのグラフィカルインターフェースを使用して古いコンテナを削除できます。自分が最も慣れている方法を選んでください。
 
 <Tabs items={['CLI', 'Docker Desktop']}>
   <Tabs.Tab>
-   ### Remove a container using the CLI
+   ### CLIを使用してコンテナを削除する
 
-   1. Get the ID of the container by using the `docker ps` command.
+   1. `docker ps` コマンドを使用してコンテナのIDを取得します。
 
       ```console
       $ docker ps
       ```
 
-   2. Use the `docker stop` command to stop the container. Replace `<the-container-id>` with the ID from `docker ps`.
+   2. `docker stop` コマンドを使用してコンテナを停止します。`docker ps` で取得したIDを `<the-container-id>` の部分に置き換えます。
 
       ```console
       $ docker stop <the-container-id>
       ```
 
-   3. Once the container has stopped, you can remove it by using the `docker rm` command.
+   3. コンテナが停止したら、`docker rm` コマンドを使用して削除できます。
 
       ```console
       $ docker rm <the-container-id>
@@ -63,34 +62,34 @@ To remove a container, you first need to stop it. Once it has stopped, you can r
 
    >**Note**
    >
-   >You can stop and remove a container in a single command by adding the `force` flag to the `docker rm` command. For example: `docker rm -f <the-container-id>`
+   >`docker rm` コマンドに `force` フラグを追加すると、コンテナを1つのコマンドで停止して削除できます。例えば、`docker rm -f <the-container-id>` です。
   </Tabs.Tab>
   <Tabs.Tab>
-   ### Remove a container using Docker Desktop
+   ### Docker Desktopを使用してコンテナを削除する
 
-   1. Open Docker Desktop to the **Containers** view.
-   2. Select the trash can icon under the **Actions** column for the container that you want to delete.
-   3. In the confirmation dialog, select **Delete forever**.
+   1. Docker Desktop を開き、**Containers** ビューに移動します。
+   2. 削除したいコンテナの **Actions** 列にあるゴミ箱アイコンを選択します。
+   3. 確認ダイアログで **Delete forever** を選択します。
   </Tabs.Tab>
 </Tabs>
 
-### Start the updated app container
+### 更新されたアプリのコンテナを起動する
 
-1. Now, start your updated app using the `docker run` command.
+1. `docker run` コマンドを使用して、更新されたアプリを起動します。
 
    ```console
    $ docker run -dp 127.0.0.1:3000:3000 getting-started
    ```
 
-2. Refresh your browser on [http://localhost:3000](http://localhost:3000) and you should see your updated help text.
+2. ブラウザで http://localhost:3000 をリフレッシュすると、更新されたヘルプテキストが表示されます。
 
-## Summary
+## まとめ
 
-In this section, you learned how to update and rebuild a container, as well as how to stop and remove a container.
+このセクションでは、コンテナの更新と再ビルドの方法、およびコンテナの停止と削除の方法を学びました。
 
-Related information:
- - [docker CLI reference](https://docs.docker.com/reference/cli/docker/)
+関連情報:
+ - [docker CLIリファレンス](https://docs.docker.com/reference/cli/docker/)
 
-## Next steps
+## 次のステップ
 
-Next, you'll learn how to share images with others.
+次は、イメージを他の人と共有する方法を学びます。
