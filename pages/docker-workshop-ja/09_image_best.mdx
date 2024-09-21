@@ -1,16 +1,14 @@
-## Image layering
+## イメージのレイヤー化
 
-Using the `docker image history` command, you can see the command that was used
-to create each layer within an image.
+`docker image history` コマンドを使うと、各レイヤーがどのように作成されたかを確認できます。
 
-1. Use the `docker image history` command to see the layers in the `getting-started` image you
-   created.
+1. `docker image history` コマンドを使用して、作成した `getting-started` イメージ内のレイヤーを確認します。
 
     ```console
     $ docker image history getting-started
     ```
 
-    You should get output that looks something like the following.
+    以下のような出力が得られるはずです。
 
     ```plaintext
     IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
@@ -29,23 +27,19 @@ to create each layer within an image.
     <missing>           13 days ago         /bin/sh -c #(nop) ADD file:e69d441d729412d24…   5.59MB   
     ```
 
-    Each of the lines represents a layer in the image. The display here shows the base at the bottom with
-    the newest layer at the top. Using this, you can also quickly see the size of each layer, helping 
-    diagnose large images.
+    各行がイメージ内のレイヤーを表しています。表示は、ベースイメージが下にあり、最新のレイヤーが上にあります。これを使えば、各レイヤーのサイズを簡単に確認でき、大きなイメージの診断に役立ちます。
 
-2. You'll notice that several of the lines are truncated. If you add the `--no-trunc` flag, you'll get the
-   full output.
+2. いくつかの行が省略されていることに気づくでしょう。`--no-trunc` フラグを追加すると、完全な出力が得られます。
 
     ```console
     $ docker image history --no-trunc getting-started
     ```
 
-## Layer caching
+## レイヤーキャッシング
 
-Now that you've seen the layering in action, there's an important lesson to learn to help decrease build
-times for your container images. Once a layer changes, all downstream layers have to be recreated as well.
+レイヤーがどのように機能するかを確認したところで、コンテナイメージのビルド時間を短縮するための重要な教訓があります。レイヤーが1つでも変更されると、すべての下流のレイヤーも再作成される必要があります。
 
-Look at the following Dockerfile you created for the getting started app.
+次に、getting-startedアプリ用に作成したDockerfileを見てみましょう。
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -56,16 +50,11 @@ RUN yarn install --production
 CMD ["node", "src/index.js"]
 ```
 
-Going back to the image history output, you see that each command in the Dockerfile becomes a new layer in the image.
-You might remember that when you made a change to the image, the yarn dependencies had to be reinstalled. It doesn't make much sense to ship around the same dependencies every time you build.
+イメージ履歴の出力に戻ると、Dockerfileの各コマンドがイメージ内の新しいレイヤーになることがわかります。イメージに変更を加えたとき、yarn依存関係が再インストールされなければならなかったことを思い出すかもしれません。同じ依存関係を毎回ビルドするのは効率的ではありません。
 
-To fix it, you need to restructure your Dockerfile to help support the caching
-of the dependencies. For Node-based applications, those dependencies are defined
-in the `package.json` file. You can copy only that file in first, install the
-dependencies, and then copy in everything else. Then, you only recreate the yarn
-dependencies if there was a change to the `package.json`.
+これを解決するには、Dockerfileの構造を変更して依存関係のキャッシュをサポートするようにする必要があります。Nodeベースのアプリケーションの場合、依存関係は `package.json` ファイルで定義されています。最初にそのファイルだけをコピーして依存関係をインストールし、その後にすべてのファイルをコピーします。これにより、`package.json` に変更があった場合にのみ、yarnの依存関係が再作成されるようになります。
 
-1. Update the Dockerfile to copy in the `package.json` first, install dependencies, and then copy everything else in.
+1. まず、`package.json` を最初にコピーし、依存関係をインストールしてから、他のすべてをコピーするようにDockerfileを更新します。
 
    ```dockerfile
    # syntax=docker/dockerfile:1
@@ -77,13 +66,13 @@ dependencies if there was a change to the `package.json`.
    CMD ["node", "src/index.js"]
    ```
 
-2. Build a new image using `docker build`.
+2. `docker build` コマンドを使って新しいイメージをビルドします。
 
     ```console
     $ docker build -t getting-started .
     ```
 
-    You should see output like the following.
+    以下のような出力が表示されるはずです。
 
     ```plaintext
     [+] Building 16.1s (10/10) FINISHED
@@ -105,9 +94,9 @@ dependencies if there was a change to the `package.json`.
     => => naming to docker.io/library/getting-started
     ```
 
-3. Now, make a change to the `src/static/index.html` file. For example, change the `<title>` to "The Awesome Todo App".
+3. 次に、`src/static/index.html` ファイルを変更します。例えば、`<title>` を「The Awesome Todo App」に変更してみてください。
 
-4. Build the Docker image now using `docker build -t getting-started .` again. This time, your output should look a little different.
+4. 再度 `docker build -t getting-started .` を使ってDockerイメージをビルドします。今回は、出力が少し異なるはずです。
 
     ```plaintext
     [+] Building 1.2s (10/10) FINISHED
@@ -129,23 +118,18 @@ dependencies if there was a change to the `package.json`.
     => => naming to docker.io/library/getting-started
     ```
 
-    First off, you should notice that the build was much faster. And, you'll see
-    that several steps are using previously cached layers. Pushing and pulling
-    this image and updates to it will be much faster as well. 
+    まず、ビルドがはるかに速くなっていることに気づくはずです。また、いくつかのステップが以前にキャッシュされたレイヤーを使用していることもわかります。これにより、イメージのプッシュやプル、およびそれらの更新がより迅速になります。
 
-## Multi-stage builds
+## マルチステージビルド
 
-Multi-stage builds are an incredibly powerful
-tool to help use multiple stages to create an image. There are several advantages for them:
+マルチステージビルドは、複数のステージを使用してイメージを作成するための非常に強力なツールです。以下のような利点があります。
 
-- Separate build-time dependencies from runtime dependencies
-- Reduce overall image size by shipping only what your app needs to run
+- ビルド時の依存関係と実行時の依存関係を分離する
+- 実行に必要なものだけを含めてイメージのサイズを削減する
 
-### Maven/Tomcat example
+### Maven/Tomcatの例
 
-When building Java-based applications, you need a JDK to compile the source code to Java bytecode. However,
-that JDK isn't needed in production. Also, you might be using tools like Maven or Gradle to help build the app.
-Those also aren't needed in your final image. Multi-stage builds help.
+Javaベースのアプリケーションをビルドする場合、ソースコードをJavaバイトコードにコンパイルするためにJDKが必要です。しかし、JDKは本番環境では必要ありません。また、MavenやGradleなどのビルドツールも使用するかもしれませんが、それも最終的なイメージには必要ありません。ここでマルチステージビルドが役立ちます。
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -158,15 +142,11 @@ FROM tomcat
 COPY --from=build /app/target/file.war /usr/local/tomcat/webapps 
 ```
 
-In this example, you use one stage (called `build`) to perform the actual Java build using Maven. In the second
-stage (starting at `FROM tomcat`), you copy in files from the `build` stage. The final image is only the last stage
-being created, which can be overridden using the `--target` flag.
+この例では、最初のステージ（`build` と呼ばれる）でMavenを使用してJavaビルドを行います。2番目のステージ（`FROM tomcat` から始まります）では、`build` ステージからファイルをコピーします。最終イメージは最後のステージのみで作成され、`--target` フラグを使って上書きすることができます。
 
-### React example
+### Reactの例
 
-When building React applications, you need a Node environment to compile the JS code (typically JSX), SASS stylesheets,
-and more into static HTML, JS, and CSS. If you aren't doing server-side rendering, you don't even need a Node environment
-for your production build. You can ship the static resources in a static nginx container.
+Reactアプリケーションをビルドする場合、Node環境を使用してJSコード（通常はJSX）、SASSスタイルシートなどを静的HTML、JS、CSSにコンパイルする必要があります。サーバーサイドレンダリングを行わない場合、本番環境にはNode環境は不要です。静的リソースをnginxコンテナに配信することができます。
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -182,17 +162,16 @@ FROM nginx:alpine
 COPY --from=build /app/build /usr/share/nginx/html
 ```
 
-In the previous Dockerfile example, it uses the `node:18` image to perform the build (maximizing layer caching) and then copies the output
-into an nginx container.
+このDockerfileの例では、`node:18` イメージを使ってビルドを実行し（レイヤーキャッシングを最大限に活用）、その後、出力をnginxコンテナにコピーしています。
 
-## Summary
+## まとめ
 
-In this section, you learned a few image building best practices, including layer caching and multi-stage builds.
+このセクションでは、イメージビルドに関するベストプラクティス（レイヤーキャッシングとマルチステージビルド）について学びました。
 
-Related information:
- - [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
- - [Dockerfile best practices](https://docs.docker.com/manuals/build/building/best-practices)
+関連情報:
+ - [Dockerfileリファレンス](https://docs.docker.com/reference/dockerfile/)
+ - [Dockerfileのベストプラクティス](https://docs.docker.com/manuals/build/building/best-practices)
 
-## Next steps
+## 次のステップ
 
-In the next section, you'll learn about additional resources you can use to continue learning about containers.
+次のセクションでは、コンテナに関する学習を続けるために役立つ追加リソースについて学びます。
