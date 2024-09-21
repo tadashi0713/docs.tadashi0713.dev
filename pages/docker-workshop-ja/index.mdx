@@ -14,11 +14,6 @@
 
 コンテナとは、ホストマシン上で実行されているサンドボックス化されたプロセスであり、そのホストマシン上で実行されている他のすべてのプロセスから隔離されています。この隔離は、Linuxに長い間存在している[カーネルのネームスペースとcgroups](https://medium.com/@saschagrunert/demystifying-containers-part-i-kernel-space-2c53d6979504)を活用しています。Dockerはこれらの機能を使いやすくしています。要約すると、コンテナとは次のようなものです。
 
-- Is a runnable instance of an image. You can create, start, stop, move, or delete a container using the Docker API or CLI.
-- Can be run on local machines, virtual machines, or deployed to the cloud.
-- Is portable (and can be run on any OS).
-- Is isolated from other containers and runs its own software, binaries, configurations, etc.
-
 - イメージの実行可能なインスタンスです。Docker API または CLI を使用して、コンテナを作成、開始、停止、移動、または削除できます。
 - ローカルマシン、仮想マシン、またはクラウドにデプロイして実行できます。
 - ポータブルであり、任意のOS上で実行できます。
