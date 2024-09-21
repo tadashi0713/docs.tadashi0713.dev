@@ -1,15 +1,10 @@
-[Docker Compose](https://docs.docker.com/manuals/compose/) is a tool that helps you define and
-share multi-container applications. With Compose, you can create a YAML file to define the services
-and with a single command, you can spin everything up or tear it all down.
+[Docker Compose](https://docs.docker.com/manuals/compose/) は、マルチコンテナアプリケーションを定義して共有するのに役立つツールです。Composeを使えば、サービスを定義するYAMLファイルを作成し、1つのコマンドでアプリケーション全体を立ち上げたり、終了させたりできます。
 
-The big advantage of using Compose is you can define your application stack in a file, keep it at the root of
-your project repository (it's now version controlled), and easily enable someone else to contribute to your project.
-Someone would only need to clone your repository and start the app using Compose. In fact, you might see quite a few projects
-on GitHub/GitLab doing exactly this now.
+Composeを使う大きなメリットは、アプリケーションスタックをファイルで定義し、それをプロジェクトリポジトリのルートに置いてバージョン管理できることです。これにより、他の人がプロジェクトに簡単に参加できるようになります。誰かがリポジトリをクローンして、Composeを使ってアプリケーションを起動するだけで済むようになります。実際、多くのプロジェクトがGitHubやGitLabでこの方法を採用しています。
 
-## Create the Compose file
+## Composeファイルを作成する
 
-In the `getting-started-app` directory, create a file named `compose.yaml`.
+`getting-started-app` ディレクトリ内に、`compose.yaml` というファイルを作成します。
 
 ```text
 ├── getting-started-app/
@@ -22,9 +17,9 @@ In the `getting-started-app` directory, create a file named `compose.yaml`.
 │ └── yarn.lock
 ```
 
-## Define the app service
+## アプリサービスを定義する
 
-In [part 7](./07_multi_container), you used the following command to start the application service.
+[パート6](./07_multi_container) では、次のコマンドを使ってアプリケーションサービスを起動しました。
 
 ```console
 $ docker run -dp 127.0.0.1:3000:3000 \
@@ -38,10 +33,9 @@ $ docker run -dp 127.0.0.1:3000:3000 \
   sh -c "yarn install && yarn run dev"
 ```
 
-You'll now define this service in the `compose.yaml` file.
+これを `compose.yaml` ファイルでサービスとして定義します。
 
-1. Open `compose.yaml` in a text or code editor, and start by defining the name and image of the first service (or container) you want to run as part of your application.
-   The name will automatically become a network alias, which will be useful when defining your MySQL service.
+1. テキストエディタやコードエディタで `compose.yaml` を開き、実行する最初のサービス（またはコンテナ）の名前とイメージを定義します。名前は自動的にネットワークエイリアスとなるため、MySQLサービスを定義するときに役立ちます。
 
    ```yaml
    services:
@@ -49,7 +43,7 @@ You'll now define this service in the `compose.yaml` file.
        image: node:18-alpine
    ```
 
-2. Typically, you will see `command` close to the `image` definition, although there is no requirement on ordering. Add the `command` to your `compose.yaml` file.
+2. 通常、`command` は `image` 定義の近くに置かれますが、順序に決まりはありません。`compose.yaml` ファイルに `command` を追加します。
 
    ```yaml
    services:
@@ -58,7 +52,7 @@ You'll now define this service in the `compose.yaml` file.
        command: sh -c "yarn install && yarn run dev"
    ```
 
-3. Now migrate the `-p 127.0.0.1:3000:3000` part of the command by defining the `ports` for the service.
+3. 次に、`-p 127.0.0.1:3000:3000` の部分を `ports` を使って定義します。
 
    ```yaml
    services:
@@ -69,10 +63,9 @@ You'll now define this service in the `compose.yaml` file.
          - 127.0.0.1:3000:3000
    ```
 
-4. Next, migrate both the working directory (`-w /app`) and the volume mapping
-   (`-v "$(pwd):/app"`) by using the `working_dir` and `volumes` definitions.
+4. 続いて、作業ディレクトリ (`-w /app`) とボリュームマッピング (`-v "$(pwd):/app"`) を `working_dir` と `volumes` で定義します。
 
-    One advantage of Docker Compose volume definitions is you can use relative paths from the current directory.
+   Docker Composeのボリューム定義の利点の1つは、現在のディレクトリから相対パスを使用できることです。
 
    ```yaml
    services:
@@ -86,7 +79,7 @@ You'll now define this service in the `compose.yaml` file.
          - ./:/app
    ```
 
-5. Finally, you need to migrate the environment variable definitions using the `environment` key.
+5. 最後に、環境変数定義を `environment` キーを使って移行します。
 
    ```yaml
    services:
@@ -105,9 +98,9 @@ You'll now define this service in the `compose.yaml` file.
          MYSQL_DB: todos
    ```
 
-### Define the MySQL service
+### MySQLサービスを定義する
 
-Now, it's time to define the MySQL service. The command that you used for that container was the following:
+次に、MySQLサービスを定義します。このコンテナで使用したコマンドは次の通りです。
 
 ```console
 $ docker run -d \
@@ -118,7 +111,7 @@ $ docker run -d \
   mysql:8.0
 ```
 
-1. First define the new service and name it `mysql` so it automatically gets the network alias. Also specify the image to use as well.
+1. 新しいサービスを定義し、名前を `mysql` にして自動的にネットワークエイリアスを取得します。また、使用するイメージも指定します。
 
    ```yaml
 
@@ -129,12 +122,7 @@ $ docker run -d \
        image: mysql:8.0
    ```
 
-2. Next, define the volume mapping. When you ran the container with `docker
-   run`, Docker created the named volume automatically. However, that doesn't
-   happen when running with Compose. You need to define the volume in the
-   top-level `volumes:` section and then specify the mountpoint in the service
-   config. By simply providing only the volume name, the default options are
-   used.
+2. 次にボリュームマッピングを定義します。`docker run` を使用してコンテナを実行したとき、Dockerは自動的に名前付きボリュームを作成しましたが、Composeで実行する場合にはそれが自動的には行われません。トップレベルの `volumes:` セクションでボリュームを定義し、サービス設定でマウントポイントを指定する必要があります。ボリューム名だけを指定すると、デフォルトのオプションが使用されます。
 
    ```yaml
    services:
@@ -149,7 +137,7 @@ $ docker run -d \
      todo-mysql-data:
    ```
 
-3. Finally, you need to specify the environment variables.
+3. 最後に、環境変数を指定します。
 
    ```yaml
    services:
@@ -167,7 +155,7 @@ $ docker run -d \
      todo-mysql-data:
    ```
 
-At this point, your complete `compose.yaml` should look like this:
+ここで、`compose.yaml` 全体は次のようになります。
 
 
 ```yaml
@@ -198,20 +186,19 @@ volumes:
   todo-mysql-data:
 ```
 
-## Run the application stack
+## アプリケーションスタックを実行する
 
-Now that you have your `compose.yaml` file, you can start your application.
+`compose.yaml` ファイルができたので、アプリケーションを起動できます。
 
-1. Make sure no other copies of the containers are running first. Use `docker ps` to list the containers and `docker rm -f <ids>` to remove them.
+1. 最初に、他のコンテナが実行されていないことを確認してください。`docker ps` を使ってコンテナを一覧表示し、`docker rm -f <ids>` で削除します。
 
-2. Start up the application stack using the `docker compose up` command. Add the
-   `-d` flag to run everything in the background.
+2. `docker compose up` コマンドを使ってアプリケーションスタックを起動します。`-d` フラグを追加してバックグラウンドで実行します。
 
    ```console
    $ docker compose up -d
    ```
 
-    When you run the previous command, you should see output like the following:
+    コマンドを実行すると、以下のような出力が表示されます。
 
    ```plaintext
    Creating network "app_default" with the default driver
@@ -220,13 +207,11 @@ Now that you have your `compose.yaml` file, you can start your application.
    Creating app_mysql_1 ... done
    ```
 
-    You'll notice that Docker Compose created the volume as well as a network. By default, Docker Compose automatically creates a network specifically for the application stack (which is why you didn't define one in the Compose file).
+    Docker Composeがボリュームやネットワークを作成していることに注目してください。デフォルトでは、Docker Composeはアプリケーションスタック専用のネットワークを自動的に作成します（Composeファイルでネットワークを定義しなかったのはこのためです）。
 
-3. Look at the logs using the `docker compose logs -f` command. You'll see the logs from each of the services interleaved
-    into a single stream. This is incredibly useful when you want to watch for timing-related issues. The `-f` flag follows the
-    log, so will give you live output as it's generated.
+3. `docker compose logs -f` コマンドを使ってログを確認します。各サービスからのログが1つのストリームに交互に表示されます。タイミングに関連する問題を監視する場合に非常に便利です。`-f` フラグはログをフォローするため、生成されるとすぐにライブ出力が得られます。
 
-    If you have run the command already, you'll see output that looks like this:
+    コマンドを実行すると、以下のような出力が表示されます。
 
     ```plaintext
     mysql_1  | 2019-10-03T03:07:16.083639Z 0 [Note] mysqld: ready for connections.
@@ -235,44 +220,35 @@ Now that you have your `compose.yaml` file, you can start your application.
     app_1    | Listening on port 3000
     ```
 
-    The service name is displayed at the beginning of the line (often colored) to help distinguish messages. If you want to
-    view the logs for a specific service, you can add the service name to the end of the logs command (for example,
-    `docker compose logs -f app`).
+    行の先頭にサービス名が表示されており、（色分けされている場合があります）メッセージを区別しやすくなっています。特定のサービスのログだけを表示したい場合は、`docker compose logs -f app` のように、ログコマンドの末尾にサービス名を追加します。
 
-4. At this point, you should be able to open your app in your browser on [http://localhost:3000](http://localhost:3000) and see it running.
+4. この時点で、http://localhost:3000 でアプリケーションを開き、動作を確認できるはずです。
 
-## See the app stack in Docker Dashboard
+## Docker Dashboardでアプリスタックを確認する
 
-If you look at the Docker Dashboard, you'll see that there is a group named **getting-started-app**. This is the project name from Docker
-Compose and used to group the containers together. By default, the project name is simply the name of the directory that the
-`compose.yaml` was located in.
+Docker Dashboardを見ると、**getting-started-app** という名前のグループがあることがわかります。これはDocker Composeからのプロジェクト名で、コンテナをグループ化するために使用されます。デフォルトでは、プロジェクト名は `compose.yaml` が存在するディレクトリの名前になります。
 
-If you expand the stack, you'll see the two containers you defined in the Compose file. The names are also a little
-more descriptive, as they follow the pattern of `<service-name>-<replica-number>`. So, it's very easy to
-quickly see what container is your app and which container is the mysql database.
+スタックを展開すると、Composeファイルで定義した2つのコンテナが表示されます。名前も少し説明的になり、`<サービス名>-<レプリカ番号>` というパターンに従っています。これにより、どのコンテナがアプリで、どのコンテナがMySQLデータベースかをすぐに見分けることができます。
 
-## Tear it all down
+## すべてを削除する
 
-When you're ready to tear it all down, simply run `docker compose down` or hit the trash can on the Docker Dashboard
-for the entire app. The containers will stop and the network will be removed.
+すべてを削除する準備ができたら、単に `docker compose down` コマンドを実行するか、Docker Dashboardでアプリ全体のゴミ箱アイコンをクリックします。コンテナは停止し、ネットワークが削除されます。
 
->**Warning**
+>**警告**
 >
->By default, named volumes in your compose file are not removed when you run `docker compose down`. If you want to
->remove the volumes, you need to add the `--volumes` flag.
+>デフォルトでは、Composeファイルに記載された名前付きボリュームは、`docker compose down` コマンドを実行しても削除されません。ボリュームを削除したい場合は、`--volumes` フラグを追加する必要があります。
 >
->The Docker Dashboard does not remove volumes when you delete the app stack.
+>Docker Dashboardでアプリスタックを削除しても、ボリュームは削除されません。
 
-## Summary
+## まとめ
 
-In this section, you learned about Docker Compose and how it helps you simplify
-the way you define and share multi-service applications.
+このセクションでは、Docker Composeについて学び、マルチサービスアプリケーションを定義し、共有する方法を簡単にする方法を学びました。
 
-Related information:
- - [Compose overview](https://docs.docker.com/manuals/compose/)
- - [Compose file reference](https://docs.docker.com/reference/compose-file/)
- - [Compose CLI reference](https://docs.docker.com/reference/cli/docker/compose/)
+関連情報:
+ - [Compose概要](https://docs.docker.com/manuals/compose/)
+ - [Composeファイルリファレンス](https://docs.docker.com/reference/compose-file/)
+ - [Compose CLIリファレンス](https://docs.docker.com/reference/cli/docker/compose/)
 
-## Next steps
+## 次のステップ
 
-Next, you'll learn about a few best practices you can use to improve your Dockerfile.
+次は、Dockerfileを改善するためのベストプラクティスについて学びます。
