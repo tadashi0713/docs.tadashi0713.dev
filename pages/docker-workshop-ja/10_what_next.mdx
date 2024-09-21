@@ -1,49 +1,38 @@
-Although you're done with the workshop, there's still a lot more to learn about containers.
+ワークショップは終了しましたが、コンテナについて学ぶことはまだたくさんあります。次に学ぶべきいくつかの領域を紹介します。
 
-Here are a few other areas to look at next.
+## コンテナオーケストレーション
 
-## Container orchestration
+本番環境でコンテナを実行するのは難しいです。単にマシンにログインして `docker run` や `docker compose up` を実行するのは避けたいでしょう。なぜなら、コンテナが停止したらどうするのか？複数のマシンにスケーリングするにはどうするのか？といった問題が発生するからです。これを解決するのがコンテナオーケストレーションです。Kubernetes、Swarm、Nomad、ECSなどのツールが、少しずつ異なる方法でこの問題を解決します。
 
-Running containers in production is tough. You don't want to log into a machine and simply run a
-`docker run` or `docker compose up`. Why not? Well, what happens if the containers die? How do you
-scale across several machines? Container orchestration solves this problem. Tools like Kubernetes,
-Swarm, Nomad, and ECS all help solve this problem, all in slightly different ways.
+一般的な考え方は、マネージャが期待される状態を受け取り、その状態に基づいて動作することです。例えば、「Webアプリのインスタンスを2つ実行し、ポート80を公開する」といった状態です。マネージャはクラスター内のすべてのマシンを確認し、作業をワーカーノードに委任します。また、マネージャはコンテナが停止するなどの変化を監視し、実際の状態が期待される状態を反映するように働きます。
 
-The general idea is that you have managers who receive the expected state. This state might be
-"I want to run two instances of my web app and expose port 80." The managers then look at all of the
-machines in the cluster and delegate work to worker nodes. The managers watch for changes (such as
-a container quitting) and then work to make the actual state reflect the expected state.
+## Cloud Native Computing Foundation (CNCF) のプロジェクト
 
-## Cloud Native Computing Foundation projects
+CNCFは、Kubernetes、Prometheus、Envoy、Linkerd、NATSなどを含むさまざまなオープンソースプロジェクトのためのベンダーニュートラルなホームです。[こちら](https://www.cncf.io/projects/)で、CNCFの卒業プロジェクトやインキュベーションプロジェクトを見ることができ、[こちら](https://landscape.cncf.io/)でCNCFランドスケープ全体を見ることができます。監視、ログ、セキュリティ、イメージレジストリ、メッセージングなどの問題を解決するためのプロジェクトが多数存在します。
 
-The CNCF is a vendor-neutral home for various open-source projects, including Kubernetes, Prometheus, 
-Envoy, Linkerd, NATS, and more. You can view the [graduated and incubated projects here](https://www.cncf.io/projects/)
-and the entire [CNCF Landscape here](https://landscape.cncf.io/). There are a lot of projects to help
-solve problems around monitoring, logging, security, image registries, messaging, and more.
+## 入門ビデオワークショップ
 
-## Getting started video workshop
+Dockerは、DockerCon 2022 のビデオワークショップを見ることを推奨しています。ビデオ全体を視聴するか、以下のリンクを使用して特定のセクションから視聴することができます。
 
-Docker recommends watching the video workshop from DockerCon 2022. Watch the entire video or use the following links to open the video at a particular section.
-
-* [Docker overview and installation](https://youtu.be/gAGEar5HQoU)
-* [Pull, run, and explore containers](https://youtu.be/gAGEar5HQoU?t=1400)
-* [Build a container image](https://youtu.be/gAGEar5HQoU?t=3185)
-* [Containerize an app](https://youtu.be/gAGEar5HQoU?t=4683)
-* [Connect a DB and set up a bind mount](https://youtu.be/gAGEar5HQoU?t=6305)
-* [Deploy a container to the cloud](https://youtu.be/gAGEar5HQoU?t=8280)
+* [Dockerの概要とインストール](https://youtu.be/gAGEar5HQoU)
+* [コンテナのプル、実行、探索](https://youtu.be/gAGEar5HQoU?t=1400)
+* [コンテナイメージのビルド](https://youtu.be/gAGEar5HQoU?t=3185)
+* [アプリケーションのコンテナ化](https://youtu.be/gAGEar5HQoU?t=4683)
+* [DBの接続とバインドマウントの設定](https://youtu.be/gAGEar5HQoU?t=6305)
+* [コンテナをクラウドにデプロイする](https://youtu.be/gAGEar5HQoU?t=8280)
 
 <iframe
   src="https://www.youtube-nocookie.com/embed/gAGEar5HQoU"
 />
 
-## Creating a container from scratch
+## コンテナをゼロから作成する
 
-If you'd like to see how containers are built from scratch, Liz Rice from Aqua Security has a fantastic talk in which she creates a container from scratch in Go. While the talk does not go into networking, using images for the filesystem, and other advanced topics, it gives a deep dive into how things are working.
+コンテナがどのようにゼロから作成されるかを見たい場合は、Aqua Security の Liz Rice がGoを使用してコンテナをゼロから作成する素晴らしい講演を行っています。この講演では、ネットワーキングやファイルシステム用のイメージを使用する方法などの高度なトピックには触れませんが、コンテナがどのように機能しているかについて深い理解を提供します。
 
 <iframe
   src="https://www.youtube-nocookie.com/embed/8fi7uSYlOdc"
 />
 
-## Language-specific guides
+## 言語固有のガイド
 
-If you are looking for information on how to containerize an application using your favorite language, see the [Language-specific guides](https://docs.docker.com/guides/language/).
+お気に入りのプログラミング言語を使用してアプリケーションをコンテナ化する方法についての情報をお探しの場合は、[言語固有のガイド](https://docs.docker.com/guides/language/) をご覧ください。
