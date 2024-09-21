@@ -1,53 +1,36 @@
 import Image from 'next/image'
 import { Tabs } from 'nextra/components'
 
-In [part 4](./05_persisting_data), you used a volume mount to persist the
-data in your database. A volume mount is a great choice when you need somewhere
-persistent to store your application data.
+[パート4](./05_persisting_data) では、ボリュームマウントを使用してデータベースのデータを永続化しました。アプリケーションデータを永続的に保存する必要がある場合、ボリュームマウントは素晴らしい選択です。
 
-A bind mount is another type of mount, which lets you share a directory from the
-host's filesystem into the container. When working on an application, you can
-use a bind mount to mount source code into the container. The container sees the
-changes you make to the code immediately, as soon as you save a file. This means
-that you can run processes in the container that watch for filesystem changes
-and respond to them.
+バインドマウントは別の種類のマウントで、ホストのファイルシステムのディレクトリをコンテナに共有できます。アプリケーションの開発中は、バインドマウントを使ってソースコードをコンテナにマウントすることができます。ファイルを保存した瞬間に、コンテナはコードの変更を即座に認識します。これにより、ファイルシステムの変更を監視し、それに応じて動作するプロセスをコンテナ内で実行できるようになります。
 
-In this chapter, you'll see how you can use bind mounts and a tool called
-[nodemon](https://npmjs.com/package/nodemon) to watch for file changes, and then restart the application
-automatically. There are equivalent tools in most other languages and
-frameworks.
+この章では、バインドマウントと、ファイルの変更を監視してアプリケーションを自動的に再起動するツールである [nodemon](https://npmjs.com/package/nodemon) を使う方法を学びます。ほとんどの他の言語やフレームワークにも、同様のツールがあります。
 
-## Quick volume type comparisons
+## ボリュームタイプの簡単な比較
 
-The following are examples of a named volume and a bind mount using `--mount`:
+以下は、`--mount` を使用した名前付きボリュームとバインドマウントの例です。
 
-- Named volume: `type=volume,src=my-volume,target=/usr/local/data`
-- Bind mount: `type=bind,src=/path/to/data,target=/usr/local/data`
+- 名前付きボリューム: `type=volume,src=my-volume,target=/usr/local/data`
+- バインドマウント: `type=bind,src=/path/to/data,target=/usr/local/data`
 
-The following table outlines the main differences between volume mounts and bind
-mounts.
+以下の表は、ボリュームマウントとバインドマウントの主な違いを示しています。
 
-|                                              | Named volumes                                      | Bind mounts                                          |
-| -------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------- |
-| Host location                                | Docker chooses                                     | You decide                                           |
-| Populates new volume with container contents | Yes                                                | No                                                   |
-| Supports Volume Drivers                      | Yes                                                | No                                                   |
+|                                   | 名前付きボリューム  | バインドマウント  |
+| --------------------------------- | ---------------  | -------------- |
+| ホスト側の場所                      | Dockerが決定      | ユーザーが決定    |
+| コンテナの内容で新しいボリュームを初期化 | 可能             | 不可            |
+| ボリュームドライバーのサポート         | あり              | なし           |
 
-## Trying out bind mounts
+## バインドマウントを試してみる
 
-Before looking at how you can use bind mounts for developing your application,
-you can run a quick experiment to get a practical understanding of how bind mounts
-work.
+アプリケーション開発でバインドマウントを使用する前に、簡単な実験を行い、バインドマウントの動作を実際に確認してみましょう。
 
-1. Verify that your `getting-started-app` directory is in a directory defined in
-Docker Desktop's file sharing setting. This setting defines which parts of your
-filesystem you can share with containers. For details about accessing the setting, see [File sharing](https://docs.docker.com/manuals/desktop/settings#file-sharing).
+1. `getting-started-app` ディレクトリが、Docker Desktopのファイル共有設定に定義されたディレクトリ内にあることを確認してください。この設定は、ファイルシステムのどの部分をコンテナと共有できるかを定義します。設定へのアクセス方法については、[ファイル共有](https://docs.docker.com/manuals/desktop/settings#file-sharing)を参照してください。
 
-2. Open a terminal and change directory to the `getting-started-app`
-   directory.
+2. ターミナルを開き、`getting-started-app` ディレクトリに移動します。
 
-3. Run the following command to start `bash` in an `ubuntu` container with a
-   bind mount.
+3. 次のコマンドを実行して、バインドマウントを使用して `ubuntu` コンテナで `bash` を起動します。
 
    <Tabs items={['Mac / Linux / PowerShel', 'Command Prompt', 'Git Bash']}>
       <Tabs.Tab>
@@ -67,12 +50,10 @@ filesystem you can share with containers. For details about accessing the settin
       </Tabs.Tab>
    </Tabs>
 
-   The `--mount type=bind` option tells Docker to create a bind mount, where `src` is the
-   current working directory on your host machine (`getting-started-app`), and
-   `target` is where that directory should appear inside the container (`/src`).
+   `--mount type=bind` オプションは、Dockerにバインドマウントを作成するよう指示します。`src` はホストマシンのカレントディレクトリ（`getting-started-app`）、`target` はコンテナ内でそのディレクトリを表示する場所（`/src`）です。
 
-4. After running the command, Docker starts an interactive `bash` session in the
-   root directory of the container's filesystem.
+
+4. コマンドを実行すると、Dockerはコンテナのファイルシステムのルートディレクトリでインタラクティブな `bash` セッションを開始します。
 
    ```console
    root@ac1237fad8db:/# pwd
@@ -82,11 +63,9 @@ filesystem you can share with containers. For details about accessing the settin
    boot  etc  lib   mnt    proc  run   src   sys  usr
    ```
 
-5. Change directory to the `src` directory.
+5. `src` ディレクトリに移動します。
 
-   This is the directory that you mounted when starting the container. Listing
-   the contents of this directory displays the same files as in the
-   `getting-started-app` directory on your host machine.
+   これは、コンテナの起動時にマウントしたディレクトリです。このディレクトリの内容を一覧表示すると、ホストマシンの `getting-started-app` ディレクトリと同じファイルが表示されます。
 
    ```console
    root@ac1237fad8db:/# cd src
@@ -94,7 +73,7 @@ filesystem you can share with containers. For details about accessing the settin
    Dockerfile  node_modules  package.json  spec  src  yarn.lock
    ```
 
-6. Create a new file named `myfile.txt`.
+6. `myfile.txt` という名前の新しいファイルを作成します。
 
    ```console
    root@ac1237fad8db:/src# touch myfile.txt
@@ -102,8 +81,7 @@ filesystem you can share with containers. For details about accessing the settin
    Dockerfile  myfile.txt  node_modules  package.json  spec  src  yarn.lock
    ```
 
-7. Open the `getting-started-app` directory on the host and observe that the
-   `myfile.txt` file is in the directory.
+7. ホスト上の `getting-started-app` ディレクトリを開き、`myfile.txt` ファイルがディレクトリ内にあることを確認します。
 
    ```text
    ├── getting-started-app/
@@ -116,41 +94,37 @@ filesystem you can share with containers. For details about accessing the settin
    │ └── yarn.lock
    ```
 
-8. From the host, delete the `myfile.txt` file.
-9. In the container, list the contents of the `app` directory once more. Observe that the file is now gone.
+8. ホスト側から `myfile.txt` ファイルを削除します。
+9. コンテナ内で、もう一度 `app` ディレクトリの内容を一覧表示します。ファイルが消えたことを確認します。
 
    ```console
    root@ac1237fad8db:/src# ls
    Dockerfile  node_modules  package.json  spec  src  yarn.lock
    ```
 
-10. Stop the interactive container session with `Ctrl` + `D`.
+10. `Ctrl` + `D` を使って、インタラクティブコンテナセッションを終了します。
 
-That's all for a brief introduction to bind mounts. This procedure
-demonstrated how files are shared between the host and the container, and how
-changes are immediately reflected on both sides. Now you can use
-bind mounts to develop software.
+以上がバインドマウントの簡単な紹介です。この手順では、ファイルがホストとコンテナ間で共有され、変更が即座に反映されることが示されました。これで、バインドマウントを使用してソフトウェアを開発できます。
 
-## Development containers
+## 開発コンテナ
 
-Using bind mounts is common for local development setups. The advantage is that the development machine doesn’t need to have all of the build tools and environments installed. With a single docker run command, Docker pulls dependencies and tools.
+バインドマウントは、ローカル開発環境で一般的に使用されます。その利点は、開発マシンにすべてのビルドツールや環境をインストールする必要がないことです。1つの `docker run` コマンドで、Dockerが依存関係やツールをプルしてきます。
 
-### Run your app in a development container
+### 開発コンテナでアプリを実行する
 
-The following steps describe how to run a development container with a bind
-mount that does the following:
+以下の手順では、バインドマウントを使用して開発コンテナを実行し、以下を行います。
 
-- Mount your source code into the container
-- Install all dependencies
-- Start `nodemon` to watch for filesystem changes
+- ソースコードをコンテナにマウント
+- すべての依存関係をインストール
+- ファイルシステムの変更を監視する `nodemon` を起動
 
-You can use the CLI or Docker Desktop to run your container with a bind mount.
+CLIまたはDocker Desktopを使用して、バインドマウント付きでコンテナを実行できます。
 
 <Tabs items={['Mac / Linux CLI', 'PowerShell CLI', 'Command Prompt CLI', 'Git Bash CLI', 'Docker Desktop']}>
    <Tabs.Tab>
-      1. Make sure you don't have any `getting-started` containers currently running.
+      1. 現在実行中の `getting-started` コンテナがないことを確認してください。
 
-      2. Run the following command from the `getting-started-app` directory.
+      2. `getting-started-app` ディレクトリから以下のコマンドを実行します。
 
          ```console
          $ docker run -dp 127.0.0.1:3000:3000 \
@@ -159,23 +133,14 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
             sh -c "yarn install && yarn run dev"
          ```
 
-         The following is a breakdown of the command:
-         - `-dp 127.0.0.1:3000:3000` - same as before. Run in detached (background) mode and
-         create a port mapping
-         - `-w /app` - sets the "working directory" or the current directory that the
-         command will run from
-         - `--mount type=bind,src="$(pwd)",target=/app` - bind mount the current
-         directory from the host into the `/app` directory in the container
-         - `node:18-alpine` - the image to use. Note that this is the base image for
-         your app from the Dockerfile
-         - `sh -c "yarn install && yarn run dev"` - the command. You're starting a
-         shell using `sh` (alpine doesn't have `bash`) and running `yarn install` to
-         install packages and then running `yarn run dev` to start the development
-         server. If you look in the `package.json`, you'll see that the `dev` script
-         starts `nodemon`.
+         コマンドの内訳は以下の通りです：
+         - `-dp 127.0.0.1:3000:3000` - 以前と同様に、デタッチモード（バックグラウンド）で実行し、ポートマッピングを作成します。
+         - `-w /app` - 「作業ディレクトリ」を設定します。これは、コマンドが実行されるカレントディレクトリです。
+         - `--mount type=bind,src="$(pwd)",target=/app` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
+         - `node:18-alpine` - 使用するイメージ。このイメージは、Dockerfileで指定されたベースイメージです。
+         - `sh -c "yarn install && yarn run dev"` - コマンド。`sh` を使ってシェルを起動し、`yarn install` を実行してパッケージをインストールし、その後`yarn run dev` を実行して開発サーバーを起動します。`package.json` に記載されている`dev` スクリプトは `nodemon` を起動します。
 
-      3. You can watch the logs using `docker logs <container-id>`. You'll know you're
-         ready to go when you see this:
+      3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
          ```console
          $ docker logs -f <container-id>
@@ -189,12 +154,12 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
          Listening on port 3000
          ```
 
-         When you're done watching the logs, exit out by hitting `Ctrl`+`C`.
+         ログの確認を終えたら、`Ctrl` + `C` で終了します。
    </Tabs.Tab>
    <Tabs.Tab>
-      1. Make sure you don't have any `getting-started` containers currently running.
+      1. 現在実行中の `getting-started` コンテナがないことを確認してください。
 
-      2. Run the following command from the `getting-started-app` directory.
+      2. `getting-started-app` ディレクトリから以下のコマンドを実行します。
 
          ```powershell
          $ docker run -dp 127.0.0.1:3000:3000 `
@@ -203,23 +168,14 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
             sh -c "yarn install && yarn run dev"
          ```
 
-         The following is a breakdown of the command:
-         - `-dp 127.0.0.1:3000:3000` - same as before. Run in detached (background) mode and
-         create a port mapping
-         - `-w /app` - sets the "working directory" or the current directory that the
-         command will run from
-         - `--mount "type=bind,src=$pwd,target=/app"` - bind mount the current
-         directory from the host into the `/app` directory in the container
-         - `node:18-alpine` - the image to use. Note that this is the base image for
-         your app from the Dockerfile
-         - `sh -c "yarn install && yarn run dev"` - the command. You're starting a
-         shell using `sh` (alpine doesn't have `bash`) and running `yarn install` to
-         install packages and then running `yarn run dev` to start the development
-         server. If you look in the `package.json`, you'll see that the `dev` script
-         starts `nodemon`.
+         コマンドの内訳は以下の通りです：
+         - `-dp 127.0.0.1:3000:3000` - デタッチモード（バックグラウンド）で実行し、ポートマッピングを作成します。
+         - `-w /app` - 「作業ディレクトリ」を設定します。
+         - `--mount "type=bind,src=$pwd,target=/app"` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
+         - `node:18-alpine` - 使用するイメージ。
+         - `sh -c "yarn install && yarn run dev"` - コマンド。`sh` を使ってシェルを起動し、`yarn install` を実行してパッケージをインストールし、その後`yarn run dev` を実行して開発サーバーを起動します。
 
-      3. You can watch the logs using `docker logs <container-id>`. You'll know you're
-         ready to go when you see this:
+      3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
          ```console
          $ docker logs -f <container-id>
@@ -233,12 +189,12 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
          Listening on port 3000
          ```
 
-         When you're done watching the logs, exit out by hitting `Ctrl`+`C`.
+         ログの確認を終えたら、`Ctrl` + `C` で終了します。
    </Tabs.Tab>
    <Tabs.Tab>
-      1. Make sure you don't have any `getting-started` containers currently running.
+      1. 現在実行中の `getting-started` コンテナがないことを確認してください。
 
-      2. Run the following command from the `getting-started-app` directory.
+      2. `getting-started-app` ディレクトリから以下のコマンドを実行します。
 
          ```console
          $ docker run -dp 127.0.0.1:3000:3000 ^
@@ -247,23 +203,14 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
             sh -c "yarn install && yarn run dev"
          ```
 
-         The following is a breakdown of the command:
-         - `-dp 127.0.0.1:3000:3000` - same as before. Run in detached (background) mode and
-         create a port mapping
-         - `-w /app` - sets the "working directory" or the current directory that the
-         command will run from
-         - `--mount "type=bind,src=%cd%,target=/app"` - bind mount the current
-         directory from the host into the `/app` directory in the container
-         - `node:18-alpine` - the image to use. Note that this is the base image for
-         your app from the Dockerfile
-         - `sh -c "yarn install && yarn run dev"` - the command. You're starting a
-         shell using `sh` (alpine doesn't have `bash`) and running `yarn install` to
-         install packages and then running `yarn run dev` to start the development
-         server. If you look in the `package.json`, you'll see that the `dev` script
-         starts `nodemon`.
+         コマンドの内訳は以下の通りです：
+         - `-dp 127.0.0.1:3000:3000` - デタッチモードで実行し、ポートマッピングを作成します。
+         - `-w /app` - 作業ディレクトリを設定します。
+         - `--mount "type=bind,src=%cd%,target=/app"` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
+         - `node:18-alpine` - 使用するイメージ。
+         - `sh -c "yarn install && yarn run dev"` - `yarn install` を実行し、その後`yarn run dev` を実行して開発サーバーを起動します。
 
-      3. You can watch the logs using `docker logs <container-id>`. You'll know you're
-         ready to go when you see this:
+      3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
          ```console
          $ docker logs -f <container-id>
@@ -277,12 +224,12 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
          Listening on port 3000
          ```
 
-         When you're done watching the logs, exit out by hitting `Ctrl`+`C`.
+         ログの確認を終えたら、`Ctrl` + `C` で終了します。
    </Tabs.Tab>
    <Tabs.Tab>
-      1. Make sure you don't have any `getting-started` containers currently running.
+      1. 現在実行中のgetting-started コンテナがないことを確認してください。
 
-      2. Run the following command from the `getting-started-app` directory.
+      2. `getting-started-app` ディレクトリから以下のコマンドを実行します。
 
          ```console
          $ docker run -dp 127.0.0.1:3000:3000 \
@@ -292,22 +239,13 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
          ```
 
          The following is a breakdown of the command:
-         - `-dp 127.0.0.1:3000:3000` - same as before. Run in detached (background) mode and
-         create a port mapping
-         - `-w //app` - sets the "working directory" or the current directory that the
-         command will run from
-         - `--mount type=bind,src="/$(pwd)",target=/app` - bind mount the current
-         directory from the host into the `/app` directory in the container
-         - `node:18-alpine` - the image to use. Note that this is the base image for
-         your app from the Dockerfile
-         - `sh -c "yarn install && yarn run dev"` - the command. You're starting a
-         shell using `sh` (alpine doesn't have `bash`) and running `yarn install` to
-         install packages and then running `yarn run dev` to start the development
-         server. If you look in the `package.json`, you'll see that the `dev` script
-         starts `nodemon`.
+         - `-dp 127.0.0.1:3000:3000` - デタッチモードで実行し、ポートマッピングを作成します。
+         - `-w //app` - 作業ディレクトリを設定します。
+         - `--mount type=bind,src="/$(pwd)",target=/app` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
+         - `node:18-alpine` - 使用するイメージ。
+         - `sh -c "yarn install && yarn run dev"` - `yarn install` を実行し、その後`yarn run dev` を実行して開発サーバーを起動します。
 
-      3. You can watch the logs using `docker logs <container-id>`. You'll know you're
-         ready to go when you see this:
+      3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
          ```console
          $ docker logs -f <container-id>
@@ -321,33 +259,33 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
          Listening on port 3000
          ```
 
-         When you're done watching the logs, exit out by hitting `Ctrl`+`C`.
+         ログの確認を終えたら、`Ctrl` + `C` で終了します。
    </Tabs.Tab>
    <Tabs.Tab>
-      Make sure you don't have any `getting-started` containers currently running.
+      現在実行中の `getting-started` コンテナがないことを確認してください。
 
-      Run the image with a bind mount.
+      バインドマウント付きでイメージを実行します。
 
-      1. Select the search box at the top of Docker Desktop.
-      2. In the search window, select the **Images** tab.
-      3. In the search box, specify the container name, `getting-started`.
+      1. Docker Desktopの上部にある検索ボックスを選択します。
+      2. 検索ウィンドウで **Images** タブを選択します。
+      3. 検索ボックスにコンテナ名 `getting-started` を指定します。
 
          > [!TIP]
          >
-         >  Use the search filter to filter images and only show **Local images**.
+         >  **Local images** のみを表示するために検索フィルタを使用してください。
 
-      4. Select your image and then select **Run**.
-      5. Select **Optional settings**.
-      6. In **Host path**, specify the path to the `getting-started-app` directory on your host machine.
-      7. In **Container path**, specify `/app`.
-      8. Select **Run**.
+      4. イメージを選択し、**Run** を選択します。
+      5. **Optional settings** を選択します。
+      6. **Host path** にホストマシンの `getting-started-app` ディレクトリへのパスを指定します。
+      7. **Container path** に `/app` を指定します。
+      8. **Run** を選択します。
 
-      You can watch the container logs using Docker Desktop.
+      Docker Desktopを使用して、コンテナのログを確認できます。
 
-      1. Select **Containers** in Docker Desktop.
-      2. Select your container name.
+      1. Docker Desktopで **Containers** を選択します。
+      2. コンテナ名を選択します。
 
-      You'll know you're ready to go when you see this:
+      以下が表示されたら準備完了です。
 
       ```console
       nodemon -L src/index.js
@@ -362,53 +300,40 @@ You can use the CLI or Docker Desktop to run your container with a bind mount.
    </Tabs.Tab>
 </Tabs>
 
-### Develop your app with the development container
+### 開発コンテナを使用してアプリを開発する
 
-Update your app on your host machine and see the changes reflected in the container.
+ホストマシンでアプリを更新し、その変更がコンテナに反映されるか確認します。
 
-1. In the `src/static/js/app.js` file, on line
-   109, change the "Add Item" button to simply say "Add":
+1. `src/static/js/app.js` ファイルの109行目で、「Add Item」ボタンのテキストを「Add」に変更します。
 
    ```diff
    - {submitting ? 'Adding...' : 'Add Item'}
    + {submitting ? 'Adding...' : 'Add'}
    ```
 
-   Save the file.
+   ファイルを保存します。
 
-2. Refresh the page in your web browser, and you should see the change reflected
-   almost immediately because of the bind mount. Nodemon detects the change and
-   restarts the server. It might take a few seconds for the Node server to
-   restart. If you get an error, try refreshing after a few seconds.
+2. ウェブブラウザでページをリフレッシュすると、バインドマウントのおかげですぐに変更が反映されます。Nodemonは変更を検知してサーバーを再起動します。Nodeサーバーの再起動には数秒かかることがあります。エラーが発生した場合は、数秒後にもう一度リフレッシュしてみてください。
 
    <Image src="/docker-workshop-ja/updated-add-button.webp" alt="Screenshot of updated label for Add button" width="1152" height="226" />
 
-3. Feel free to make any other changes you'd like to make. Each time you make a
-   change and save a file, the change is reflected in the container because of
-   the bind mount. When Nodemon detects a change, it restarts the app inside the
-   container automatically. When you're done, stop the container and build your
-   new image using:
+3. 他に変更したい箇所があれば、自由に変更してください。ファイルを保存するたびに、変更がバインドマウントのおかげでコンテナに反映されます。Nodemonは変更を検知し、コンテナ内でアプリを自動的に再起動します。すべての作業が終わったら、コンテナを停止し、以下のコマンドを使用して新しいイメージをビルドします。
 
    ```console
    $ docker build -t getting-started .
    ```
 
-## Summary
+## まとめ
 
-At this point, you can persist your database and see changes in your app as you develop without rebuilding the image.
+ここまでで、データベースを永続化し、アプリ開発中にイメージを再ビルドせずに変更が即座に反映されることを確認できました。
 
-In addition to volume mounts and bind mounts, Docker also supports other mount
-types and storage drivers for handling more complex and specialized use cases.
+ボリュームマウントやバインドマウントに加えて、Dockerはより複雑で専門的なユースケースを処理するための他のマウントタイプやストレージドライバーもサポートしています。
 
-Related information:
+関連情報:
 
- - [docker CLI reference](https://docs.docker.com/reference/cli/docker/)
- - [Manage data in Docker](https://docs.docker.com/storage/)
+ - [docker CLIリファレンス](https://docs.docker.com/reference/cli/docker/)
+ - [Dockerでのデータ管理](https://docs.docker.com/storage/)
 
-## Next steps
+## 次のステップ
 
-In order to prepare your app for production, you need to migrate your database
-from working in SQLite to something that can scale a little better. For
-simplicity, you'll keep using a relational database and switch your application
-to use MySQL. But, how should you run MySQL? How do you allow the containers to
-talk to each other? You'll learn about that in the next section.
+アプリを本番環境に向けて準備するためには、SQLiteからよりスケーラブルなデータベースに移行する必要があります。簡単のため、引き続きリレーショナルデータベースを使用し、アプリケーションをMySQLに切り替えます。しかし、MySQLはどのように実行すればよいのでしょうか？コンテナ間で通信する方法は？次のセクションで学びます。
