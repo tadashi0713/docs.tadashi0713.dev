@@ -131,14 +131,7 @@ import { Tabs } from 'nextra/components'
    
    `-d` フラグ（`--detach` の省略形）は、コンテナをバックグラウンドで実行します。これにより、Dockerはコンテナを起動し、すぐにターミナルに戻ります。コンテナが実行されているかどうかは、Docker ダッシュボードの **Containers** タブで確認するか、ターミナルで `docker ps` を実行して確認できます。
 
-   The `-p` flag (short for `--publish`) creates a port mapping between the host
-   and the container. The `-p` flag takes a string value in the format of
-   `HOST:CONTAINER`, where `HOST` is the address on the host, and `CONTAINER` is
-   the port on the container. The command publishes the container's port 3000 to
-   `127.0.0.1:3000` (`localhost:3000`) on the host. Without the port mapping,
-   you wouldn't be able to access the application from the host.
-
-   `-p` フラグ（`--publish` の省略形）は、ホストとコンテナ間のポートマッピングを作成します。コマンドは、コンテナのポート3000をホストの `127.0.0.1:3000` (`localhost:3000`) に公開します。
+   `-p` フラグ（`--publish` の短縮形）は、ホストとコンテナの間でポートマッピングを作成します。`-p` フラグは `HOST:CONTAINER` という形式の文字列を受け取り、`HOST` はホスト上のアドレス、`CONTAINER` はコンテナ内のポートを指します。このコマンドは、コンテナのポート3000をホストの `127.0.0.1:3000`（`localhost:3000`）に公開します。ポートマッピングがなければ、ホストからアプリケーションにアクセスすることはできません。
 
 2. 数秒後に、ウェブブラウザで http://localhost:3000 にアクセスします。アプリが表示されるはずです。
 
