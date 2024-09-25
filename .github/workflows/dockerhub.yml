@@ -16,6 +16,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - uses: docker/build-push-action@v6
       with:
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: tadashi0713/docs-tadashi0713-dev:latest
         cache-from: type=registry,ref=tadashi0713/docs-tadashi0713-dev:buildcache
