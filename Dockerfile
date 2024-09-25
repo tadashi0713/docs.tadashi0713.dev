@@ -29,9 +29,9 @@ RUN pnpm build
 ### Production image runner ###
 FROM base AS runner
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup nodejs
 RUN adduser -SDH nextjs
@@ -46,8 +46,8 @@ USER nextjs
 
 # Exposed port (for orchestrators and dynamic reverse proxies)
 EXPOSE 80
-ENV PORT 80
-ENV HOSTNAME "0.0.0.0"
+ENV PORT=80
+ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD [ "wget", "-q0", "http://localhost/health" ]
 
 # Run the nextjs app
