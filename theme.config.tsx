@@ -2,6 +2,7 @@ import React from 'react'
 import { DocsThemeConfig } from 'nextra-theme-docs'
 import { useRouter } from 'next/router'
 import { useConfig } from 'nextra-theme-docs'
+import { Analytics } from '@vercel/analytics/react'
 
 const config: DocsThemeConfig = {
   logo: <span>tadashi0713 Docs</span>,
@@ -33,7 +34,12 @@ const config: DocsThemeConfig = {
     )
   },
   footer: {
-    text: 'tadashi0713 Docs',
+    text: (
+      <>
+        <Analytics />
+        <span>tadashi0713 Docs</span>
+      </>
+    ),
   },
   faviconGlyph: '📚',
 }
