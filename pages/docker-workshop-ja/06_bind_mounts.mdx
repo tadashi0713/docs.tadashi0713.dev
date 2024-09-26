@@ -70,7 +70,7 @@ import { Tabs } from 'nextra/components'
    ```console
    root@ac1237fad8db:/# cd src
    root@ac1237fad8db:/src# ls
-   Dockerfile  node_modules  package.json  spec  src  yarn.lock
+   Dockerfile  node_modules  package.json  spec  src  package-lock.json
    ```
 
 6. `myfile.txt` という名前の新しいファイルを作成します。
@@ -78,7 +78,7 @@ import { Tabs } from 'nextra/components'
    ```console
    root@ac1237fad8db:/src# touch myfile.txt
    root@ac1237fad8db:/src# ls
-   Dockerfile  myfile.txt  node_modules  package.json  spec  src  yarn.lock
+   Dockerfile  myfile.txt  node_modules  package.json  spec  src  package-lock.json
    ```
 
 7. ホスト上の `getting-started-app` ディレクトリを開き、`myfile.txt` ファイルがディレクトリ内にあることを確認します。
@@ -91,7 +91,7 @@ import { Tabs } from 'nextra/components'
    │ ├── package.json
    │ ├── spec/
    │ ├── src/
-   │ └── yarn.lock
+   │ └── package-lock.json
    ```
 
 8. ホスト側から `myfile.txt` ファイルを削除します。
@@ -99,7 +99,7 @@ import { Tabs } from 'nextra/components'
 
    ```console
    root@ac1237fad8db:/src# ls
-   Dockerfile  node_modules  package.json  spec  src  yarn.lock
+   Dockerfile  node_modules  package.json  spec  src  package-lock.json
    ```
 
 10. `Ctrl` + `D` を使って、インタラクティブコンテナセッションを終了します。
@@ -130,7 +130,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          $ docker run -dp 127.0.0.1:3000:3000 \
             -w /app --mount type=bind,src="$(pwd)",target=/app \
             node:18-alpine \
-            sh -c "yarn install && yarn run dev"
+            sh -c "npm install && npm run dev"
          ```
 
          コマンドの内訳は以下の通りです：
@@ -138,7 +138,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          - `-w /app` - 「作業ディレクトリ」を設定します。これは、コマンドが実行されるカレントディレクトリです。
          - `--mount type=bind,src="$(pwd)",target=/app` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
          - `node:18-alpine` - 使用するイメージ。このイメージは、Dockerfileで指定されたベースイメージです。
-         - `sh -c "yarn install && yarn run dev"` - コマンド。`sh` を使ってシェルを起動し、`yarn install` を実行してパッケージをインストールし、その後`yarn run dev` を実行して開発サーバーを起動します。`package.json` に記載されている`dev` スクリプトは `nodemon` を起動します。
+         - `sh -c "npm install && npm run dev"` - コマンド。`sh` を使ってシェルを起動し、`npm install` を実行してパッケージをインストールし、その後`npm run dev` を実行して開発サーバーを起動します。`package.json` に記載されている`dev` スクリプトは `nodemon` を起動します。
 
       3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
@@ -165,7 +165,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          $ docker run -dp 127.0.0.1:3000:3000 `
             -w /app --mount "type=bind,src=$pwd,target=/app" `
             node:18-alpine `
-            sh -c "yarn install && yarn run dev"
+            sh -c "npm install && npm run dev"
          ```
 
          コマンドの内訳は以下の通りです：
@@ -173,7 +173,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          - `-w /app` - 「作業ディレクトリ」を設定します。
          - `--mount "type=bind,src=$pwd,target=/app"` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
          - `node:18-alpine` - 使用するイメージ。
-         - `sh -c "yarn install && yarn run dev"` - コマンド。`sh` を使ってシェルを起動し、`yarn install` を実行してパッケージをインストールし、その後`yarn run dev` を実行して開発サーバーを起動します。
+         - `sh -c "npm install && npm run dev"` - コマンド。`sh` を使ってシェルを起動し、`npm install` を実行してパッケージをインストールし、その後`npm run dev` を実行して開発サーバーを起動します。
 
       3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
@@ -200,7 +200,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          $ docker run -dp 127.0.0.1:3000:3000 ^
             -w /app --mount "type=bind,src=%cd%,target=/app" ^
             node:18-alpine ^
-            sh -c "yarn install && yarn run dev"
+            sh -c "npm install && npm run dev"
          ```
 
          コマンドの内訳は以下の通りです：
@@ -208,7 +208,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          - `-w /app` - 作業ディレクトリを設定します。
          - `--mount "type=bind,src=%cd%,target=/app"` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
          - `node:18-alpine` - 使用するイメージ。
-         - `sh -c "yarn install && yarn run dev"` - `yarn install` を実行し、その後`yarn run dev` を実行して開発サーバーを起動します。
+         - `sh -c "npm install && npm run dev"` - `npm install` を実行し、その後`npm run dev` を実行して開発サーバーを起動します。
 
       3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
@@ -235,7 +235,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          $ docker run -dp 127.0.0.1:3000:3000 \
             -w //app --mount type=bind,src="/$(pwd)",target=/app \
             node:18-alpine \
-            sh -c "yarn install && yarn run dev"
+            sh -c "npm install && npm run dev"
          ```
 
          The following is a breakdown of the command:
@@ -243,7 +243,7 @@ CLIまたはDocker Desktopを使用して、バインドマウント付きでコ
          - `-w //app` - 作業ディレクトリを設定します。
          - `--mount type=bind,src="/$(pwd)",target=/app` - カレントディレクトリをホストからコンテナの `/app` ディレクトリにバインドマウントします。
          - `node:18-alpine` - 使用するイメージ。
-         - `sh -c "yarn install && yarn run dev"` - `yarn install` を実行し、その後`yarn run dev` を実行して開発サーバーを起動します。
+         - `sh -c "npm install && npm run dev"` - `npm install` を実行し、その後`npm run dev` を実行して開発サーバーを起動します。
 
       3. `docker logs <container-id>` を使用してログを確認できます。以下が表示されたら準備完了です。
 
