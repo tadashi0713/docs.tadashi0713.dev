@@ -12,6 +12,13 @@ const config: DocsThemeConfig = {
       titleTemplate: "%s | tadashi0713 Docs"
     };
   },
+  head: (
+    <>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <meta property="og:title" content="tadashi0713 Docs" />
+      <meta property="og:description" content="Collections of documents created by Tadashi Nemoto(tadashi0713)." />
+    </>
+  ),
   footer: {
     text: 'tadashi0713 Docs',
   },
