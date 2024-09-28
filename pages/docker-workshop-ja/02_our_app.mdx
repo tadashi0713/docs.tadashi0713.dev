@@ -13,10 +13,10 @@ import { Tabs } from 'nextra/components'
 
 アプリケーションを実行する前に、アプリケーションのソースコードをマシンに取得する必要があります。
 
-1. 次のコマンドを使用して、[getting-started-appリポジトリ](https://github.com/tadashi0713/getting-started-app/tree/main) をクローンします。
+1. 次のコマンドを使用して、[getting-started-appリポジトリ](https://github.com/docker/getting-started-app/tree/main) をクローンします。
 
    ```console
-   $ git clone git@github.com:tadashi0713/getting-started-app.git
+   $ git clone https://github.com/docker/getting-started-app.git
    ```
 
 2. クローンしたリポジトリの内容を確認します。以下のようなファイルやサブディレクトリが表示されるはずです。
@@ -28,7 +28,7 @@ import { Tabs } from 'nextra/components'
    │ ├── README.md
    │ ├── spec/
    │ ├── src/
-   │ └── package-lock.json
+   │ └── yarn.lock
    ```
 
 ## アプリのイメージをビルドする
@@ -93,7 +93,7 @@ import { Tabs } from 'nextra/components'
    FROM node:18-alpine
    WORKDIR /app
    COPY . .
-   RUN npm install --production
+   RUN yarn install --production
    CMD ["node", "src/index.js"]
    EXPOSE 3000
    ```
@@ -113,7 +113,7 @@ import { Tabs } from 'nextra/components'
 
    `docker build` コマンドは、Dockerfileを使用して新しいイメージをビルドします。`node:18-alpine` イメージを指定したため、Dockerはそのイメージをダウンロードする必要がありました。
 
-   イメージがダウンロードされた後、Dockerfileの指示に従ってアプリケーションをコピーし、`npm` を使ってアプリケーションの依存関係をインストールしました。`CMD` ディレクティブは、このイメージからコンテナを起動するときのデフォルトコマンドを指定します。
+   イメージがダウンロードされた後、Dockerfileの指示に従ってアプリケーションをコピーし、`yarn` を使ってアプリケーションの依存関係をインストールしました。`CMD` ディレクティブは、このイメージからコンテナを起動するときのデフォルトコマンドを指定します。
 
    最後に、`-t` フラグはイメージにタグを付けます。これは、最終イメージの人間が読める名前だと思ってください。イメージに `getting-started` という名前を付けたため、このイメージを使ってコンテナを実行できます。
 

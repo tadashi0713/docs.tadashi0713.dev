@@ -46,13 +46,13 @@
 FROM node:18-alpine
 WORKDIR /app
 COPY . .
-RUN npm install --production
+RUN yarn install --production
 CMD ["node", "src/index.js"]
 ```
 
-イメージ履歴の出力に戻ると、Dockerfileの各コマンドがイメージ内の新しいレイヤーになることがわかります。イメージに変更を加えたとき、npm依存関係が再インストールされなければならなかったことを思い出すかもしれません。同じ依存関係を毎回ビルドするのは効率的ではありません。
+イメージ履歴の出力に戻ると、Dockerfileの各コマンドがイメージ内の新しいレイヤーになることがわかります。イメージに変更を加えたとき、yarn依存関係が再インストールされなければならなかったことを思い出すかもしれません。同じ依存関係を毎回ビルドするのは効率的ではありません。
 
-これを解決するには、Dockerfileの構造を変更して依存関係のキャッシュをサポートするようにする必要があります。Nodeベースのアプリケーションの場合、依存関係は `package.json` ファイルで定義されています。最初にそのファイルだけをコピーして依存関係をインストールし、その後にすべてのファイルをコピーします。これにより、`package.json` に変更があった場合にのみ、npmの依存関係が再作成されるようになります。
+これを解決するには、Dockerfileの構造を変更して依存関係のキャッシュをサポートするようにする必要があります。Nodeベースのアプリケーションの場合、依存関係は `package.json` ファイルで定義されています。最初にそのファイルだけをコピーして依存関係をインストールし、その後にすべてのファイルをコピーします。これにより、`package.json` に変更があった場合にのみ、yarnの依存関係が再作成されるようになります。
 
 1. まず、`package.json` を最初にコピーし、依存関係をインストールしてから、他のすべてをコピーするようにDockerfileを更新します。
 
@@ -60,8 +60,8 @@ CMD ["node", "src/index.js"]
    # syntax=docker/dockerfile:1
    FROM node:18-alpine
    WORKDIR /app
-   COPY package* ./
-   RUN npm install --production
+   COPY package.json yarn.lock ./
+   RUN yarn install --production
    COPY . .
    CMD ["node", "src/index.js"]
    ```
@@ -152,11 +152,11 @@ Reactアプリケーションをビルドする場合、Node環境を使用し�
 # syntax=docker/dockerfile:1
 FROM node:18 AS build
 WORKDIR /app
-COPY package* ./
-RUN npm install
+COPY package* yarn.lock ./
+RUN yarn install
 COPY public ./public
 COPY src ./src
-RUN npm run build
+RUN yarn run build
 
 FROM nginx:alpine
 COPY --from=build /app/build /usr/share/nginx/html
