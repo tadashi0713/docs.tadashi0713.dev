@@ -14,7 +14,7 @@ Composeを使う大きなメリットは、アプリケーションスタック�
 │ ├── package.json
 │ ├── spec/
 │ ├── src/
-│ └── package-lock.json
+│ └── yarn.lock
 ```
 
 ## アプリサービスを定義する
@@ -30,7 +30,7 @@ $ docker run -dp 127.0.0.1:3000:3000 \
   -e MYSQL_PASSWORD=secret \
   -e MYSQL_DB=todos \
   node:18-alpine \
-  sh -c "npm install && npm run dev"
+  sh -c "yarn install && yarn run dev"
 ```
 
 これを `compose.yaml` ファイルでサービスとして定義します。
@@ -49,7 +49,7 @@ $ docker run -dp 127.0.0.1:3000:3000 \
    services:
      app:
        image: node:18-alpine
-       command: sh -c "npm install && npm run dev"
+       command: sh -c "yarn install && yarn run dev"
    ```
 
 3. 次に、`-p 127.0.0.1:3000:3000` の部分を `ports` を使って定義します。
@@ -58,7 +58,7 @@ $ docker run -dp 127.0.0.1:3000:3000 \
    services:
      app:
        image: node:18-alpine
-       command: sh -c "npm install && npm run dev"
+       command: sh -c "yarn install && yarn run dev"
        ports:
          - 127.0.0.1:3000:3000
    ```
@@ -71,7 +71,7 @@ $ docker run -dp 127.0.0.1:3000:3000 \
    services:
      app:
        image: node:18-alpine
-       command: sh -c "npm install && npm run dev"
+       command: sh -c "yarn install && yarn run dev"
        ports:
          - 127.0.0.1:3000:3000
        working_dir: /app
@@ -85,7 +85,7 @@ $ docker run -dp 127.0.0.1:3000:3000 \
    services:
      app:
        image: node:18-alpine
-       command: sh -c "npm install && npm run dev"
+       command: sh -c "yarn install && yarn run dev"
        ports:
          - 127.0.0.1:3000:3000
        working_dir: /app
@@ -162,7 +162,7 @@ $ docker run -d \
 services:
   app:
     image: node:18-alpine
-    command: sh -c "npm install && npm run dev"
+    command: sh -c "yarn install && yarn run dev"
     ports:
       - 127.0.0.1:3000:3000
     working_dir: /app
