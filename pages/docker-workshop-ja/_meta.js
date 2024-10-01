@@ -1,4 +1,5 @@
-{
+// eslint-disable-next-line import/no-anonymous-default-export
+export default {
   "index": "Docker ワークショップの概要",
   "02_our_app": "Part 1: アプリをコンテナ化する",
   "03_updating_app": "Part 2: アプリを更新する",

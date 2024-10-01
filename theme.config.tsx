@@ -10,11 +10,6 @@ const config: DocsThemeConfig = {
     link: 'https://github.com/tadashi0713/doc',
   },
   docsRepositoryBase: 'https://github.com/tadashi0713/doc/tree/main',
-  useNextSeoProps() {
-    return {
-      titleTemplate: "%s | tadashi0713 Docs"
-    };
-  },
   head: () => {
     const { asPath, defaultLocale, locale } = useRouter()
     const { frontMatter } = useConfig()
@@ -34,7 +29,7 @@ const config: DocsThemeConfig = {
     )
   },
   footer: {
-    text: (
+    content: (
       <>
         <Analytics />
         <span>tadashi0713 Docs</span>
