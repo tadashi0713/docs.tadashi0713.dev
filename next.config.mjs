@@ -6,5 +6,14 @@ const withNextra = nextra({
 })
 
 export default withNextra({
-  output: 'standalone'
+  output: 'standalone',
+  webpack: (config) => {
+    config.ignoreWarnings = [
+      {
+        module: /@typescript/,
+        message: /Critical dependency: the request of a dependency is an expression/,
+      },
+    ]
+    return config
+  },
 })

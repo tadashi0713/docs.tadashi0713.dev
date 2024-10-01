@@ -1,4 +1,4 @@
-{
+export default {
   "index": "Home",
   "docker-workshop-ja": "Dockerワークショップ",
   "about": {
