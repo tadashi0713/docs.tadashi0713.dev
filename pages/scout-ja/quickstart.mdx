@@ -1,0 +1,210 @@
+
+# Docker Scout クイックスタート
+
+Docker Scoutはイメージの内容を分析し、検出されたパッケージや脆弱性の詳細なレポートを生成します。これにより、Docker Scoutはイメージ分析で発見された問題を修正するための提案を提供できます。
+
+このガイドでは、脆弱なコンテナイメージを使い、Docker Scoutを使用して脆弱性を特定し修正する方法、イメージのバージョンを時間と共に比較する方法、そして結果をチームと共有する方法を紹介します。
+
+## ステップ 1: セットアップ
+
+[このサンプルプロジェクト](https://github.com/docker/scout-demo-service)には、脆弱なNode.jsアプリケーションが含まれており、それを使って一緒に進めることができます。
+
+
+1. リポジトリをクローンします：
+
+  ```console
+  $ git clone https://github.com/docker/scout-demo-service.git
+  ```
+
+2. ディレクトリに移動します：
+
+  ```console
+  $ cd scout-demo-service
+  ```
+
+3. Dockerアカウントにサインインしていることを確認します。これは `docker login` コマンドを実行するか、Docker Desktopでサインインすることで行えます。
+
+4. イメージをビルドして `<ORG_NAME>/scout-demo:v1` にプッシュします。`<ORG_NAME>` はDocker Hubのネームスペースを指します。
+
+  ```
+  $ docker build --push -t <ORG_NAME>/scout-demo:v1 .
+  ```
+
+## ステップ 2: Docker Scoutの有効化
+
+Docker Scoutは、デフォルトでローカルのイメージを分析します。リモートリポジトリ内のイメージを分析するには、まず有効化する必要があります。これはDocker Hub、Docker Scout Dashboard、CLIから行えます。詳しくは[概要ガイド](/scout-ja)を参照してください。
+
+1. `docker login` コマンドを使ってDockerアカウントにサインインするか、Docker Desktopの **Sign in** ボタンを使用します。
+
+2. 次に、`docker scout enroll` コマンドを使用して、組織をDocker Scoutに登録します。
+
+  ```console
+  $ docker scout enroll <ORG_NAME>
+      ✓ Successfully enrolled organization <ORG_NAME> with Docker Scout Free
+  ```
+
+3. `docker scout repo enable` コマンドを使って、Docker Scoutをイメージリポジトリに対して有効にします。
+
+  ```
+  $ docker scout repo enable --org <ORG_NAME> <ORG_NAME>/scout-demo
+  ```
+
+## ステップ 3: イメージの脆弱性を分析する
+
+ビルド後、`docker scout` CLIコマンドを使って、Docker Scoutが検出した脆弱性を確認します。
+
+このガイドのサンプルアプリケーションは、脆弱なバージョンのExpressを使用しています。次のコマンドで、イメージ内でExpressに影響を与えるすべてのCVEを確認できます：
+
+```console
+$ docker scout cves --only-package express
+```
+
+Docker Scoutは、デフォルトで最後にビルドされたイメージを分析するため、この場合、イメージ名を指定する必要はありません。
+
+[`CLIリファレンスドキュメント`](/reference/cli/docker/scout/cves)で `docker scout cves` コマンドの詳細をご確認ください。
+
+## ステップ 4: アプリケーションの脆弱性を修正する
+
+Docker Scoutが提案する修正は、脆弱なExpressバージョンを4.17.3以上に更新することです。
+
+1. `package.json` ファイルを新しいパッケージバージョンで更新します。
+
+  ```diff
+    "dependencies": {
+  -    "express": "4.17.1"
+  +    "express": "4.17.3"
+    }
+  ```
+
+2. 新しいタグでイメージを再ビルドし、Docker Hubリポジトリにプッシュします：
+
+  ```console
+  $ docker build --push -t <ORG_NAME>/scout-demo:v2 .
+  ```
+
+これで、Docker Desktop、Docker Scout Dashboard、またはCLIで最新のタグを表示し、脆弱性が修正されたことが確認できます。
+
+```console
+$ docker scout cves --only-package express
+    ✓ Provenance obtained from attestation
+    ✓ Image stored for indexing
+    ✓ Indexed 79 packages
+    ✓ No vulnerable package detected
+
+
+  ## Overview
+
+                      │                  Analyzed Image                   
+  ────────────────────┼───────────────────────────────────────────────────
+    Target            │  mobywhale/scout-demo:v2                   
+      digest          │  ef68417b2866                                     
+      platform        │ linux/arm64                                       
+      provenance      │ https://github.com/docker/scout-demo-service.git  
+                      │  7c3a06793fc8f97961b4a40c73e0f7ed85501857         
+      vulnerabilities │    0C     0H     0M     0L                        
+      size            │ 19 MB                                             
+      packages        │ 1                                                 
+
+
+  ## Packages and Vulnerabilities
+
+  No vulnerable packages detected
+
+```
+
+## ステップ 5: ポリシー遵守の評価
+
+特定のパッケージに基づいた脆弱性の確認は有効ですが、サプライチェーンの改善にはあまり効果的ではありません。
+
+Docker Scoutは、ポリシー評価をサポートしています。ポリシーは、イメージがサプライチェーン要件に準拠しているかどうかを追跡するためのカスタマイズ可能なルールのセットです。
+
+ポリシールールは組織ごとに固有のものなので、評価する際にはどの組織のポリシーを使用するか指定する必要があります。`docker scout config` コマンドを使用してDockerの組織を設定します。
+
+```console
+$ docker scout config organization <ORG_NAME>
+    ✓ Successfully set organization to <ORG_NAME>
+```
+
+これで、`quickview` コマンドを実行して、ビルドしたイメージのコンプライアンスステータスの概要を取得できます。イメージはデフォルトのポリシー設定に基づいて評価されます。
+
+```console
+$ docker scout quickview
+
+...
+Policy status  FAILED  (2/6 policies met, 2 missing data)
+
+  Status │                  Policy                      │           Results
+─────────┼──────────────────────────────────────────────┼──────────────────────────────
+  ✓      │ No copyleft licenses                         │    0 packages
+  !      │ Default non-root user                        │
+  !      │ No fixable critical or high vulnerabilities  │    2C    16H     0M     0L
+  ✓      │ No high-profile vulnerabilities              │    0C     0H     0M     0L
+  ?      │ No outdated base images                      │    No data
+  ?      │ Supply chain attestations                    │    No data
+```
+
+## ステップ 6: コンプライアンスの改善
+
+`quickview` コマンドの出力により、改善の余地があることが分かります。一部のポリシーは生成元やSBOMの証明がないため、評価に必要なデータが不足しています。また、いくつかの評価においてチェックに失敗しています。
+
+ポリシー評価は脆弱性のチェック以上の機能を持っています。例えば「デフォルトの非rootユーザーポリシー」では、イメージがデフォルトでrootスーパーユーザーとして実行されないようにして、実行時のセキュリティを向上させます。
+
+このポリシー違反に対処するには、Dockerfileに `USER` 指示を追加して、非rootユーザーを指定します：
+
+```diff
+  CMD ["node","/app/app.js"]
+  EXPOSE 3000
++ USER appuser
+```
+
+さらに、より完全なポリシー評価結果を得るには、SBOMと生成元の証明がイメージに含まれている必要があります。Docker Scoutは、これらの生成元証明書を使用して、イメージがどのようにビルドされたかを判断し、より正確な評価結果を提供します。
+
+イメージに証明書を付けてビルドする前に、[containerd イメージストア](/manuals/desktop/containerd.md) を有効にするか、`docker-container` ドライバーを使用してカスタムビルダーを作成する必要があります。古いイメージストアはマニフェストリストをサポートしていないため、生成元証明書がイメージに付けられません。
+
+Docker Desktopの **Settings** を開き、**General** セクションの **Use containerd for pulling and storing images** オプションにチェックが入っていることを確認します。イメージストアを切り替えると、非アクティブなイメージストアのイメージやコンテナは一時的に非表示になります。
+
+containerdイメージストアを有効にした状態で、`v3` タグを付けてイメージを再ビルドします。この時、`--provenance=true` および `--sbom=true` フラグを追加します。
+
+```console
+$ docker build --provenance=true --sbom=true --push -t <ORG_NAME>/scout-demo:v3 .
+```
+
+## ステップ 7: ダッシュボードで確認
+
+証明書付きで更新されたイメージをプッシュしたら、次はDocker Scout Dashboardで結果を確認しましょう。
+
+1. [Docker Scout Dashboard](https://scout.docker.com/) を開きます。
+2. Dockerアカウントでサインインします。
+3. 左側のナビゲーションから **Images** を選択します。
+
+イメージページには、Scoutが有効になっているリポジトリが一覧表示されます。リスト内のイメージを選択して **Image details** サイドバーを開きます。サイドバーには、リポジトリの最後にプッシュされたタグのコンプライアンス概要が表示されます。
+
+>[注意]
+>
+>ポリシー結果がまだ表示されていない場合、ページを更新してください。初めてDocker Scout Dashboardを使用する場合、結果が表示されるまでに数分かかることがあります。
+
+**Up-to-Date Base Images** ポリシーを確認します。このポリシーは、使用しているベースイメージが最新かどうかを確認します。この例では、古いバージョンの `alpine` をベースイメージとして使用しているため、非準拠のステータスになっています。
+
+ポリシー名の横にある **View fix** ボタンを選択すると、違反の詳細と修正方法に関する推奨事項が表示されます。この場合、推奨されるアクションは [Docker ScoutのGitHubインテグレーション](./integrations/source-code-management/github.md)を有効にすることです。これにより、ベースイメージを自動的に最新の状態に保つことができます。
+
+>[TIP]
+>
+>このガイドで使用されているデモアプリでは、この統合を有効にすることはできません。コードを所有するGitHubリポジトリにプッシュして、この統合を試してみてください！
+
+## まとめ
+
+このクイックスタートガイドでは、Docker Scoutがソフトウェアサプライチェーン管理をサポートするいくつかの方法について紹介しました：
+- リポジトリでのDocker Scoutの有効化方法
+- 脆弱性の分析
+- ポリシーとコンプライアンス
+- 脆弱性の修正とコンプライアンスの改善
+
+## 次のステップは？
+
+まだまだ発見することがたくさんあります。サードパーティのインテグレーション、ポリシーのカスタマイズ、リアルタイムでのランタイム環境モニタリングなど、以下のセクションもぜひご覧ください：
+
+- イメージ分析
+- データソース
+- Docker Scoutダッシュボード
+- 統合
+- ポリシー評価
