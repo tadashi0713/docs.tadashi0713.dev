@@ -1,6 +1,7 @@
 export default {
   "index": "Home",
   "docker-workshop-ja": "Dockerワークショップ",
+  "scout-ja": "Docker Scout ドキュメント",
   "about": {
     "title": "About me",
     "type": "page",
