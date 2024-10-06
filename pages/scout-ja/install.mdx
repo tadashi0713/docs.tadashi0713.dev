@@ -1,0 +1,111 @@
+import { Tabs } from 'nextra/components'
+
+# Docker Scout をインストールする
+
+**Docker Scout CLI プラグインは Docker Desktop にプリインストールされています。**
+
+Docker Desktop を使用せずに Docker Engine を実行している場合、Docker Scout はプリインストールされていませんが、スタンドアロンのバイナリとしてインストールできます。
+
+## インストールスクリプト
+
+プラグインの最新バージョンをインストールするには、以下のコマンドを実行してください：
+
+```console
+$ curl -fsSL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh -o install-scout.sh
+$ sh install-scout.sh
+```
+
+>[注意]
+>インターネットからダウンロードしたスクリプトを実行する前に、必ず内容を確認してください。インストールする前に、便利なスクリプトの潜在的なリスクや制限について理解しておくことをお勧めします。
+
+## 手動インストール
+
+<Tabs items={['Linux', 'macOS', 'Windows']}>
+  <Tabs.Tab>
+    1. [リリースページ](https://github.com/docker/scout-cli/releases)から最新バージョンをダウンロードしてください。
+    2. `$HOME/.docker` 配下に `scout` というサブディレクトリを作成します。
+
+    ```console
+    $ mkdir -p $HOME/.docker/scout
+    ```
+
+    3. アーカイブを解凍し、`docker-scout` バイナリを `$HOME/.docker/scout` ディレクトリに移動します。
+    4. バイナリを実行可能にします：`chmod +x $HOME/.docker/scout/docker-scout`
+    5. `scout` サブディレクトリを `.docker/config.json` にプラグインディレクトリとして追加します：
+
+    ```json
+    {
+      "cliPluginsExtraDirs": [
+        "$HOME/.docker/scout"
+      ]
+    }
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. [リリースページ](https://github.com/docker/scout-cli/releases)から最新バージョンをダウンロードしてください。
+    2. `$HOME/.docker` 配下に `scout` というサブディレクトリを作成します。
+
+    ```console
+    $ mkdir -p $HOME/.docker/scout
+    ```
+
+    3. アーカイブを解凍し、`docker-scout` バイナリを `$HOME/.docker/scout` ディレクトリに移動します。
+    4. バイナリを実行可能にします：
+    
+    ```console
+    $ chmod +x $HOME/.docker/scout/docker-scout
+    ```
+
+    5. バイナリをmacOSで実行可能にするために認証します：
+
+    ```console
+    xattr -d com.apple.quarantine $HOME/.docker/scout/docker-scout
+    ```
+
+    5. `scout` サブディレクトリを `.docker/config.json` にプラグインディレクトリとして追加します：
+
+    ```json
+    {
+      "cliPluginsExtraDirs": [
+        "$HOME/.docker/scout"
+      ]
+    }
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. [リリースページ](https://github.com/docker/scout-cli/releases)から最新バージョンをダウンロードしてください。
+    2. `%USERPROFILE%/.docker` 配下に `scout` というサブディレクトリを作成します。
+
+    ```scout
+    % mkdir %USERPROFILE%\.docker\scout
+    ```
+
+    3. アーカイブを解凍し、`docker-scout.exe` バイナリを `%USERPROFILE%\.docker\scout` ディレクトリに移動します。
+    4. `scout` サブディレクトリを `.docker/config.json` にプラグインディレクトリとして追加します：
+    
+    ```json
+    {
+      "cliPluginsExtraDirs": [
+        "C:\Users\MobyWhale\.docker\scout"
+      ]
+    }
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## コンテナイメージ
+
+Docker Scout CLIプラグインは、[コンテナイメージ](https://hub.docker.com/r/docker/scout-cli)としても利用可能です。`docker/scout-cli` を使用して、ホストにCLIプラグインをインストールせずに `docker scout` コマンドを実行できます。
+
+```console
+$ docker run -it \
+  -e DOCKER_SCOUT_HUB_USER=<your Docker Hub user name> \
+  -e DOCKER_SCOUT_HUB_PASSWORD=<your Docker Hub PAT>  \
+  docker/scout-cli <command>
+```
+
+## GitHub Action
+
+Docker Scout CLIプラグインは、[GitHub Action](https://github.com/docker/scout-action) としても利用可能です。GitHubワークフローで使用して、各プッシュごとにイメージを自動的に分析し、ポリシー遵守を評価することができます。
+
+Docker Scoutは、Jenkins、GitLab、Azure DevOpsなどの多くのCI/CDツールとも統合可能です。Docker Scoutの利用可能な[統合](./integrations/_index.md)について詳しくはご覧ください。
