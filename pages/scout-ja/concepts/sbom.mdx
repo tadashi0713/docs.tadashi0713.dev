@@ -1,0 +1,29 @@
+# ソフトウェア部品表 (Software Bill of Materials, SBOM)
+
+部品表 (Bill of Materials, BOM) とは、製品を製造するために必要な材料、部品、およびその数量のリストです。例えば、コンピュータの部品表には、マザーボード、CPU、RAM、電源、ストレージデバイス、ケース、その他のコンポーネントが含まれ、それらをコンピュータに組み立てるために必要な数量がリストされています。
+
+ソフトウェア部品表 (Software Bill of Materials, SBOM) は、ソフトウェアを構成するすべてのコンポーネントのリストです。これには、オープンソースやサードパーティのコンポーネント、さらにはそのソフトウェア専用に書かれたカスタムコードも含まれます。SBOMは、物理製品の部品表に似ていますが、ソフトウェア用のものです。
+
+ソフトウェアサプライチェーンのセキュリティの文脈において、SBOMはソフトウェアにおけるセキュリティおよびコンプライアンスリスクを特定し、緩和するのに役立ちます。ソフトウェアに使用されているコンポーネントを正確に把握することで、コンポーネントの脆弱性をすばやく特定して修正したり、プロジェクトに適さないライセンスを持つコンポーネントを特定したりすることができます。
+
+## SBOMの内容
+
+SBOMには通常、以下の情報が含まれます：
+
+- SBOMが説明するソフトウェアの名前（ライブラリやフレームワークの名前など）
+- ソフトウェアのバージョン
+- ソフトウェアが配布されているライセンス
+- ソフトウェアが依存している他のコンポーネントのリスト
+
+## Docker ScoutがSBOMを使用する方法
+
+Docker Scoutは、Dockerイメージで使用されているコンポーネントを特定するためにSBOMを使用します。イメージを分析するとき、Docker Scoutはイメージに添付されたSBOM（[証明](https://docs.docker.com/manuals/build/metadata/attestations/_index.md)を使用）を使用するか、またはイメージの内容を分析してその場でSBOMを生成します。
+
+SBOMは、[アドバイザリーデータベース](https://docs.docker.com/manuals/scout/deep-dive/advisory-db-sources.md)と照合され、イメージ内のコンポーネントに既知の脆弱性があるかどうかを確認します。
+
+## 追加リソース
+
+SBOMの生成方法やDocker ScoutでのSBOMの活用方法について詳しく学ぶには、以下を参照してください：
+
+- [Docker Scoutにおけるイメージ分析](https://docs.docker.com/manuals/scout/explore/analysis.md)
+- [SBOMの表示と作成](https://docs.docker.com/manuals/scout/how-tos/view-create-sboms.md)
