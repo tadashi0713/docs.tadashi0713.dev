@@ -1,21 +1,21 @@
 ---
 title: Docker Build Cloud
-description: Docker Build Cloudに関するドキュメントを見つけて、ローカルおよびCIでコンテナイメージをより速くビルドするために役立てましょう
+description: Docker Build Cloud に関するドキュメントを見つけて、ローカルおよびCIでコンテナイメージをより速くビルドするために役立てましょう
 ---
 
 # Docker Build Cloud
 
-Docker Build Cloudは、ローカル環境やCIでコンテナイメージをより速くビルドできるサービスです。このサービスは、ワークロードに最適なクラウドインフラでビルドを実行し、設定は不要です。リモートビルドキャッシュを使用するため、どこでビルドしても、チームメンバー全員にとって高速なビルドが可能です。
+Docker Build Cloud は、ローカル環境やCIでコンテナイメージをより速くビルドできるサービスです。このサービスは、ワークロードに最適なクラウドインフラでビルドを実行し、設定は不要です。リモートビルドキャッシュを使用するため、どこでビルドしても、チームメンバー全員にとって高速なビルドが可能です。
 
-## Docker Build Cloudの仕組み
+## Docker Build Cloud の仕組み
 
-Docker Build Cloudの使用方法は、通常のビルドと変わりません。`docker buildx build` を使って、普段通りにビルドを開始します。違いは、そのビルドがどこで、どのように実行されるかです。
+Docker Build Cloud の使用方法は、通常のビルドと変わりません。`docker buildx build` を使って、普段通りにビルドを開始します。違いは、そのビルドがどこで、どのように実行されるかです。
 
-通常、ビルドコマンドを実行すると、ビルドはDockerデーモンにバンドルされたBuildKitのローカルインスタンスで実行されます。Docker Build Cloudを使用する場合、ビルドリクエストはクラウドでリモート実行されるBuildKitインスタンスに送信されます。すべてのデータは転送中に暗号化されます。
+通常、ビルドコマンドを実行すると、ビルドはDockerデーモンにバンドルされた BuildKit のローカルインスタンスで実行されます。Docker Build Cloud を使用する場合、ビルドリクエストはクラウドでリモート実行される BuildKit インスタンスに送信されます。すべてのデータは転送中に暗号化されます。
 
 リモートビルダーはビルドステップを実行し、結果のビルド出力を指定された宛先に送信します。たとえば、ローカルのDocker Engineイメージストアや、イメージレジストリへの送信が可能です。
 
-Docker Build Cloudはローカルビルドと比べていくつかの利点を提供します：
+Docker Build Cloud はローカルビルドと比べていくつかの利点を提供します：
 
 - ビルド速度の向上
 - 共有ビルドキャッシュ
@@ -25,19 +25,19 @@ Docker Build Cloudはローカルビルドと比べていくつかの利点を�
 
 > [!NOTE]
 >
-> Docker Build Cloudは現在、米国東部地域でのみ利用可能です。ヨーロッパやアジアのユーザーは、北米のユーザーに比べて遅延が増加する可能性があります。
+> Docker Build Cloud は現在、米国東部地域でのみ利用可能です。ヨーロッパやアジアのユーザーは、北米のユーザーに比べて遅延が増加する可能性があります。
 >
 > 複数の地域に対応したビルダーのサポートは、今後の予定にあります。
 
-## Docker Build Cloudの入手
+## Docker Build Cloud の入手
 
-Docker Build Cloudを始めるには、
+Docker Build Cloud を始めるには、
 [Dockerアカウントを作成](https://docs.docker.com/accounts/create-account/)
-し、[Docker Build Cloudダッシュボード](https://build.docker.com/)でスタータープランに登録してください。
+し、[Docker Build Cloud ダッシュボード](https://build.docker.com/)でスタータープランに登録してください。
 
-もし組織がまだ有料のDockerサブスクリプションを利用していない場合、Docker Build Cloudに登録するために支払い方法を提供する必要があります。ただし、スタータープランを選択した場合、提供された支払い方法に対して料金が請求されることはなく、これは確認のために必要なだけです。
+もし組織がまだ有料のDockerサブスクリプションを利用していない場合、Docker Build Cloud に登録するために支払い方法を提供する必要があります。ただし、スタータープランを選択した場合、提供された支払い方法に対して料金が請求されることはなく、これは確認のために必要なだけです。
 
 登録してビルダーを作成したら、[ローカル環境でビルダーを設定](./setup)する手順を続けてください。
 
-利用可能なサブスクリプションプランについての詳細は、[Docker Build Cloudのサブスクリプションと機能](https://docs.docker.com/subscription/build-cloud/build-details/)をご覧ください。
-Docker Build Cloudに関連するロールと権限に関する情報は、[ロールと権限](https://docs.docker.com/security/for-admins/roles-and-permissions/#docker-build-cloud)をご覧ください。
+利用可能なサブスクリプションプランについての詳細は、[Docker Build Cloud のサブスクリプションと機能](https://docs.docker.com/subscription/build-cloud/build-details/)をご覧ください。
+Docker Build Cloud に関連するロールと権限に関する情報は、[ロールと権限](https://docs.docker.com/security/for-admins/roles-and-permissions/#docker-build-cloud)をご覧ください。
