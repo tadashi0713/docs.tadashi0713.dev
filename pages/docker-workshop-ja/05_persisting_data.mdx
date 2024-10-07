@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { Tabs } from 'nextra/components'
 
 もし気づいていない場合、コンテナを起動するたびに、todoリストが空になっています。なぜそうなるのでしょうか？このパートでは、コンテナがどのように動作しているかを詳しく見ていきます。
@@ -126,7 +125,7 @@ CLIまたはDocker Desktopのグラフィカルインターフェースを使用
 
 1. コンテナが起動したら、アプリを開いて、todoリストにいくつかのアイテムを追加します。
 
-    <Image src="/docker-workshop-ja/items-added.webp" alt="Items added to todo list" width="1234" height="644" />
+    ![Items added to todo list](/docker-workshop-ja/items-added.webp)
 
 2. Docker Desktopまたは docker ps コマンドを使ってIDを取得し、`docker rm -f <id>` コマンドを使用してtodoアプリコンテナを停止して削除します。
 

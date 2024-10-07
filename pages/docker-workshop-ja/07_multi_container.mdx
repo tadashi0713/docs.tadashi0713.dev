@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import { Tabs } from 'nextra/components'
 
 ここまで、単一コンテナのアプリケーションを扱ってきました。しかし、これからはMySQLをアプリケーションスタックに追加します。次のような質問がよく出てきます。「MySQLはどこで動かすべきか？同じコンテナにインストールするか、別々に動かすか？」一般的に、各コンテナは1つのことを行い、それをうまくやるべきです。以下は、MySQLを別のコンテナで実行する理由のいくつかです。
@@ -10,7 +9,7 @@ import { Tabs } from 'nextra/components'
 
 他にも理由があります。そのため、以下の図のようにアプリを複数のコンテナで実行するのがベストです。
 
-<Image src="/docker-workshop-ja/multi-container.webp" alt="Todo App connected to MySQL container" width="350" height="250" />
+![Todo App connected to MySQL container](/docker-workshop-ja/multi-container.webp)
 
 ## コンテナネットワーキング
 
