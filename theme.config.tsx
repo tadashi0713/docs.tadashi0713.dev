@@ -5,7 +5,7 @@ import { useConfig } from 'nextra-theme-docs'
 import { Analytics } from '@vercel/analytics/react'
 
 const config: DocsThemeConfig = {
-  logo: <span>tadashi0713 Docs</span>,
+  logo: <span style={{ fontWeight: 800 }}>📚 tadashi0713 Docs</span>,
   project: {
     link: 'https://github.com/tadashi0713/doc',
   },
@@ -20,7 +20,7 @@ const config: DocsThemeConfig = {
       <>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta property="og:url" content={url} />
-        <meta property="og:title" content={frontMatter.title || 'tadashi0713 Docs'} />
+        <meta property="og:title" content={frontMatter.title + ' | tadashi0713 Docs' || 'tadashi0713 Docs'} />
         <meta
           property="og:description"
           content={frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'}
