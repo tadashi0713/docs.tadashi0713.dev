@@ -1,3 +1,4 @@
 export default {
-  "setup": "セットアップ"
+  "setup": "セットアップ",
+  "usage": "利用方法"
 }

@@ -1,0 +1,147 @@
+---
+title: Docker Build Cloud を使ったビルド
+description: Buildx CLI クライアントを使用してクラウドビルドを実行する方法
+---
+
+import { Tabs } from 'nextra/components'
+
+# Docker Build Cloud を使ったビルド
+
+Docker Build Cloud を使用してビルドするには、ビルドコマンドを実行し、`--builder` フラグでビルダーの名前を指定します。
+
+```console
+$ docker buildx build --builder cloud-<ORG>-<BUILDER_NAME> --tag <IMAGE> .
+```
+
+## デフォルトで使用する
+
+`--builder` フラグを毎回指定する必要がないように、Docker Build Cloud をデフォルトビルダーとして設定することができます。
+
+<Tabs items={['CLI', 'Docker Desktop']}>
+  <Tabs.Tab>
+    次のコマンドを実行します：
+
+    ```console
+    $ docker buildx use cloud-<ORG>-<BUILDER_NAME> --global
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. Docker Desktop の設定を開き、**Builders** タブに移動します。
+
+    2. **Available builders** の下でクラウドビルダーを見つけます。
+
+    3. ドロップダウンメニューを開き、**Use** を選択します。
+  </Tabs.Tab>
+</Tabs>
+
+`docker buildx use` コマンドでデフォルトビルダーを変更しても、`docker buildx build` コマンドにのみ適用されます。`docker build` コマンドは、`--builder` フラグを明示的に指定しない限り、引き続き `default` ビルダーを使用します。
+
+もしビルドスクリプト（`make` など）を使用している場合は、`docker build` を `docker buildx build` に更新することをお勧めします。ビルダーの選択に関する混乱を避けるためです。代わりに、`docker buildx install` を実行して、`docker build` コマンドを `docker buildx build` のように動作させることも可能です。
+
+## Docker Compose で使用する
+
+`docker compose build` コマンドを使用して Docker Build Cloud でビルドするには、まずクラウドビルダーを選択したビルダーとして設定し、その後ビルドを実行します。
+
+> [!NOTE]
+> Docker Compose の対応バージョンを使用していることを確認してください。詳細は[前提条件](./setup)を参照してください。
+
+```console
+$ docker buildx use cloud-<ORG>-<BUILDER_NAME>
+$ docker compose build
+```
+
+`docker buildx use` を使用する以外にも、`docker compose build --builder` フラグや [`BUILDX_BUILDER 環境変数`](https://docs.docker.com/build/building/variables/#buildx_builder) を使用してクラウドビルダーを選択することができます。
+
+# ビルド結果の読み込み
+
+`--tag` を使用してビルドすると、ビルドが完了すると同時にビルド結果がローカルイメージストアに自動的に読み込まれます。タグなしでビルドして結果を読み込みたい場合は、`--load` フラグを渡す必要があります。
+
+マルチプラットフォームイメージの場合、ビルド結果の読み込みはサポートされていません。マルチプラットフォームイメージをビルドする場合は、`docker buildx build --push` フラグを使用して出力をレジストリにプッシュします。
+
+```console
+$ docker buildx build --builder cloud-<ORG>-<BUILDER_NAME> \
+  --platform linux/amd64,linux/arm64 \
+  --tag <IMAGE> \
+  --push .
+```
+
+タグを使用してビルドしたいが、結果をローカルイメージストアに読み込みたくない場合は、ビルド結果をビルドキャッシュにのみエクスポートできます：
+
+```console
+$ docker buildx build --builder cloud-<ORG>-<BUILDER_NAME> \
+  --platform linux/amd64,linux/arm64 \
+  --tag <IMAGE> \
+  --output type=cacheonly .
+```
+
+## マルチプラットフォームビルド
+
+マルチプラットフォームビルドを実行するには、`--platform` フラグを使用してビルドするすべてのプラットフォームを指定する必要があります。
+
+```console
+$ docker buildx build --builder cloud-<ORG>-<BUILDER_NAME> \
+  --platform linux/amd64,linux/arm64 \
+  --tag <IMAGE> \
+  --push .
+```
+
+プラットフォームを指定しない場合、クラウドビルダーはローカル環境に一致するアーキテクチャで自動的にビルドを行います。
+
+マルチプラットフォームビルドについて詳しくは、[マルチプラットフォームビルド](https://docs.docker.com/build/building/multi-platform/) を参照してください。
+
+## Docker Desktop での Build Cloud
+
+Docker Desktop の [ビルドビュー](https://docs.docker.com/desktop/use-desktop/builds/) は、Docker Build Cloud とネイティブに連携します。このビューでは、自分のビルドだけでなく、同じビルダーを使用しているチームメンバーによって開始されたビルドの情報も表示できます。
+
+共有ビルダーを使用するチームは、以下の情報にアクセスできます：
+
+- 実行中および完了したビルド
+- ビルドの設定、統計、依存関係、結果
+- ビルドソース（Dockerfile）
+- ビルドログとエラー
+
+これにより、ビルドログやベンチマークをチーム内でやり取りすることなく、トラブルシューティングやビルド速度の向上に共同で取り組むことができます。
+
+## Docker Build Cloud でシークレットを使用する
+
+Docker Build Cloud でビルドシークレット（認証情報やトークンなど）を使用するには、`--secret` および `--ssh` CLI フラグを `docker buildx` コマンドで使用します。トラフィックは暗号化され、シークレットはビルドキャッシュに保存されることはありません。
+
+> [注意]
+>
+> ビルド引数を使用して認証情報、認証トークン、その他のシークレットを渡している場合は、[シークレットマウント](/reference/cli/docker/buildx/build.md#secret) を使用するようにビルドをリファクタリングする必要があります。ビルド引数はキャッシュに保存され、その値は証明で公開されます。シークレットマウントはビルド外に漏れず、証明には含まれません。
+
+詳細については、以下を参照してください：
+
+- [docker buildx build --secret](https://docs.docker.com/reference/cli/docker/buildx/build/#secret)
+- [docker buildx build --ssh](https://docs.docker.com/reference/cli/docker/buildx/build/#ssh)
+
+## ビルドキャッシュの管理
+
+Docker Build Cloud のキャッシュは手動で管理する必要はありません。システムが自動的に[ガベージコレクション](https://docs.docker.com/build/cache/garbage-collection/)を通じて管理します。
+
+ストレージの制限に達した場合、古いキャッシュは自動的に削除されます。現在のキャッシュ状態は [`docker buildx du` コマンド](https://docs.docker.com/reference/cli/docker/buildx/du/) で確認できます。
+
+ビルダーのキャッシュを手動でクリアするには、[`docker buildx prune` コマンド](https://docs.docker.com/reference/cli/docker/buildx/prune/) を使用します。これは、他のビルダーのキャッシュをプルーニングする場合と同様に機能します。
+
+> [注意]
+>
+> クラウドビルダーのキャッシュをプルーニングすると、同じビルダーを使用している他のチームメンバーのキャッシュも削除されます。
+
+## Docker Build Cloud をデフォルトビルダーから解除する
+
+クラウドビルダーをデフォルトビルダーとして設定している場合、それを解除して `docker` デフォルトビルダーに戻すには、以下のコマンドを実行します：
+
+```console
+$ docker context use default
+```
+
+これにより、ビルダーはシステムから削除されません。ビルドを自動的に実行するために選択されるビルダーが変更されるだけです。
+
+## 内部ネットワークのレジストリ
+
+Docker Build Cloud は、VPNの背後にある内部ネットワーク上のプライベートレジストリやレジストリミラーでは使用できません。クラウドビルダーがやり取りするすべてのエンドポイント（OCIレジストリなど）は、インターネット経由でアクセス可能である必要があります。
+
+> **実験的な機能を試してみたいですか？**
+> 
+> クラウドビルダーが内部リソースにアクセスできる実験的な機能を現在テスト中です。
+> この機能を試してみたい場合は、[サポートフォーム](https://hub.docker.com/support/contact?topic=Docker+Build+Cloud&subject=Private+registry+access) を使用してお問い合わせください。
