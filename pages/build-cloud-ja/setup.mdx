@@ -1,0 +1,61 @@
+---
+title: Docker Build Cloud のセットアップ
+description: Docker Build Cloud の始め方
+---
+
+import { Tabs } from 'nextra/components'
+
+# Docker Build Cloud のセットアップ
+
+Docker Build Cloud を使用する前に、ビルダーをローカル環境に追加する必要があります。
+
+## 前提条件
+
+Docker Build Cloud を始めるには、以下が必要です：
+
+- Docker Desktop バージョン 4.26.0 以降をダウンロードしてインストールする。
+- [Docker Build Cloud ダッシュボード](https://build.docker.com/) で Docker Build Cloud のサブスクリプションに登録する。
+
+### Docker Desktop を使用せずに Docker Build Cloud を使用する
+
+Docker Desktop を使用せずに Docker Build Cloud を利用する場合、Docker Build Cloud（`cloud` ドライバー）をサポートする Buildx のバージョンをダウンロードしてインストールする必要があります。互換性のある Buildx バイナリは、[このリポジトリ](https://github.com/docker/buildx-desktop) のリリースページで見つけることができます。
+
+`docker compose build` コマンドを使用して Docker Build Cloud でビルドを行う予定の場合は、Docker Build Cloud をサポートする Docker Compose のバージョンも必要です。互換性のある Docker Compose バイナリは、[このリポジトリ](https://github.com/docker/compose-desktop) のリリースページで見つけることができます。
+
+## 手順
+
+CLI を使用して `docker buildx create` コマンドでビルダーを追加するか、Docker Desktop の設定 GUI を使用してビルダーを追加できます。
+
+<Tabs items={['CLI', 'Docker Desktop']}>
+  <Tabs.Tab>
+    1. Docker アカウントにサインインします。
+
+      ```console
+      $ docker login
+      ```
+
+    2. クラウドビルダーエンドポイントを追加します。
+
+      ```console
+      $ docker buildx create --driver cloud <ORG>/<BUILDER_NAME>
+      ```
+      `ORG` を Docker Hub の組織ネームスペースに置き換えてください。
+    
+    これにより、`cloud-ORG-BUILDER_NAME` という名前のビルダーが作成されます。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. Docker Desktop の **Sign in** ボタンを使って Docker アカウントにサインインします。
+
+    2. Docker Desktop の設定を開き、**Builders** タブに移動します。
+
+    3. **Available builders** の下で、**Connect to builder** を選択します。
+  </Tabs.Tab>
+</Tabs>
+
+このビルダーは、`linux/amd64` と `linux/arm64` アーキテクチャをネイティブにサポートしています。これにより、マルチプラットフォームイメージをネイティブにビルドするための高性能なビルドクラスターを利用できます。
+
+## 次のステップ
+
+- [Docker Build Cloud]() を使ったビルド のセクションで、Docker Build Cloud の使用方法の例をご覧ください。
+
+- [CIで Docker Build Cloud を使用する]() で、CI システムで Docker Build Cloud を使用する例をご覧ください。

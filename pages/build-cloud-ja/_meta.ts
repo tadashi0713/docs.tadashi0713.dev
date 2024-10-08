@@ -1,3 +1,3 @@
 export default {
-  "install": "インストール"
+  "setup": "セットアップ"
 }
