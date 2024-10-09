@@ -27,6 +27,7 @@ const config: DocsThemeConfig = {
           name="description"
           content={description}
         />
+        <meta property="og:site_name" content="tadashi0713 Docs" />
         <meta property="og:type" content='article' />
         <meta property="og:url" content={url} />
         <meta property="og:title" content={title} />
@@ -35,6 +36,8 @@ const config: DocsThemeConfig = {
           content={description}
         />
         <meta property="og:image" content={ogImage} key={ogImage} />
+        <meta property="twitter:title" content={title}/>
+        <meta property="twitter:description" content={description} />
         <meta name="twitter:image" content={ogImage} />
         <meta name="twitter:card" content='summary_large_image' />
       </>
