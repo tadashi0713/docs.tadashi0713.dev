@@ -18,12 +18,21 @@ const config: DocsThemeConfig = {
       (defaultLocale === locale ? asPath : `/${locale}${asPath}`)
     return (
       <>
+        <title>{frontMatter.title || 'tadashi0713 Docs'}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta
+          property="description"
+          content={frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'}
+        />
         <meta property="og:url" content={url} />
-        <meta property="og:title" content={frontMatter.title + ' | tadashi0713 Docs' || 'tadashi0713 Docs'} />
+        <meta property="og:title" content={frontMatter.title || 'tadashi0713 Docs'} />
         <meta
           property="og:description"
           content={frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'}
+        />
+        <meta
+          property="og:image"
+          content="https://docs.tadashi0713.dev/api/og"
         />
       </>
     )
