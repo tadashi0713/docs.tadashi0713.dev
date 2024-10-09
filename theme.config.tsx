@@ -18,6 +18,7 @@ const config: DocsThemeConfig = {
       (defaultLocale === locale ? asPath : `/${locale}${asPath}`)
     const title = frontMatter.title || 'tadashi0713 Docs'
     const description = frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'
+    const ogImage = `https://docs.tadashi0713.dev/api/og?title=${title}`
     return (
       <>
         <title>{title}</title>
@@ -26,16 +27,16 @@ const config: DocsThemeConfig = {
           name="description"
           content={description}
         />
+        <meta property="og:type" content='article' />
         <meta property="og:url" content={url} />
         <meta property="og:title" content={title} />
         <meta
           property="og:description"
           content={description}
         />
-        <meta
-          property="og:image"
-          content={`https://docs.tadashi0713.dev/api/og?title=${title}`}
-        />
+        <meta property="og:image" content={ogImage} key={ogImage} />
+        <meta name="twitter:image" content={ogImage} />
+        <meta name="twitter:card" content='summary_large_image' />
       </>
     )
   },
