@@ -16,23 +16,25 @@ const config: DocsThemeConfig = {
     const url =
       'https://docs.tadashi0713.dev' +
       (defaultLocale === locale ? asPath : `/${locale}${asPath}`)
+    const title = frontMatter.title || 'tadashi0713 Docs'
+    const description = frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'
     return (
       <>
-        <title>{frontMatter.title || 'tadashi0713 Docs'}</title>
+        <title>{title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta
           property="description"
-          content={frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'}
+          content={description}
         />
         <meta property="og:url" content={url} />
-        <meta property="og:title" content={frontMatter.title || 'tadashi0713 Docs'} />
+        <meta property="og:title" content={title} />
         <meta
           property="og:description"
-          content={frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'}
+          content={description}
         />
         <meta
           property="og:image"
-          content="https://docs.tadashi0713.dev/api/og"
+          content={`https://docs.tadashi0713.dev/api/og?title=${title}`}
         />
       </>
     )
