@@ -18,7 +18,7 @@ const config: DocsThemeConfig = {
       (defaultLocale === locale ? asPath : `/${locale}${asPath}`)
     const title = frontMatter.title || 'tadashi0713 Docs'
     const description = frontMatter.description || 'Collections of documents created by Tadashi Nemoto(tadashi0713)'
-    const ogImage = `https://docs.tadashi0713.dev/api/og?title=${title}`
+    const ogImage = `https://docs.tadashi0713.dev/api/og?title=${encodeURIComponent(title)}`
     return (
       <>
         <title>{title}</title>
