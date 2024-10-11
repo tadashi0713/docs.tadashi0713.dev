@@ -16,5 +16,8 @@ export default {
     "type": "page",
     "href": "https://tadashi0713.dev/contact",
     "newWindow": true
-  }
+  },
+  "private": {
+    "display": "hidden"
+  },
 }

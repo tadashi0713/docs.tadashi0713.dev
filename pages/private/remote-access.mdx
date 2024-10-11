@@ -1,0 +1,103 @@
+---
+title: Dockerデーモンのリモートアクセスを設定する
+description:
+  リモートアクセスを設定すると、DockerがUnixソケットだけでなく、IPアドレスとポートでもリクエストを受け入れるように構成できます。
+---
+
+# Dockerデーモンのリモートアクセスを設定する
+
+デフォルトでは、DockerデーモンはUnixソケットでの接続をリッスンして、ローカルクライアントからのリクエストを受け付けます。Dockerを構成して、Unixソケットだけでなく、IPアドレスとポートでリモートクライアントからのリクエストを受け付けるようにすることができます。
+
+> [!警告]
+>
+> Dockerをリモートクライアントからの接続を受け入れるように構成すると、ホストへの不正アクセスやその他の攻撃に対して脆弱になる可能性があります。
+>
+> Dockerをネットワークに公開する際のセキュリティ上の影響を十分に理解することが非常に重要です。接続を保護するための対策が取られない場合、リモートの非rootユーザーがホストのrootアクセスを取得する可能性があります。
+>
+> TLSなしでのリモートアクセスは**推奨されません**。今後のリリースでは、明示的なオプトインが必要になる予定です。
+> この接続を保護するためにTLS証明書を使用する方法については、[Dockerデーモンソケットを保護する](https://docs.docker.com/engine/security/protect-access/)を参照してください。
+
+## リモートアクセスを有効にする
+
+リモートアクセスを有効にするには、`docker.service` systemdユニットファイルを使用するか、`daemon.json`ファイルを使用して構成できます。systemdを使用していないディストリビューションの場合は、`daemon.json`ファイルを使用します。
+
+systemdユニットファイルと`daemon.json`ファイルの両方を使用して接続をリッスンするようにDockerを構成すると、Dockerの起動が妨げられる競合が発生します。
+
+### systemdユニットファイルでリモートアクセスを構成する
+
+1. `sudo systemctl edit docker.service` コマンドを使用して、`docker.service` のオーバーライドファイルをテキストエディタで開きます。
+
+2. 次の行を追加または変更します。値は自身の環境に合わせて置き換えてください。
+
+   ```systemd
+   [Service]
+   ExecStart=
+   ExecStart=/usr/bin/dockerd -H fd:// -H tcp://127.0.0.1:2375
+   ```
+
+3. ファイルを保存します。
+
+4. `systemctl` の設定をリロードします。
+
+```console
+$ sudo systemctl daemon-reload
+```
+
+5. Dockerを再起動します。
+
+```console
+$ sudo systemctl restart docker.service
+```
+
+6. 変更が反映されたかを確認します。
+
+```console
+$ sudo netstat -lntp | grep dockerd
+tcp        0      0 127.0.0.1:2375          0.0.0.0:*               LISTEN      3758/dockerd
+```
+
+### `daemon.json`でリモートアクセスを構成する
+
+1. `/etc/docker/daemon.json`ファイルの`hosts`配列を設定し、UnixソケットとIPアドレスに接続するようにします。
+
+```json
+{
+  "hosts": ["unix:///var/run/docker.sock", "tcp://127.0.0.1:2375"]
+}
+```
+
+2. Dockerを再起動します。
+
+3. 変更が反映されたかを確認します。
+
+```console
+$ sudo netstat -lntp | grep dockerd
+tcp        0      0 127.0.0.1:2375          0.0.0.0:*               LISTEN      3758/dockerd
+```
+
+### ファイアウォールを通じてリモートAPIへのアクセスを許可する
+
+Docker Remote APIに他のリモートホストからアクセスしたい場合、同じホスト上でファイアウォールを実行している場合は、Dockerポートへの着信接続を許可するようにファイアウォールを構成する必要があります。TLSで暗号化されたトランスポートを使用している場合、デフォルトのポートは`2376`、それ以外の場合は`2375`です。
+
+よく使用される2つのファイアウォールデーモンは次のとおりです：
+
+- [Uncomplicated Firewall (ufw)](https://help.ubuntu.com/community/UFW) は、Ubuntuシステムでよく使用されます。
+- [firewalld](https://firewalld.org/) は、RPMベースのシステムでよく使用されます。
+
+ご利用のOSとファイアウォールのドキュメントを参照してください。以下の情報は、設定を開始するための参考になるかもしれません。この手順で使用される設定は緩やかであり、システムをより厳密にロックダウンする別の構成を検討することをお勧めします。
+
+- ufwでは、設定で`DEFAULT_FORWARD_POLICY="ACCEPT"`を指定します。
+- firewalldでは、次のようなルールをポリシーに追加します。1つは着信リクエスト用、もう1つは送信リクエスト用です。`
+
+```xml
+<direct>
+  [ <rule ipv="ipv6" table="filter" chain="FORWARD_direct" priority="0"> -i zt0 -j ACCEPT </rule> ]
+  [ <rule ipv="ipv6" table="filter" chain="FORWARD_direct" priority="0"> -o zt0 -j ACCEPT </rule> ]
+</direct>
+```
+
+インターフェース名とチェーン名が正しいことを確認してください。
+
+## 追加情報
+
+デーモンへのリモートアクセスの構成オプションについて詳しくは、[dockerd CLIリファレンス](https://docs.docker.com/reference/cli/dockerd/#bind-docker-to-another-hostport-or-a-unix-socket)を参照してください。
