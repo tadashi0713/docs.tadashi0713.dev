@@ -1,0 +1,139 @@
+---
+title: Docker CLIでプロキシサーバーを使用する
+description: DockerクライアントCLIをプロキシサーバーで使用する方法
+---
+
+# Docker CLIでプロキシサーバーを使用する
+
+このページでは、コンテナ内で環境変数を使用してDocker CLIにプロキシを設定する方法について説明します。
+
+このページでは、Docker Desktopのプロキシ設定方法については説明していません。Docker DesktopでのHTTP/HTTPSプロキシ設定の手順については、[Docker Desktopでのプロキシ設定](https://docs.docker.com/desktop/settings/#proxies)を参照してください。
+
+Docker Desktopを使用せずにDocker Engineを実行している場合は、[Dockerデーモンでプロキシサーバーを使用する設定](https://docs.docker.com/engine/daemon/proxy/)を参照し、Dockerデーモン（`dockerd`）自体のプロキシサーバー設定方法を確認してください。
+
+コンテナでHTTP、HTTPS、またはFTPプロキシサーバーを使用する必要がある場合、以下の方法で設定できます。
+
+- [Dockerクライアントの設定](#dockerクライアントの設定)
+- [CLIでプロキシを設定する](#cliでプロキシを設定する)
+
+> [!NOTE]
+>
+> 残念ながら、Webクライアントがプロキシ環境変数をどのように処理するべきか、またそれを定義するフォーマットに関する標準は存在しません。
+>
+> これらの変数の歴史について興味がある場合、GitLabチームによるブログ記事をご覧ください：[We need to talk: Can we standardize NO_PROXY?](https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/)。
+
+## Dockerクライアントの設定
+
+Dockerクライアントのプロキシ設定は、`~/.docker/config.json`にあるJSON構成ファイルを使用して追加できます。ビルドやコンテナは、このファイルに指定された設定を使用します。
+
+```json
+{
+ "proxies": {
+   "default": {
+     "httpProxy": "http://proxy.example.com:3128",
+     "httpsProxy": "https://proxy.example.com:3129",
+     "noProxy": "*.test.example.com,.example.org,127.0.0.0/8"
+   }
+ }
+}
+```
+
+> [!WARNING]
+>
+> プロキシ設定には機密情報が含まれることがあります。例えば、いくつかのプロキシサーバーは認証情報をURLに含める必要がある場合があり、あるいは会社の環境におけるIPアドレスやホスト名が露出する可能性があります。
+>
+> 環境変数はコンテナの設定にプレーンテキストとして保存されるため、リモートAPI経由で確認したり、docker commitコマンドを使用してイメージにコミットされた場合に検査される可能性があります。
+
+ファイルを保存すると設定が有効になり、Dockerの再起動は不要です。ただし、この設定は新しいコンテナとビルドにのみ適用され、既存のコンテナには影響しません。
+
+以下の表では、利用可能な設定パラメータについて説明します。
+
+| プロパティ     | 説明                                                          |
+| :----------- | :----------------------------------------------------------- |
+| httpProxy    | `HTTP_PROXY` と `http_proxy` 環境変数およびビルド引数を設定します。   |
+| httpsProxy   | `HTTPS_PROXY` と `https_proxy` 環境変数およびビルド引数を設定します。 |
+| ftpProxy     | `FTP_PROXY` と `ftp_proxy` 環境変数およびビルド引数を設定します。     |
+| noProxy      | `NO_PROXY` と `no_proxy` 環境変数およびビルド引数を設定します。       |
+| allProxy     | `ALL_PROXY` と `all_proxy` 環境変数およびビルド引数を設定します。     |
+
+これらの設定はコンテナのプロキシ環境変数を設定するためのものであり、Docker CLIやDockerデーモン自体のプロキシ設定には使用されません。CLIおよびデーモンのプロキシ設定については、[環境変数](https://docs.docker.com/reference/cli/docker/#environment-variables)および[Dockerデーモンでプロキシサーバーを使用する設定](https://docs.docker.com/engine/daemon/proxy/)のセクションを参照してください。
+
+### プロキシ設定でコンテナを実行する
+
+コンテナを起動する際、プロキシに関連する環境変数は、`~/.docker/config.json`に設定されたプロキシ設定を反映します。
+
+例えば、[前のセクション](#dockerクライアントの設定)で示したプロキシ設定を使用している場合、実行されるコンテナの環境変数は次のように設定されます。
+
+```console
+$ docker run --rm alpine sh -c 'env | grep -i  _PROXY'
+https_proxy=http://proxy.example.com:3129
+HTTPS_PROXY=http://proxy.example.com:3129
+http_proxy=http://proxy.example.com:3128
+HTTP_PROXY=http://proxy.example.com:3128
+no_proxy=*.test.example.com,.example.org,127.0.0.0/8
+NO_PROXY=*.test.example.com,.example.org,127.0.0.0/8
+```
+
+### プロキシ設定でビルドする
+
+ビルドを実行するとき、プロキシに関連するビルド引数はDockerクライアント構成ファイルのプロキシ設定に基づいて自動的に設定されます。
+
+[前のセクション](#dockerクライアントの設定)で示したプロキシ設定を使用している場合、ビルド中の環境変数は次のように設定されます。
+
+```console
+$ docker build \
+  --no-cache \
+  --progress=plain \
+  - <<EOF
+FROM alpine
+RUN env | grep -i _PROXY
+EOF
+```
+
+```console
+#5 [2/2] RUN env | grep -i _PROXY
+#5 0.100 HTTPS_PROXY=https://proxy.example.com:3129
+#5 0.100 no_proxy=*.test.example.com,.example.org,127.0.0.0/8
+#5 0.100 NO_PROXY=*.test.example.com,.example.org,127.0.0.0/8
+#5 0.100 https_proxy=https://proxy.example.com:3129
+#5 0.100 http_proxy=http://proxy.example.com:3128
+#5 0.100 HTTP_PROXY=http://proxy.example.com:3128
+#5 DONE 0.1s
+```
+
+### デーモンごとにプロキシ設定を構成する
+
+`~/.docker/config.json`内の`proxies`セクションの`default`キーは、クライアントが接続するすべてのデーモンに対してプロキシ設定を構成します。個々のデーモンに対してプロキシを構成する場合は、`default`キーの代わりにデーモンのアドレスを使用します。
+
+次の例では、デフォルトのプロキシ設定と、アドレス`tcp://docker-daemon1.example.com`に対するno-proxyオーバーライドを構成しています。
+
+```json
+{
+ "proxies": {
+   "default": {
+     "httpProxy": "http://proxy.example.com:3128",
+     "httpsProxy": "https://proxy.example.com:3129",
+     "noProxy": "*.test.example.com,.example.org,127.0.0.0/8"
+   },
+   "tcp://docker-daemon1.example.com": {
+     "noProxy": "*.internal.example.net"
+   }
+ }
+}
+```
+
+## CLIでプロキシを設定する
+
+[Dockerクライアントを構成](#dockerクライアントの設定)する代わりに、`docker build`や`docker run`コマンドを実行する際に、コマンドラインでプロキシ設定を指定することもできます。
+
+コマンドラインでのプロキシ設定は、ビルドでは`--build-arg`フラグ、コンテナ実行時には`--env`フラグを使用して指定します。
+
+`docker build`コマンドで使用できるすべてのプロキシ関連のビルド引数のリストについては、[Predefined ARGs](https://docs.docker.com/reference/dockerfile/#predefined-args)を参照してください。これらのプロキシ値はビルドコンテナ内でのみ使用可能であり、ビルドの出力には含まれません。
+
+## ビルド時のプロキシ設定を環境変数として使用する
+
+ビルドのプロキシ設定には、`ENV` Dockerfile命令を使用しないでください。代わりにビルド引数を使用してください。
+
+プロキシの環境変数を使用すると、設定がイメージに埋め込まれてしまいます。内部プロキシを使用している場合、そのプロキシがイメージから作成されたコンテナでアクセスできない可能性があります。
+
+プロキシ設定をイメージに埋め込むことはセキュリティリスクを伴います。これらの値には機密情報が含まれている可能性があるためです。
