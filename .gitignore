@@ -1,3 +1,5 @@
 .next
 node_modules
 .DS_Store
+public/robots.txt
+public/*.xml
