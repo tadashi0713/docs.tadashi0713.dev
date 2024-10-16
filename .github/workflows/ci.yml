@@ -13,5 +13,5 @@ jobs:
           node-version: '20.x'
           cache: 'pnpm'
       - run: pnpm install
-      - run: pnpm run lint
+      - run: pnpm run biome:ci
       - run: pnpm run build
