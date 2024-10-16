@@ -15,6 +15,10 @@
     }
   },
   "javascript": {
-    "formatter": { "quoteStyle": "single", "semicolons": "asNeeded" }
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "quoteProperties": "preserve"
+    }
   }
 }

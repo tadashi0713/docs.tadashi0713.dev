@@ -4,8 +4,7 @@
   "description": "Nextra docs template",
   "scripts": {
     "dev": "next dev",
-    "biome": "biome check --write .",
-    "biome:ci": "biome check .",
+    "lint": "biome check --write .",
     "build": "next build",
     "postbuild": "next-sitemap",
     "start": "next start"
