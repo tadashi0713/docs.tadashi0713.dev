@@ -3,4 +3,4 @@ module.exports = {
   generateRobotsTxt: true,
   autoLastmod: false,
   generateIndexSitemap: false,
-};
+}

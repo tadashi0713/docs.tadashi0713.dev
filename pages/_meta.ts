@@ -18,4 +18,4 @@ export default {
   private: {
     display: 'hidden',
   },
-};
+}

@@ -1,15 +1,15 @@
-import { ImageResponse } from '@vercel/og';
+import { ImageResponse } from '@vercel/og'
 
 export const config = {
   runtime: 'edge',
-};
+}
 
 export default function (req) {
-  const { searchParams } = new URL(req.url);
-  const hasTitle = searchParams.has('title');
+  const { searchParams } = new URL(req.url)
+  const hasTitle = searchParams.has('title')
   const title = hasTitle
     ? searchParams.get('title')?.slice(0, 100)
-    : 'My default title';
+    : 'My default title'
 
   return new ImageResponse(
     <div
@@ -60,5 +60,5 @@ export default function (req) {
       width: 1200,
       height: 630,
     },
-  );
+  )
 }

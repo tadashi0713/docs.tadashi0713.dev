@@ -14,5 +14,7 @@
       "correctness": { "useHookAtTopLevel": "off" }
     }
   },
-  "javascript": { "formatter": { "quoteStyle": "single" } }
+  "javascript": {
+    "formatter": { "quoteStyle": "single", "semicolons": "asNeeded" }
+  }
 }

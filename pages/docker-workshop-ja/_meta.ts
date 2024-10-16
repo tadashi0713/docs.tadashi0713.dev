@@ -9,4 +9,4 @@ export default {
   '08_using_compose': 'パート7: Docker Compose を使用する',
   '09_image_best': 'パート8: イメージビルドのベストプラクティス',
   '10_what_next': 'パート9: 次のステップ',
-};
+}

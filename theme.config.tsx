@@ -1,8 +1,8 @@
-import { Analytics } from '@vercel/analytics/react';
-import { useRouter } from 'next/router';
-import { DocsThemeConfig } from 'nextra-theme-docs';
-import { useConfig } from 'nextra-theme-docs';
-import React from 'react';
+import { Analytics } from '@vercel/analytics/react'
+import { useRouter } from 'next/router'
+import { DocsThemeConfig } from 'nextra-theme-docs'
+import { useConfig } from 'nextra-theme-docs'
+import React from 'react'
 
 const config: DocsThemeConfig = {
   logo: <span style={{ fontWeight: 800 }}>📚 tadashi0713 Docs</span>,
@@ -11,16 +11,16 @@ const config: DocsThemeConfig = {
   },
   docsRepositoryBase: 'https://github.com/tadashi0713/doc/tree/main',
   head: () => {
-    const { asPath, defaultLocale, locale } = useRouter();
-    const { frontMatter } = useConfig();
+    const { asPath, defaultLocale, locale } = useRouter()
+    const { frontMatter } = useConfig()
     const url =
       'https://docs.tadashi0713.dev' +
-      (defaultLocale === locale ? asPath : `/${locale}${asPath}`);
-    const title = frontMatter.title || 'tadashi0713 Docs';
+      (defaultLocale === locale ? asPath : `/${locale}${asPath}`)
+    const title = frontMatter.title || 'tadashi0713 Docs'
     const description =
       frontMatter.description ||
-      'Collections of documents created by Tadashi Nemoto(tadashi0713)';
-    const ogImage = `https://docs.tadashi0713.dev/api/og?title=${encodeURIComponent(title)}`;
+      'Collections of documents created by Tadashi Nemoto(tadashi0713)'
+    const ogImage = `https://docs.tadashi0713.dev/api/og?title=${encodeURIComponent(title)}`
     return (
       <>
         <title>{title}</title>
@@ -37,7 +37,7 @@ const config: DocsThemeConfig = {
         <meta name="twitter:image" content={ogImage} />
         <meta name="twitter:card" content="summary_large_image" />
       </>
-    );
+    )
   },
   footer: {
     content: (
@@ -48,6 +48,6 @@ const config: DocsThemeConfig = {
     ),
   },
   faviconGlyph: '📚',
-};
+}
 
-export default config;
+export default config
