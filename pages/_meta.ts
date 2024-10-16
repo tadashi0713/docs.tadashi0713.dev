@@ -1,9 +1,7 @@
 export default {
   "index": "Home",
   "docker-workshop-ja": "Dockerワークショップ",
-  "scout-ja": {
-    "display": "hidden"
-  },
+  "scout-ja": "Docker Scout ドキュメント",
   "build-cloud-ja": "Docker Build Cloud ドキュメント",
   "about": {
     "title": "About me",
