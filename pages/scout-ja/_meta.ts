@@ -1,5 +1,5 @@
 export default {
-  install: "インストール",
-  quickstart: "クイックスタート",
-  concepts: "コンセプト",
+  install: 'インストール',
+  quickstart: 'クイックスタート',
+  concepts: 'コンセプト',
 };

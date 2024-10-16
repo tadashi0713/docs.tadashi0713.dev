@@ -14,5 +14,5 @@
       "correctness": { "useHookAtTopLevel": "off" }
     }
   },
-  "javascript": { "formatter": { "quoteStyle": "double" } }
+  "javascript": { "formatter": { "quoteStyle": "single" } }
 }
