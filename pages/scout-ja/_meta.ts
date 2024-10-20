@@ -3,4 +3,5 @@ export default {
   'quickstart': 'クイックスタート',
   'concepts': 'コンセプト',
   'explore': '探る',
+  'integrations': 'インテグレーション',
 }
