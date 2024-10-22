@@ -1,0 +1,71 @@
+---
+description: Docker Scout を Circle CI と連携する方法
+title: Docker Scout を Circle CI と連携する
+---
+
+# Docker Scout を Circle CI と連携する
+
+以下の例は、CircleCIでトリガーされたときに実行されます。トリガーされると、`docker/scout-demo-service:latest` イメージとタグをチェックアウトし、Docker Scout を使用してCVEレポートを作成します。
+
+`.circleci/config.yml` ファイルに以下を追加します。
+
+最初に、ワークフローの残りを設定します。YAMLファイルに次の内容を追加してください。
+
+```yaml
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    environment:
+      IMAGE_TAG: docker/scout-demo-service:latest
+```
+
+これにより、ワークフローが使用するコンテナイメージと、イメージのための環境変数が定義されます。
+
+次に、ワークフローの手順を定義するために、以下の内容をYAMLファイルに追加します。
+
+```yaml
+steps:
+  # リポジトリファイルをチェックアウト
+  - checkout
+  
+  # `docker`コマンドを実行するための別のDocker環境をセットアップ
+  - setup_remote_docker:
+      version: 20.10.24
+
+  # Docker Scoutをインストールし、Docker Hubにログイン
+  - run:
+      name: Docker Scoutのインストール
+      command: |
+        env
+        curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b /home/circleci/bin
+        echo $DOCKER_HUB_PAT | docker login -u $DOCKER_HUB_USER --password-stdin
+
+  # Dockerイメージをビルド
+  - run:
+      name: Dockerイメージのビルド
+      command: docker build -t $IMAGE_TAG .
+  
+  # Docker Scoutを実行
+  - run:
+      name: CVEのスキャン
+      command: |
+        docker-scout cves $IMAGE_TAG --exit-code --only-severity critical,high
+```
+
+これにより、リポジトリファイルがチェックアウトされ、コマンドを実行するための別の Docker 環境がセットアップされます。
+
+次に、Docker Scout をインストールし、Docker Hub にログインして Docker イメージをビルドし、Docker Scout を実行して CVE レポートを生成します。このレポートには、重大または高リスクの脆弱性のみが表示されます。
+
+最後に、ワークフローの名前とジョブを追加します。
+
+```yaml
+workflows:
+  build-docker-image:
+    jobs:
+      - build
+```
+
+これで、CircleCIでDocker Scoutを使用してCVEレポートを生成するワークフローが完了です。
