@@ -1,0 +1,134 @@
+---
+title: Docker Scout を GitHub Actions と連携する
+description: Docker ScoutをGitHub Actionsと連携する方法
+---
+
+# Docker Scout を GitHub Actions と連携する
+
+以下の例では、GitHub Actions で Docker Scout のワークフローを設定する方法を示しています。このアクションはプルリクエストによってトリガーされ、イメージをビルドし、その新しいバージョンを本番環境で稼働中のイメージと比較します。
+
+このワークフローは、`docker scout compare` コマンドを実行するために [docker/scout-action](https://github.com/docker/scout-action) GitHub Action を使用しており、プルリクエストのイメージが本番環境で稼働しているイメージとどのように比較されるかを可視化します。
+
+## 前提条件
+
+- この例では、Docker Hubまたは他のレジストリにDocker Scoutを有効にした既存のイメージリポジトリがあることを前提としています。
+- この例では、[Environment](https://chatgpt.com/environment/_index.md) を使用して、プルリクエストでビルドされたイメージを `production` という環境での同じイメージの異なるバージョンと比較します。
+
+## 手順
+
+まず、GitHub Actions ワークフローを設定してイメージをビルドします。ここでは Docker Scout に特化したものではありませんが、比較するためのイメージをビルドする必要があります。
+
+以下を GitHub Actions の YAML ファイルに追加します。
+
+```yaml
+name: Docker
+
+on:
+  push:
+    tags: ["*"]
+    branches:
+      - "main"
+  pull_request:
+    branches: ["**"]
+
+env:
+  # レジストリのホスト名
+  REGISTRY: docker.io
+  # イメージリポジトリ（ホスト名とタグなし）
+  IMAGE_NAME: ${{ github.repository }}
+  SHA: ${{ github.event.pull_request.head.sha || github.event.after }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Docker buildx のセットアップ
+        uses: docker/setup-buildx-action@v3
+
+      # コンテナレジストリへの認証
+      - name: レジストリ ${{ env.REGISTRY }} への認証
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      # Docker メタデータを抽出
+      - name: Docker メタデータの抽出
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.revision=${{ env.SHA }}
+          tags: |
+            type=edge,branch=$repo.default_branch
+            type=semver,pattern=v{{version}}
+            type=sha,prefix=,suffix=,format=short
+
+      # Buildx で Docker イメージをビルドおよびプッシュ
+      # （プルリクエスト時にはプッシュせず、ロードのみ）
+      - name: Docker イメージのビルドとプッシュ
+        id: build-and-push
+        uses: docker/build-push-action@v6
+        with:
+          sbom: ${{ github.event_name != 'pull_request' }}
+          provenance: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+```
+
+このワークフローは以下のステップを実行します。
+
+1. Docker buildx をセットアップします。
+2. レジストリへの認証を行います。
+3. Git リファレンスや GitHub イベントからメタデータを抽出します。
+4. Dockerイメージをビルドし、レジストリにプッシュします。
+
+> [!NOTE]
+> 
+> このCIワークフローはローカルのイメージ分析と評価を実行します。イメージをローカルで評価するためには、ランナーのローカルイメージストアにイメージがロードされている必要があります。
+>
+> イメージをレジストリにプッシュした場合や、マルチプラットフォームイメージ、SBOMや証明書付きイメージなどがローカルイメージストアにロードできない場合、この比較は機能しません。
+
+この設定が完了したら、イメージの比較を実行するための以下のステップを追加します。
+
+```yaml
+      # Docker Hubがレジストリの場合、このステップをスキップできます
+      # 既に認証されているため
+      - name: Dockerへの認証
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      # プルリクエストでビルドされたイメージを本番環境のイメージと比較
+      - name: Docker Scout
+        id: docker-scout
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: docker/scout-action@v1
+        with:
+          command: compare
+          image: ${{ steps.meta.outputs.tags }}
+          to-env: production
+          ignore-unchanged: true
+          only-severities: critical,high
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+`compare` コマンドはイメージを分析し、ポリシーコンプライアンスを評価します。そして結果を `production` 環境の対応するイメージと照合します。この例では、重大および高リスクの脆弱性のみを含み、両方のイメージに存在する脆弱性は除外され、変更があったもののみが表示されます。
+
+GitHub Action は、比較結果をプルリクエストコメントにデフォルトで出力します。
+
+![Docker Scout の出力結果を表示した GitHub Action のスクリーンショット](/scout-ja/gha-output.webp)
+
+**Policies** セクションを展開すると、2つのイメージ間のポリシーコンプライアンスの違いを確認できます。この例では、新しいイメージは完全には準拠していませんが、ベースラインと比較して新しいイメージの評価が改善されたことが表示されています。
+
+![GHA ポリシー評価の出力](/scout-ja/gha-policy-eval.webp)
