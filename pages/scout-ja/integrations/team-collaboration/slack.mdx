@@ -1,0 +1,43 @@
+---
+title: Docker ScoutをSlackと連携する
+description: |
+  Docker Scout を Slack と連携して、脆弱性やポリシーコンプライアンスに関するリアルタイムの更新を Slack チャンネルで受け取る方法
+---
+
+# Docker ScoutをSlackと連携する
+
+Docker ScoutをSlackと統合することで、SlackのWebhookを作成し、Docker Scoutダッシュボードに追加できます。これにより、新しい脆弱性が公開され、その脆弱性が1つ以上のイメージに影響を与えた場合に通知を受け取ることができます。
+
+![Docker Scout からの Slack 通知](/scout-ja/scout-slack-notification.png)
+
+## 仕組み
+
+連携を設定すると、Docker Scout はリポジトリのポリシーコンプライアンスや脆弱性の露出に関する変更を、Webhook に関連付けられたSlackチャンネルに通知します。
+
+> [!NOTE]
+>
+> 通知は、各リポジトリの「最後にプッシュされた」イメージタグに対してのみトリガーされます。「最後にプッシュされた」とは、レジストリに最後にプッシュされ、Docker Scoutによって分析されたイメージタグを指します。最後にプッシュされたイメージが新しく公開されたCVEの影響を受けていない場合、通知はトリガーされません。
+
+Docker Scoutの通知についての詳細は、[通知設定](/manuals/scout/explore/dashboard.md#notification-settings)をご覧ください。
+
+## 設定方法
+
+Slack 連携を追加する手順は次のとおりです。
+
+1. Webhookを作成します。詳細は [Slack ドキュメント](https://api.slack.com/messaging/webhooks)をご覧ください。
+2. Docker Scout ダッシュボードの [Slack 連携ページ](https://scout.docker.com/settings/integrations/slack/)に移動します。
+3. **How to integrate** セクションで、**Configuration name** を入力します。Docker Scout は、このラベルを連携の表示名として使用するため、デフォルト名を変更して、`#チャンネル名`や、この設定が属するチーム名など、より意味のある名前にすることをお勧めします。
+4. 作成した Webhook を **Slack Webhook** フィールドに貼り付けます。
+   **Test webhook** ボタンを選択すると、接続を確認できます。Docker Scout は、指定した Webhook にテストメッセージを送信します。
+5. すべての Scout 対応イメージリポジトリの通知を有効にするか、通知を送信するリポジトリ名を入力するかを選択します。
+6. 連携を有効にする準備ができたら、**Create** を選択します。
+
+Webhook を作成すると、Docker Scout は Webhook に関連付けられた Slack チャンネルに通知を送信し始めます。
+
+## Slack連携を削除する
+
+Slack連携を削除する手順は次のとおりです。
+
+1. Docker Scout ダッシュボードの [Slack 連携ページ](https://scout.docker.com/settings/integrations/slack/)に移動します。
+2. 削除したい連携の **Remove** アイコンを選択します。
+3. 確認ダイアログで再度 **Remove** を選択して確認します。
