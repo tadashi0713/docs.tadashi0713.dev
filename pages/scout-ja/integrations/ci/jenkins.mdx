@@ -1,0 +1,42 @@
+---
+title: Docker Scout を Jenkins に統合する
+description: Docker Scout を Jenkins に統合する方法
+---
+
+# Docker Scout を Jenkins に統合する
+
+以下のステージとステップ定義を `Jenkinsfile` に追加することで、Jenkins パイプラインの一部として Docker Scout を実行することができます。パイプラインには、Docker Hub に認証するためのユーザー名とパスワードを含む `DOCKER_HUB` クレデンシャルが必要です。また、イメージとタグのための環境変数も定義する必要があります。
+
+```groovy
+pipeline {
+    agent {
+        // エージェントの詳細
+    }
+
+    environment {
+        DOCKER_HUB = credentials('jenkins-docker-hub-credentials')
+        IMAGE_TAG  = 'myorg/scout-demo-service:latest'
+    }
+
+    stages {
+        stage('Analyze image') {
+            steps {
+                // Docker Scoutをインストール
+                sh 'curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b /usr/local/bin'
+
+                // Docker Hubにログイン
+                sh 'echo $DOCKER_HUB_PSW | docker login -u $DOCKER_HUB_USR --password-stdin'
+
+                // 重大または高優先度の脆弱性に基づいて分析し、失敗させる
+                sh 'docker-scout cves $IMAGE_TAG --exit-code --only-severity critical,high'
+            }
+        }
+    }
+}
+```
+
+このスクリプトは Docker Scout をインストールし、Docker Hub にログインしてから、指定されたイメージとタグに対して Docker Scout を実行して CVE レポートを生成します。表示されるのは重大または高優先度の脆弱性のみです。
+
+> [注意]
+> 
+> もしイメージキャッシュに関連する「permission denied」エラーが発生した場合は、[`DOCKER_SCOUT_CACHE_DIR`](scout/how-tos/configure-cli.md) 環境変数を書き込み可能なディレクトリに設定してください。もしくは、ローカルキャッシュを完全に無効化するために、`DOCKER_SCOUT_NO_CACHE=true` を設定することもできます。

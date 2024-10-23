@@ -1,0 +1,54 @@
+---
+title: Docker Scout を Microsoft Azure DevOps パイプラインに統合する
+description: Docker Scout を Microsoft Azure DevOps パイプラインに統合する方法
+---
+
+# Docker Scout を Microsoft Azure DevOps パイプラインに統合する
+
+```yaml
+trigger:
+  - main
+
+resources:
+  - repo: self
+
+variables:
+  tag: "$(Build.BuildId)"
+  image: "vonwig/nodejs-service"
+```
+
+これにより、アプリケーションに特定のコンテナイメージを使用し、各新しいイメージビルドにビルドIDでタグを付けるためのワークフローが設定されます。
+
+次に、YAMLファイルに以下を追加します:
+
+```yaml
+stages:
+  - stage: Build
+    displayName: Build image
+    jobs:
+      - job: Build
+        displayName: Build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: Docker@2
+            displayName: Build an image
+            inputs:
+              command: build
+              dockerfile: "$(Build.SourcesDirectory)/Dockerfile"
+              repository: $(image)
+              tags: |
+                $(tag)
+          - task: CmdLine@2
+            displayName: Find CVEs on image
+            inputs:
+              script: |
+                # Docker Scout CLIをインストール
+                curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+                # Docker Scout CLIに必要なDocker Hubへのログイン
+                docker login -u $(DOCKER_HUB_USER) -p $(DOCKER_HUB_PAT)
+                # ビルドされたイメージのCVEレポートを取得し、重大または高優先度のCVEが検出された場合にパイプラインを失敗させる
+                docker scout cves $(image):$(tag) --exit-code --only-severity critical,high
+```
+
+これにより、先述のフローが作成されます。チェックアウトされた Dockerfile を使用してイメージをビルドおよびタグ付けし、Docker Scout CLI をダウンロードしてから、新しいタグに対して `cves` コマンドを実行して CVE レポートを生成します。表示されるのは重大または高優先度の脆弱性のみです。
