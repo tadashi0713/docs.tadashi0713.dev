@@ -1,0 +1,80 @@
+---
+title: Docker Scout と GitLab CI を連携する
+description: Docker Scout と GitLab CI を連携する方法
+---
+
+# Docker Scout と GitLab CI を連携する
+
+この例では、Docker イメージの定義とコンテンツを含むリポジトリ内で、GitLab CIを使用してパイプラインを実行します。コミットによってトリガーされ、パイプラインはイメージをビルドします。デフォルトブランチへのコミットの場合は、Docker Scout を使用して CVE レポートを取得します。別のブランチへのコミットの場合は、新しいバージョンを現在公開されているバージョンと比較します。
+
+## 手順
+
+最初に、ワークフロー全体を設定します。これは Docker Scout に特有ではありませんが、比較するためのイメージを作成するために必要です。
+
+リポジトリのルートにある `.gitlab-ci.yml` ファイルに、以下の内容を追加してください。
+
+```yaml
+docker-build:
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+
+    # curlとDocker Scout CLIをインストール
+    - |
+      apk add --update curl
+      curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- 
+      apk del curl 
+      rm -rf /var/cache/apk/*
+    # Docker Hubへのログインが必要です
+    - docker login -u "$DOCKER_HUB_USER" -p "$DOCKER_HUB_PAT"
+```
+
+これにより、コンテナ内で Docker を実行するための Docker-in-Docker モードを使用してDockerイメージをビルドするワークフローが設定されます。
+次に、curl と Docker Scout CLI プラグインをダウンロードし、リポジトリの設定に定義された環境変数を使用して Docker レジストリにログインします。
+
+次に、YAML ファイルに以下の内容を追加してください。
+
+```yaml
+script:
+  - |
+    if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+      tag=""
+      echo "デフォルトブランチ '$CI_DEFAULT_BRANCH' で実行中: tag = 'latest'"
+    else
+      tag=":$CI_COMMIT_REF_SLUG"
+      echo "ブランチ '$CI_COMMIT_BRANCH' で実行中: tag = $tag"
+    fi
+  - docker build --pull -t "$CI_REGISTRY_IMAGE${tag}" .
+  - |
+    if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then
+      # ビルドされたイメージのCVEレポートを取得し、重大または高優先度のCVEが検出された場合にパイプラインを失敗させる
+      docker scout cves "$CI_REGISTRY_IMAGE${tag}" --exit-code --only-severity critical,high    
+    else
+      # ブランチのイメージとデフォルトブランチの最新イメージを比較し、新しい重大または高優先度のCVEが検出された場合にパイプラインを失敗させる
+      docker scout compare "$CI_REGISTRY_IMAGE${tag}" --to "$CI_REGISTRY_IMAGE:latest" --exit-code --only-severity critical,high --ignore-unchanged
+    fi
+
+  - docker push "$CI_REGISTRY_IMAGE${tag}"
+```
+
+これにより、先に述べたフローが作成されます。デフォルトブランチへのコミットの場合、Docker Scoutは CVE レポート を生成します。別のブランチへのコミットの場合、新しいバージョンを現在の公開バージョンと比較します。表示されるのは重大または高優先度の脆弱性のみで、前回の分析以降に変更のない脆弱性は無視されます。
+
+最後に、YAML ファイルに以下の内容を追加してください。
+
+```yaml
+rules:
+  - if: $CI_COMMIT_BRANCH
+    exists:
+      - Dockerfile
+```
+
+これにより、コミットに Dockerfile が含まれている場合と CI ブランチへのコミットである場合にのみ、パイプラインが実行されるようになります。
+
+## ビデオ解説
+
+<br />
+
+<iframe src="https://www.loom.com/embed/451336c4508c42189532108fc37b2560?sid=f912524b-276d-417d-b44a-c2d39719aa1a" />
