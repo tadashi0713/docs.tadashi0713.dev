@@ -1,3 +1,4 @@
+import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google'
 import { Analytics } from '@vercel/analytics/react'
 import { useRouter } from 'next/router'
 import { DocsThemeConfig } from 'nextra-theme-docs'
@@ -43,6 +44,8 @@ const config: DocsThemeConfig = {
     content: (
       <>
         <Analytics />
+        <GoogleAnalytics gaId="G-SZP0XJE85W" />
+        <GoogleTagManager gtmId="G-SZP0XJE85W" />
         <span>tadashi0713 Docs</span>
       </>
     ),
