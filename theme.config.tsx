@@ -37,6 +37,13 @@ const config: DocsThemeConfig = {
         <meta property="twitter:description" content={description} />
         <meta name="twitter:image" content={ogImage} />
         <meta name="twitter:card" content="summary_large_image" />
+        <link rel="icon" href="api/icon" type="image/png" sizes="32x32" />
+        <link
+          rel="apple-touch-icon"
+          href="api/icon"
+          type="image/png"
+          sizes="32x32"
+        />
       </>
     )
   },
