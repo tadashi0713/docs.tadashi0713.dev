@@ -1,0 +1,47 @@
+---
+title: Docker Scout と SonarQube の統合
+description: |
+  プロジェクトで定義された SonarQube の品質ゲートを使ってイメージを評価する
+---
+
+# Docker Scout と SonarQube の統合
+
+SonarQube の統合により、Docker Scout はポリシー評価を通じて SonarQube の品質ゲートチェックを表示できます。これは新しい [SonarQube Quality Gates Policy](https://chatgpt.com/manuals/scout/policy/_index.md#sonarqube-quality-gates-policy) で利用できます。
+
+## 動作の仕組み
+
+この統合は [SonarQube の Webhook](https://docs.sonarsource.com/sonarqube/latest/project-administration/webhooks/) を使用して、SonarQube プロジェクト分析が完了したことを Docker Scout に通知します。Webhook が呼び出されると、Docker Scout は分析結果を受け取り、それをデータベースに保存します。
+
+新しいイメージをリポジトリにプッシュすると、Docker Scout はそのイメージに対応する SonarQube 分析記録の結果を評価します。Docker Scout はイメージに付随する Git のプロベナンスメタデータ（プロベナンスアテステーションまたは OCI アノテーション）を使用して、イメージリポジトリと SonarQube の分析結果をリンクします。
+
+> [!NOTE]
+>
+> Docker Scout は過去の SonarQube 分析記録にはアクセスできません。統合を有効化した後に記録された分析結果のみが Docker Scout に利用可能です。
+
+セルフマネージド型の SonarQube インスタンスと SonarCloud の両方がサポートされています。
+
+## 前提条件
+
+Docker Scout を SonarQube と統合するには、以下を確認してください:
+
+- イメージリポジトリが [Docker Scout と統合されている](https://chatgpt.com/_index.md#container-registries)こと。
+- イメージが [プロベナンスアテステーション](https://chatgpt.com/manuals/build/metadata/attestations/slsa-provenance.md) または `org.opencontainers.image.revision` アノテーションを使用してビルドされ、Git リポジトリに関する情報を含んでいること。
+
+## SonarQube の統合を有効にする
+
+1. Docker Scout ダッシュボードの [SonarQube 統合ページ](https://scout.docker.com/settings/integrations/sonarqube/)に移動します。
+2. **How to integrate** セクションで、この統合の設定名を入力します。Docker Scout はこのラベルを表示名として使用し、Webhook 名にします。
+3. **Next** を選択します。
+4. SonarQube インスタンスの設定詳細を入力します。Docker Scout はこの情報を使用して SonarQube の Webhook を作成します。
+
+   SonarQube で新しい [**User token** を生成](https://docs.sonarsource.com/sonarqube/latest/user-guide/user-account/generating-and-using-tokens/#generating-a-token)します。トークンには指定されたプロジェクトで `Administer` 権限、またはグローバルな `Administer` 権限が必要です。
+
+   トークン、SonarQube の URL、および SonarQube organization ID を入力します。SonarCloud を使用している場合は、SonarQube の organization が必要です。
+
+5. **Enable configuration** を選択します。
+
+   Docker Scout は提供された詳細が正しく、トークンに必要な権限があることを確認するために接続テストを実行します。
+
+6. 接続テストが成功すると、SonarQube 統合の概要ページにリダイレクトされ、すべての SonarQube 統合とそのステータスが一覧表示されます。
+
+統合の概要ページから直接 **SonarQube Quality Gates Policy** に移動できます。このポリシーには最初は結果が表示されません。このポリシーの評価結果を表示するには、新しい SonarQube の分析をプロジェクトで実行し、対応するイメージをリポジトリにプッシュしてください。詳細については、[ポリシーの説明](https://chatgpt.com/policy/_index.md#sonarqube-quality-gates)を参照してください。
