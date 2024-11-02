@@ -1,0 +1,73 @@
+---
+description: Docker Scout と Amazon Elastic Container Registry の統合
+title: Docker Scout と Amazon ECR の統合
+---
+
+# Docker Scout と Amazon ECR の統合
+
+Docker Scout と Amazon Elastic Container Registry (ECR) を統合することで、ECR リポジトリにホストされているイメージのインサイトを表示できます。Docker Scout と ECR を統合し、リポジトリで Docker Scout を有効化すると、リポジトリにイメージをプッシュするたびに自動的にイメージ分析が開始されます。Docker Scout ダッシュボードまたは `docker scout` CLI コマンドを使用して、イメージのインサイトを表示できます。
+
+## 仕組み
+
+Docker Scout と ECR を統合するために、CloudFormation スタックテンプレートを使用して、ECR レジストリと Docker Scout の統合に必要な AWS リソースを作成および設定できます。AWS リソースの詳細については、[CloudFormation スタックテンプレート](https://chatgpt.com/c/67207bde-7068-800b-b539-1ad3678a88b6#cloudformation-stack-template)をご参照ください。
+
+次の図は、Docker Scout ECR 統合の仕組みを示しています。
+
+![ECR 統合の仕組み](/scout-ja/Scout-ECR.png)
+
+統合後、Docker Scout は ECR レジストリにプッシュされたイメージを自動的に取得して分析します。イメージのメタデータは Docker Scout プラットフォームに保存されますが、Docker Scout はコンテナイメージ自体を保存しません。Docker Scout のデータ取り扱い方法の詳細については、[データの取り扱い](https://chatgpt.com/manuals/scout/deep-dive/data-handling.md)をご参照ください。
+
+## CloudFormation スタックテンプレート
+
+以下の表は、設定リソースの説明を示しています。
+
+> [!NOTE]
+>
+> これらのリソースを作成すると、AWS アカウントに小額の継続的なコストが発生します。表の **コスト** 列には、1 日あたり 100 個のイメージがプッシュされる ECR レジストリを統合する際の推定月額コストが表示されています。
+>
+> また、Docker Scout が ECR からイメージを取得する際に発生する egress コストも適用されます。egress コストは約 $0.09/GB です。
+
+| リソースタイプ                  | リソース名                      | 説明                                                                         | コスト |
+| ----------------------------- | ----------------------------- | ----------------------------------------------------------------------------| ----- |
+| `AWS::SNSTopic::Topic`        | `SNSTopic`                    | AWS リソース作成時に Docker Scout へ通知するための SNS トピック。                  | 無料  |
+| `AWS::SNS::TopicPolicy`       | `TopicPolicy`                 | 初期セットアップ通知のためのトピック定義。                                         | 無料  |
+| `AWS::SecretsManager::Secret` | `ScoutAPICredentials`         | Docker Scout へのイベント発火に使用する EventBridge の認証情報を保存。              | $0.42 |
+| `AWS::Events::ApiDestination` | `ApiDestination`              | ECR のプッシュおよび削除イベントを Docker Scout に送信する EventBridge 接続。       | $0.01 |
+| `AWS::Events::Connection`     | `Connection`                  | Docker Scout への EventBridge 接続用の認証情報。                                | 無料  |
+| `AWS::Events::Rule`           | `DockerScoutEcrRule`          | ECR のプッシュと削除を Docker Scout に送信するルールの定義。                       | 無料  |
+| `AWS::Events::Rule`           | `DockerScoutRepoDeletedRule`  | ECR リポジトリの削除を Docker Scout に送信するルールの定義。                       | 無料  |
+| `AWS::IAM::Role`              | `InvokeApiRole`               | `ApiDestination` へのイベントアクセスを許可する内部ロール。                        | 無料  |
+| `AWS::IAM::Role`              | `AssumeRoleEcrAccess`         | Docker Scout 統合の設定に必要な `ScoutAPICredentials` へのアクセス権限を持つロール。| 無料  |
+
+## 最初のレジストリの統合
+
+AWS アカウントで CloudFormation スタックを作成し、Docker Scout の統合を有効化します。
+
+前提条件：
+
+- AWS アカウントへのアクセス権があり、リソース作成権限があること。
+- Docker Organization のオーナーであること。
+
+スタックの作成方法：
+
+1. Docker Scout ダッシュボードの [ECR 統合ページ](https://scout.docker.com/settings/integrations/ecr/)に移動します。
+2. **Create on AWS** ボタンを選択します。
+
+   これにより、新しいブラウザタブで AWS CloudFormation コンソールの **Create stack** ウィザードが開きます。AWS にサインインしていない場合は、最初にサインインページにリダイレクトされます。
+
+   ボタンがグレー表示されている場合は、Docker Organization に必要な権限がありません。
+
+3. **Create stack** ウィザードの手順に従って操作を完了します。統合したい AWS リージョンを選択し、リソースの作成手続きを完了してください。
+
+   ウィザード内のフィールドは CloudFormation テンプレートによって事前に入力されているため、編集する必要はありません。
+
+4. リソースが作成されると（AWS コンソールの CloudFormation ステータスが `CREATE_COMPLETE` となる）、Docker Scout ダッシュボードの ECR 統合ページに戻ります。
+
+   **Integrated registries** リストに、統合した ECR レジストリのアカウント ID とリージョンが表示されます。統合が成功した場合、ステータスは **Connected** となります。
+
+ECR 統合はこれで有効化されました。レジストリ内のリポジトリごとに Docker Scout を有効化するには、[リポジトリ設定](https://scout.docker.com/settings/repos/)に移動してください。
+
+リポジトリを有効化すると、プッシュされたイメージが Docker Scout によって分析されます。分析結果は Docker Scout ダッシュボードに表示されます。リポジトリにすでにイメージがある場合、Docker Scout は最新のイメージバージョンを自動的に取得して分析します。
+
+## 追加のレジストリの統合
+
