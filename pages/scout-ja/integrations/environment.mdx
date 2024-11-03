@@ -1,0 +1,86 @@
+---
+description: Docker Scout は、実行環境と統合することで、ソフトウェアサプライチェーンに関するリアルタイムのインサイトを提供します。
+title: Docker Scout と実行環境の統合
+---
+
+import { Callout } from 'nextra/components'
+
+# Docker Scout と実行環境の統合
+
+Docker Scout を実行環境と統合することで、実行中のワークロードのインサイトを取得できます。これにより、デプロイされたアーティファクトのセキュリティステータスをリアルタイムで把握できます。
+
+Docker Scout では複数の実行環境を定義し、異なる実行環境にイメージを割り当てることができます。これにより、ソフトウェアサプライチェーンの全体像が見えるようになり、たとえばステージング環境と本番環境の間の差分を比較できます。
+
+実行環境の定義方法や命名は自由で、アプリケーションの出荷方法に合わせて適切なパターンを選択できます。
+
+## 実行環境への割り当て
+
+各実行環境には、いくつかのイメージへの参照が含まれています。これらの参照は、特定の実行環境で現在実行されているコンテナを表します。
+
+たとえば、`myorg/webapp:3.1` を本番環境で実行している場合、そのタグを `production` 環境に割り当てることができます。同じイメージの別バージョンをステージングで実行している場合、そのバージョンを `staging` 環境に割り当てることができます。
+
+Docker Scout に実行環境を追加する方法は以下の通りです：
+
+- `docker scout env <environment> <image>` CLI コマンドを使用して、イメージを手動で実行環境に記録する
+- 実行環境の統合を有効にし、実行環境内のイメージを自動的に検出する
+
+Docker Scout は以下の実行環境統合をサポートしています：
+
+- [Docker Scout GitHub Action](https://github.com/marketplace/actions/docker-scout#record-an-image-deployed-to-an-environment)
+- [CLI クライアント](https://chatgpt.com/c/cli.md)
+- [Sysdig 統合]()
+
+<Callout type="info" emoji="ℹ️">
+新しい環境の作成や統合設定は、組織のオーナーのみが可能です。また、Docker Scout は、イメージが[分析済み](https://chatgpt.com/manuals/scout/explore/analysis.md)である場合、または[レジストリ統合](https://chatgpt.com/manuals/scout/integrations/_index.md#container-registries)を通じて分析された場合にのみ、イメージを実行環境に割り当てます。
+</Callout>
+
+## 環境の一覧表示
+
+Organization の利用可能な環境を確認するには、`docker scout env` コマンドを使用します。
+
+```console
+$ docker scout env
+```
+
+デフォルトでは、個人の Docker Organization のすべての環境が表示されます。他の Organization の環境を表示するには、--org フラグを使用します。
+
+```console
+$ docker scout env --org <org>
+```
+
+デフォルトの Organization を変更するには、`docker scout config` コマンドを使用します。これにより、`docker scout` コマンド全体のデフォルト Organization が変更されます（`env` コマンドに限りません）。
+
+```console
+$ docker scout config organization <org>
+```
+
+## 環境間の比較
+
+イメージを環境に割り当てることで、環境間での比較が可能になります。これは、GitHub のプルリクエストなどで、PR のコードからビルドされたイメージとステージングや本番のイメージを比較する場合に役立ちます。
+
+また、`docker scout compare` CLI コマンドの `--to-env` フラグを使用してストリームと比較することもできます。
+
+```console
+$ docker scout compare --to-env production myorg/webapp:latest
+```
+
+## 環境のイメージを表示する
+
+環境のイメージを表示するには：
+
+1. Docker Scout ダッシュボードの[イメージページ](https://scout.docker.com/)に移動します。
+2. **Environments** ドロップダウンメニューを開きます。
+3. 表示したい環境を選択します。
+
+リストには、選択した環境に割り当てられたすべてのイメージが表示されます。同じ環境内に同一イメージの複数バージョンがデプロイされている場合、それらすべてがリストに表示されます。
+
+または、`docker scout env` コマンドを使用してターミナルからイメージを表示することもできます。
+
+```console
+$ docker scout env production
+docker/scout-demo-service:main@sha256:ef08dca54c4f371e7ea090914f503982e890ec81d22fd29aa3b012351a44e1bc
+```
+
+### タグの不一致
+
+**Images** タブで環境を選択したとき、リスト内のタグはイメージのデプロイに使用されたタグを表しています。タグは変更可能であるため、タグが指すイメージのダイジェストを変更することができます。Docker Scout がタグが古いダイジェストを指していると検出すると、イメージ名の横に警告アイコンが表示されます。

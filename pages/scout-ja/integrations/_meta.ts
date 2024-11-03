@@ -4,4 +4,5 @@ export default {
   'code-quality': 'コード品質',
   'registry': 'レジストリ',
   'source-code-management': 'ソースコード管理',
+  'environment': '実行環境',
 }
