@@ -1,0 +1,153 @@
+---
+title: Docker Scout と Artifactory の統合
+description: JFrog Artifactory と JFrog Container Registry を Docker Scout と統合する
+---
+
+# Docker Scout と Artifactory の統合
+
+Docker Scout を JFrog Artifactory と統合することで、Artifactory レジストリ内のイメージに対して自動的にイメージ分析を実行できます。
+
+## ローカルイメージ分析
+
+Docker Desktop や Docker CLI を使用して、Artifactory イメージの脆弱性をローカルで分析できます。まず、[`docker login`](https://docs.docker.com/reference/cli/docker/login/) コマンドを使用して JFrog Artifactory に認証する必要があります。例えば次のようにします。
+
+```bash
+docker login {URL}
+```
+
+> [!TIP]
+>
+> クラウドホスト型の Artifactory では、Artifactory UI でリポジトリを選択し、**Set Me Up** ボタンをクリックすると、リポジトリの認証情報を確認できます。
+
+## リモートイメージ分析
+
+リモート環境で実行中のイメージを自動的に分析するには、Docker Scout Artifactory エージェントをデプロイする必要があります。このエージェントはスタンドアロンのサービスで、イメージを分析し、その結果を Docker Scout にアップロードします。結果は[Docker Scout ダッシュボード](https://scout.docker.com/)で確認できます。
+
+### エージェントの仕組み
+
+Docker Scout Artifactory エージェントは、[Docker Hub 上のイメージ](https://hub.docker.com/r/docker/artifactory-agent)として利用可能です。エージェントは Artifactory を継続的にポーリングし、新しいイメージを検出すると次の手順を実行します。
+
+1. Artifactory からイメージをプルする
+2. イメージを分析する
+3. 分析結果を Docker Scout にアップロードする
+
+エージェントはイメージのソフトウェア部品表 (SBOM) と、すべてのベースイメージの SBOM を記録します。記録される SBOM には、オペレーティングシステム (OS) レベルとアプリケーションレベルのプログラムや依存関係が含まれます。
+
+また、エージェントは以下のメタデータも Docker Scout に送信します。
+
+- イメージのソースリポジトリ URL とコミット SHA
+- ビルド指示
+- ビルド日
+- タグとダイジェスト
+- 対象プラットフォーム
+- レイヤーサイズ
+
+エージェントはイメージ本体やイメージ内部のデータ（コード、バイナリ、レイヤーブロブ）を送信しません。
+
+エージェントは、事前に存在するイメージの検出や分析は行わず、エージェントの実行中にレジストリに出現したイメージのみを分析します。
+
+### エージェントのデプロイ
+
+以下の手順に従って Artifactory エージェントをデプロイします。
+
+#### 前提条件
+
+エージェントをデプロイする前に、以下の前提条件を確認してください。
+
+- エージェントをホストするサーバーが次のリソースにネットワーク経由でアクセスできること:
+  - JFrog Artifactory インスタンス
+  - Docker で認証するための `hub.docker.com`、ポート 443
+  - Docker Scout にデータを送信するための `api.dso.docker.com`、ポート 443
+- レジストリが Docker V2 レジストリであること。V1 レジストリはサポートされていません。
+
+エージェントはすべてのバージョンの JFrog Artifactory と JFrog Container Registry に対応しています。
+
+#### 設定ファイルの作成
+
+エージェントは JSON ファイルで設定します。エージェントは、起動時に設定ファイルが `/opt/artifactory-agent/data/config.json` に存在することを期待します。
+
+設定ファイルには以下のプロパティが含まれます。
+
+| プロパティ                    | 説明                                                            |
+| --------------------------- | --------------------------------------------------------------- |
+| `agent_id`                  | エージェントの一意識別子                                            |
+| `docker.organization_name`  | Docker Organization の名前                                       |
+| `docker.username`           | Docker Organization の管理者ユーザーのユーザー名                     |
+| `docker.pat`                | 読み取りおよび書き込み権限を持つ管理者ユーザーのパーソナルアクセストークン。 |
+| `artifactory.base_url`      | Artifactory インスタンスのベース URL                               |
+| `artifactory.username`      | エージェントが使用する読み取り権限を持つ Artifactory ユーザーのユーザー名 |
+| `artifactory.password`      | Artifactory ユーザーのパスワードまたは API トークン                   |
+| `artifactory.image_filters` | オプション: 分析対象のリポジトリとイメージのリスト。                    |
+
+`artifactory.image_filters` にリポジトリを指定しない場合、エージェントは Artifactory インスタンス内のすべてのイメージを分析します。
+
+以下はサンプル設定のスニペットです。
+
+```json
+{
+  "agent_id": "acme-prod-agent",
+  "docker": {
+    "organization_name": "acme",
+    "username": "mobythewhale",
+    "pat": "dckr_pat__dsaCAs_xL3kNyupAa7dwO1alwg"
+  },
+  "artifactory": [
+    {
+      "base_url": "https://acme.jfrog.io",
+      "username": "acmeagent",
+      "password": "hayKMvFKkFp42RAwKz2K",
+      "image_filters": [
+        {
+          "repository": "dev-local",
+          "images": ["internal/repo1", "internal/repo2"]
+        },
+        {
+          "repository": "prod-local",
+          "images": ["staging/repo1", "prod/repo1"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+設定ファイルを作成し、エージェントを実行する予定のサーバー上の適当な場所に保存します（例: `/var/opt/artifactory-agent/config.json`）。
+
+#### エージェントの実行
+
+以下は `docker run` を使用して Docker Scout Artifactory エージェントを実行する例です。このコマンドは、先に作成した JSON 設定ファイルが含まれるディレクトリを `/opt/artifactory-agent/data` にバインドマウントします。使用するマウントパスが `config.json` ファイルを含むディレクトリであることを確認してください。
+
+> [!IMPORTANT]
+>
+> Artifactory エージェントイメージの `v1` タグを使用してください。`latest` タグの使用は避けてください。互換性のない変更が発生する可能性があります。
+
+```console
+$ docker run \
+  --mount type=bind,src=/var/opt/artifactory-agent,target=/opt/artifactory-agent/data \
+  docker/artifactory-agent:v1
+```
+
+#### 既存データの分析
+
+デフォルトでは、エージェントはイメージが作成または更新されるたびにそれを検出して分析します。既存のイメージをエージェントで分析したい場合は、バックフィルモードを使用できます。エージェントをバックフィルモードで実行するには、`--backfill-from=TIME` コマンドラインオプションを使用します。`TIME` は ISO 8601 形式の時刻です。このオプションを使用すると、エージェントは開始時に指定した時刻から現在までにプッシュされたすべてのイメージを分析し、終了します。
+
+例:
+```console
+$ docker run \
+  --mount type=bind,src=/var/opt/artifactory-agent,target=/opt/artifactory-agent/data \
+  docker/artifactory-agent:v1 --backfill-from=2022-04-10T10:00:00Z
+```
+
+バックフィルを複数回実行する場合、エージェントは既に分析したイメージを再度分析しません。再分析を強制するには、`--force` コマンドラインフラグを指定してください。
+
+### 分析結果の表示
+
+Docker Scout ダッシュボードでイメージ分析結果を表示できます。
+
+1. Docker Scout ダッシュボードの[イメージページ](https://scout.docker.com/reports/images/)に移動します。
+
+   このページには、Docker Scout が有効化された Organization 内のリポジトリが表示されます。
+2. リスト内のイメージを選択します。
+3. タグを選択します。
+
+タグを選択すると、そのタグの脆弱性レポートに移動します。ここで、イメージ内のすべての脆弱性や特定のレイヤーで導入された脆弱性を表示できます。また、脆弱性を重大度や修正バージョンの有無でフィルタリングすることも可能です。
