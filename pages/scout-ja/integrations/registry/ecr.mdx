@@ -71,3 +71,55 @@ ECR 統合はこれで有効化されました。レジストリ内のリポジ�
 
 ## 追加のレジストリの統合
 
+追加のレジストリを統合するには：
+
+1. Docker Scout ダッシュボードの[ECR 統合ページ](https://scout.docker.com/settings/integrations/ecr/)に移動します。
+
+2. リストの上部にある **Add** ボタンを選択します。
+
+3. AWS リソースの作成手順を完了します。
+
+4. リソースが作成されると、Docker Scout ダッシュボードの ECR 統合ページに戻ります。
+
+   **Integrated registries** リストに、統合した ECR レジストリのアカウント ID とリージョンが表示されます。統合が成功した場合、ステータスは **Connected** となります。
+
+次に、分析したいリポジトリごとに Docker Scout を有効化するために、リポジトリ設定に移動してください。
+
+## 統合の削除
+
+統合された ECR レジストリを削除するには、Docker 組織のオーナーである必要があります。
+
+1. Docker Scout ダッシュボードの[ECR 統合ページ](https://scout.docker.com/settings/integrations/ecr/)に移動します。
+
+2. 統合されたレジストリのリストから、削除したいレジストリを見つけ、**Actions** 列の削除アイコンを選択します。
+
+   削除アイコンが無効になっている場合は、Docker Organization に必要な権限がありません。
+
+3. 開いたダイアログで、**Remove** を選択して確認します。
+
+> [!IMPORTANT]
+> 
+> Docker Scout ダッシュボードから統合を削除しても、AWS アカウント内のリソースは削除されません。
+> 
+> Docker Scout で統合を削除した後、AWS コンソールに移動し、削除したい統合の DockerScoutECRIntegration CloudFormation スタックを削除してください。
+
+## トラブルシューティング
+
+### レジストリを統合できない
+
+Docker Scout ダッシュボードの[ECR 統合ページ](https://scout.docker.com/settings/integrations/ecr/)で、統合の **Status** を確認してください。
+
+- ステータスが長時間 **Pending** の場合は、AWS 側で統合がまだ完了していないことを示します。**Pending** リンクを選択して CloudFormation ウィザードを開き、すべての手順を完了してください。
+
+- **Error** ステータスはバックエンドで問題が発生したことを示します。[統合の削除](#統合の削除)を試み、再度作成してみてください。
+
+### ECR イメージがダッシュボードに表示されない
+
+ECR イメージの分析結果が Docker Scout ダッシュボードに表示されない場合：
+
+- Docker Scout がリポジトリで有効化されていることを確認してください。アクティブなリポジトリの表示と管理は[リポジトリ設定](https://scout.docker.com/settings/repos/)で行えます。
+
+- レジストリの AWS アカウント ID とリージョンが ECR 統合ページにリストされていることを確認してください。
+
+  アカウント ID とリージョンは、レジストリのホスト名に含まれています：
+  `<aws_account_id>.dkr.ecr.<region>.amazonaws.com/<image>`
