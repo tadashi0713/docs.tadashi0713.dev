@@ -1,0 +1,179 @@
+---
+title: Docker Scout と Azure Container Registry の統合
+description: Docker Scout と Azure Container Registry の統合
+---
+
+# Docker Scout と Azure Container Registry の統合
+
+Docker Scout と Azure Container Registry (ACR) を統合することで、ACR リポジトリにホストされているイメージのインサイトを表示できます。Docker Scout と ACR を統合し、リポジトリで Docker Scout を有効化すると、リポジトリにイメージをプッシュするたびに自動的にイメージ分析が開始されます。Docker Scout ダッシュボードまたは `docker scout` CLI コマンドを使用して、イメージのインサイトを表示できます。
+
+## 仕組み
+
+Azure Container Registry を Docker Scout と統合するために、カスタム Azure Resource Manager (ARM) テンプレートを使用して、Azure で必要なインフラストラクチャを自動的に作成できます。
+
+- イメージのプッシュおよび削除イベントのための EventGrid トピックとサブスクリプション
+- リポジトリの一覧表示とイメージの取得に使用される read-only の認証トークン
+
+Azure でリソースが作成された後、統合された ACR インスタンス内のイメージリポジトリで統合を有効にできます。リポジトリを有効にすると、新しいイメージのプッシュが自動的にイメージ分析をトリガーします。分析結果は Docker Scout ダッシュボードに表示されます。
+
+既にイメージが含まれているリポジトリで統合を有効にした場合、Docker Scout は最新のイメージバージョンを自動的に取得して分析します。
+
+### ARM テンプレート
+
+以下の表は、設定リソースの説明を示しています。
+
+> [!NOTE]
+>
+> これらのリソースを作成すると、Azure アカウントに小額の継続的なコストが発生します。表の コスト 列には、1 日あたり 100 個のイメージがプッシュされる ACR レジストリを統合する際の推定月額コストが表示されています。
+>
+> Egress コストは使用量に応じて異なりますが、約 $0.1/GB で、最初の 100 GB は無料です。
+
+| Azure                    | リソース                                                                                | コスト                                              |
+| -----------------------  | ------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Event Grid システムトピック | Azure Container Registry イベント（イメージのプッシュと削除）へのサブスクリプション             | 無料                                                |
+| イベントサブスクリプション    | Event Grid イベントを Webhook サブスクリプションを通じて Scout に送信                        | 100万メッセージごとに $0.60。最初の 100k メッセージは無料。|
+| レジストリトークン          | リポジトリを一覧表示し、レジストリからイメージを取得するために Scout が使用するリードオンリートークン | 無料                                                 |
+
+以下の JSON ドキュメントは、Docker Scout が Azure リソースを作成するために使用する ARM テンプレートを示しています。
+
+```json
+{
+	"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"systemTopics_dockerScoutRepository": {
+			"defaultValue": "docker-scout-repository",
+			"type": "String",
+			"metadata": {
+				"description": "EventGrid's topic name"
+			}
+		},
+		"DockerScoutWebhook": {
+			"type": "String",
+			"metadata": {
+				"description": "EventGrid's subscription Webhook"
+			}
+		},
+		"RegistryName": {
+			"type": "String",
+			"metadata": {
+				"description": "Name of the registry to add Docker Scout"
+			}
+		}
+	},
+	"variables": {},
+	"resources": [
+		{
+			"type": "Microsoft.EventGrid/systemTopics",
+			"apiVersion": "2023-06-01-preview",
+			"name": "[parameters('systemTopics_dockerScoutRepository')]",
+			"location": "[resourceGroup().location]",
+			"identity": {
+				"type": "None"
+			},
+			"properties": {
+				"source": "[extensionResourceId(resourceGroup().Id , 'Microsoft.ContainerRegistry/Registries', parameters('RegistryName'))]",
+				"topicType": "Microsoft.ContainerRegistry.Registries"
+			}
+		},
+		{
+			"type": "Microsoft.EventGrid/systemTopics/eventSubscriptions",
+			"apiVersion": "2023-06-01-preview",
+			"name": "[concat(parameters('systemTopics_dockerScoutRepository'), '/image-change')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.EventGrid/systemTopics', parameters('systemTopics_dockerScoutRepository'))]"
+			],
+			"properties": {
+				"destination": {
+					"properties": {
+						"maxEventsPerBatch": 1,
+						"preferredBatchSizeInKilobytes": 64,
+						"endpointUrl": "[parameters('DockerScoutWebhook')]"
+					},
+					"endpointType": "WebHook"
+				},
+				"filter": {
+					"includedEventTypes": [
+						"Microsoft.ContainerRegistry.ImagePushed",
+						"Microsoft.ContainerRegistry.ImageDeleted"
+					],
+					"enableAdvancedFilteringOnArrays": true
+				},
+				"labels": [],
+				"eventDeliverySchema": "EventGridSchema",
+				"retryPolicy": {
+					"maxDeliveryAttempts": 30,
+					"eventTimeToLiveInMinutes": 1440
+				}
+			}
+		},
+		{
+			"type": "Microsoft.ContainerRegistry/registries/tokens",
+			"apiVersion": "2023-01-01-preview",
+			"name": "[concat(parameters('RegistryName'), '/docker-scout-readonly-token')]",
+			"properties": {
+				"credentials": {},
+				"scopeMapId": "[resourceId('Microsoft.ContainerRegistry/registries/scopeMaps', parameters('RegistryName'), '_repositories_pull_metadata_read')]"
+			}
+		}
+	]
+}
+```
+
+## レジストリの統合
+
+1. Docker Scout ダッシュボードの[ACR 統合ページ](https://scout.docker.com/settings/integrations/azure/)に移動します。
+
+2. **How to integrate** セクションで、統合したいレジストリの **Registry hostname** を入力します。
+
+3. **Next** を選択します。
+
+4. **Deploy to Azure** を選択して、Azure でテンプレートデプロイメントウィザードを開きます。
+   
+   サインインしていない場合は、Azure アカウントへのサインインを求められます。
+
+5. テンプレートウィザードでデプロイメントを設定します。
+   
+   - **Resource group**: コンテナレジストリと同じリソースグループを入力します。Docker Scout リソースはレジストリと同じリソースグループにデプロイする必要があります。
+
+   - **Registry name**: フィールドはレジストリホスト名のサブドメインで事前に入力されています。
+
+6. *Review + create** を選択し、続いて **Create** を選択してテンプレートをデプロイします。
+
+7. デプロイメントが完了するまで待ちます。
+
+8. **Deployment details** セクションで、**Container registry token** タイプの新しく作成されたリソースをクリックし、このトークンの新しいパスワードを生成します。
+
+   または、Azure の検索機能を使用して、統合する **Container registry** リソースに移動し、作成されたアクセストークンの新しいパスワードを生成します。
+
+9. 生成されたパスワードをコピーし、Docker Scout ダッシュボードに戻って統合を完了します。
+
+10. 生成されたパスワードを **Registry token** フィールドに貼り付けます。
+
+11. **Enable integration** を選択します。
+
+**Enable integration** を選択すると、Docker Scout は統合を確認するための接続テストを実行します。確認が成功した場合、現在の Organization の Azure 統合がすべて表示される Azure レジストリサマリページにリダイレクトされます。
+
+次に、[リポジトリ設定](https://scout.docker.com/settings/repos/)で、分析したいリポジトリごとに Docker Scout を有効化します。
+
+リポジトリを有効化すると、プッシュされたイメージが Docker Scout によって分析されます。分析結果は Docker Scout ダッシュボードに表示されます。リポジトリに既にイメージがある場合、Docker Scout は最新のイメージバージョンを自動的に取得して分析します。
+
+## 統合の削除
+
+> [!IMPORTANT]
+> 
+> Docker Scout ダッシュボードで統合を削除しても、Azure に作成されたリソースは自動的には削除されません。
+
+ACR 統合を削除するには：
+
+1. Docker Scout ダッシュボードの[ACR 統合ページ](https://scout.docker.com/settings/integrations/azure/)に移動します。
+
+2. 削除したい ACR 統合を見つけ、**Remove** ボタンを選択します。
+
+3. 開いたダイアログで、**Remove** を選択して確認します。
+
+4. Docker Scout ダッシュボードで統合を削除した後、統合に関連する Azure リソースも削除してください：
+
+   - コンテナレジストリ用の `docker-scout-readonly-token` トークン。
+
+   - `docker-scout-repository` Event Grid システムトピック。
