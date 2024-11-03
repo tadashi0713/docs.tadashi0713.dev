@@ -1,0 +1,34 @@
+---
+title: Docker Scout と GitHub の統合
+description: Docker Scout GitHub アプリを使用してリポジトリで直接修正アドバイスを受け取る 
+---
+
+# Docker Scout と GitHub の統合
+
+GitHub 統合は現在ベータ版です。
+
+Docker Scout の GitHub アプリ統合により、Docker Scout が GitHub 上のソースコードリポジトリにアクセスできるようになります。これにより、イメージの作成方法に関する可視性が向上し、Docker Scout は自動的で文脈に応じた修正アドバイスを提供できます。
+
+## 動作の仕組み
+
+GitHub 統合を有効にすると、Docker Scout はイメージ分析結果とソースコードを直接リンクできます。
+
+イメージを分析する際、Docker Scout はイメージのソースコードリポジトリの場所を検出するために[プロベナンスアテステーション](https://docs.docker.com/build/metadata/attestations/slsa-provenance/)をチェックします。ソースコードの場所が見つかり、GitHub アプリが有効化されている場合、Docker Scout はイメージの作成に使用された Dockerfile を解析します。
+
+Dockerfile を解析すると、イメージ作成に使用されたベースイメージのタグが明らかになります。このタグ情報により、Docker Scout はタグが最新であるかどうかを検出できます。たとえば、`alpine:3.18` をベースイメージとして使用していて、その後 `3.18` バージョンのパッチがリリースされ、セキュリティ修正が含まれていた場合、`alpine:3.18` タグが古くなる可能性があります。現在使用している `alpine:3.18` はもはや最新のものではありません。
+
+このような状況が発生すると、Docker Scout はその差異を検出し、[最新のベースイメージポリシー](https://chatgpt.com/manuals/scout/policy/_index.md#up-to-date-base-images-policy)を通じて通知します。GitHub 統合が有効化されていると、ベースイメージの更新に関する自動的な提案も受けられます。Docker Scout がどのようにしてサプライチェーンのセキュリティ対策を自動的に改善できるかについては、[修正](https://chatgpt.com/policy/remediation.md)を参照してください。
+
+## セットアップ
+
+Docker Scout を GitHub Organization と統合するには、以下の手順に従います。
+
+1. Docker Scout ダッシュボードの[GitHub 統合ページ](https://scout.docker.com/settings/integrations/github/)に移動します。
+2. **Integrate GitHub app** ボタンを選択して GitHub を開きます。
+3. 統合したい Organization を選択します。
+4. GitHub Organization 内のすべてのリポジトリを統合するか、手動でリポジトリを選択するかを選びます。
+5. **Install & Authorize** を選択して、Docker Scout アプリを Organization に追加します。
+
+   これにより、Docker Scout ダッシュボードにリダイレクトされ、アクティブな GitHub 統合の一覧が表示されます。
+
+GitHub 統合が有効になりました。

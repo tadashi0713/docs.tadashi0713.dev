@@ -3,4 +3,5 @@ export default {
   'team-collaboration': 'チームコラボレーション',
   'code-quality': 'コード品質',
   'registry': 'レジストリ',
+  'source-code-management': 'ソースコード管理',
 }
