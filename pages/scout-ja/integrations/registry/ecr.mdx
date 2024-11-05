@@ -3,6 +3,8 @@ description: Docker Scout と Amazon Elastic Container Registry の統合
 title: Docker Scout と Amazon ECR の統合
 ---
 
+import { Callout } from 'nextra/components'
+
 # Docker Scout と Amazon ECR の統合
 
 Docker Scout と Amazon Elastic Container Registry (ECR) を統合することで、ECR リポジトリにホストされているイメージのインサイトを表示できます。Docker Scout と ECR を統合し、リポジトリで Docker Scout を有効化すると、リポジトリにイメージをプッシュするたびに自動的にイメージ分析が開始されます。Docker Scout ダッシュボードまたは `docker scout` CLI コマンドを使用して、イメージのインサイトを表示できます。
@@ -21,11 +23,11 @@ Docker Scout と ECR を統合するために、CloudFormation スタックテ�
 
 以下の表は、設定リソースの説明を示しています。
 
-> [!NOTE]
->
-> これらのリソースを作成すると、AWS アカウントに小額の継続的なコストが発生します。表の **コスト** 列には、1 日あたり 100 個のイメージがプッシュされる ECR レジストリを統合する際の推定月額コストが表示されています。
->
-> また、Docker Scout が ECR からイメージを取得する際に発生する egress コストも適用されます。egress コストは約 $0.09/GB です。
+<Callout type="info" emoji="ℹ️">
+  これらのリソースを作成すると、AWS アカウントに小額の継続的なコストが発生します。表の **コスト** 列には、1 日あたり 100 個のイメージがプッシュされる ECR レジストリを統合する際の推定月額コストが表示されています。
+
+  また、Docker Scout が ECR からイメージを取得する際に発生する egress コストも適用されます。egress コストは約 $0.09/GB です。
+</Callout>
 
 | リソースタイプ                  | リソース名                      | 説明                                                                         | コスト |
 | ----------------------------- | ----------------------------- | ----------------------------------------------------------------------------| ----- |
@@ -97,11 +99,11 @@ ECR 統合はこれで有効化されました。レジストリ内のリポジ�
 
 3. 開いたダイアログで、**Remove** を選択して確認します。
 
-> [!IMPORTANT]
-> 
-> Docker Scout ダッシュボードから統合を削除しても、AWS アカウント内のリソースは削除されません。
-> 
-> Docker Scout で統合を削除した後、AWS コンソールに移動し、削除したい統合の DockerScoutECRIntegration CloudFormation スタックを削除してください。
+<Callout type="info" emoji="ℹ️"> 
+  Docker Scout ダッシュボードから統合を削除しても、AWS アカウント内のリソースは削除されません。
+
+  Docker Scout で統合を削除した後、AWS コンソールに移動し、削除したい統合の DockerScoutECRIntegration CloudFormation スタックを削除してください。
+</Callout>
 
 ## トラブルシューティング
 

@@ -4,6 +4,7 @@ description: Buildx CLI クライアントを使用してクラウドビルド�
 ---
 
 import { Tabs } from 'nextra/components'
+import { Callout } from 'nextra/components'
 
 # Docker Build Cloud を使ったビルド
 
@@ -42,8 +43,9 @@ $ docker buildx build --builder cloud-<ORG>-<BUILDER_NAME> --tag <IMAGE> .
 
 `docker compose build` コマンドを使用して Docker Build Cloud でビルドするには、まずクラウドビルダーを選択したビルダーとして設定し、その後ビルドを実行します。
 
-> [!NOTE]
-> Docker Compose の対応バージョンを使用していることを確認してください。詳細は[前提条件](./setup)を参照してください。
+<Callout type="info" emoji="ℹ️">
+  Docker Compose の対応バージョンを使用していることを確認してください。詳細は[前提条件](./setup)を参照してください。
+</Callout>
 
 ```console
 $ docker buildx use cloud-<ORG>-<BUILDER_NAME>
@@ -106,9 +108,9 @@ Docker Desktop の [ビルドビュー](https://docs.docker.com/desktop/use-desk
 
 Docker Build Cloud でビルドシークレット（認証情報やトークンなど）を使用するには、`--secret` および `--ssh` CLI フラグを `docker buildx` コマンドで使用します。トラフィックは暗号化され、シークレットはビルドキャッシュに保存されることはありません。
 
-> [注意]
->
-> ビルド引数を使用して認証情報、認証トークン、その他のシークレットを渡している場合は、[シークレットマウント](/reference/cli/docker/buildx/build.md#secret) を使用するようにビルドをリファクタリングする必要があります。ビルド引数はキャッシュに保存され、その値は証明で公開されます。シークレットマウントはビルド外に漏れず、証明には含まれません。
+<Callout type="warning" emoji="⚠️">
+  ビルド引数を使用して認証情報、認証トークン、その他のシークレットを渡している場合は、[シークレットマウント](/reference/cli/docker/buildx/build.md#secret) を使用するようにビルドをリファクタリングする必要があります。ビルド引数はキャッシュに保存され、その値は証明で公開されます。シークレットマウントはビルド外に漏れず、証明には含まれません。
+</Callout>
 
 詳細については、以下を参照してください：
 
@@ -123,9 +125,9 @@ Docker Build Cloud のキャッシュは手動で管理する必要はありま�
 
 ビルダーのキャッシュを手動でクリアするには、[`docker buildx prune` コマンド](https://docs.docker.com/reference/cli/docker/buildx/prune/) を使用します。これは、他のビルダーのキャッシュをプルーニングする場合と同様に機能します。
 
-> [注意]
->
-> クラウドビルダーのキャッシュをプルーニングすると、同じビルダーを使用している他のチームメンバーのキャッシュも削除されます。
+<Callout type="warning" emoji="⚠️">
+  クラウドビルダーのキャッシュをプルーニングすると、同じビルダーを使用している他のチームメンバーのキャッシュも削除されます。
+</Callout>
 
 ## Docker Build Cloud をデフォルトビルダーから解除する
 

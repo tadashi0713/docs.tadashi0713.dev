@@ -3,6 +3,8 @@ title: Docker Scout と Azure Container Registry の統合
 description: Docker Scout と Azure Container Registry の統合
 ---
 
+import { Callout } from 'nextra/components'
+
 # Docker Scout と Azure Container Registry の統合
 
 Docker Scout と Azure Container Registry (ACR) を統合することで、ACR リポジトリにホストされているイメージのインサイトを表示できます。Docker Scout と ACR を統合し、リポジトリで Docker Scout を有効化すると、リポジトリにイメージをプッシュするたびに自動的にイメージ分析が開始されます。Docker Scout ダッシュボードまたは `docker scout` CLI コマンドを使用して、イメージのインサイトを表示できます。
@@ -22,11 +24,11 @@ Azure でリソースが作成された後、統合された ACR インスタン
 
 以下の表は、設定リソースの説明を示しています。
 
-> [!NOTE]
->
-> これらのリソースを作成すると、Azure アカウントに小額の継続的なコストが発生します。表の コスト 列には、1 日あたり 100 個のイメージがプッシュされる ACR レジストリを統合する際の推定月額コストが表示されています。
->
-> Egress コストは使用量に応じて異なりますが、約 $0.1/GB で、最初の 100 GB は無料です。
+<Callout type="info" emoji="ℹ️">
+  これらのリソースを作成すると、Azure アカウントに小額の継続的なコストが発生します。表の **Cost** 列には、1 日あたり 100 個のイメージがプッシュされる ACR レジストリを統合する際の推定月額コストが表示されています。
+
+  Egress コストは使用量に応じて異なりますが、約 $0.1/GB で、最初の 100 GB は無料です。
+</Callout>
 
 | Azure                    | リソース                                                                                | コスト                                              |
 | -----------------------  | ------------------------------------------------------------------------------------- | --------------------------------------------------- |
@@ -160,9 +162,9 @@ Azure でリソースが作成された後、統合された ACR インスタン
 
 ## 統合の削除
 
-> [!IMPORTANT]
-> 
-> Docker Scout ダッシュボードで統合を削除しても、Azure に作成されたリソースは自動的には削除されません。
+<Callout type="info" emoji="ℹ️">
+  Docker Scout ダッシュボードで統合を削除しても、Azure に作成されたリソースは自動的には削除されません。
+</Callout>
 
 ACR 統合を削除するには：
 

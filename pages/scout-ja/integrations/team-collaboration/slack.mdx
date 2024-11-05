@@ -4,6 +4,8 @@ description: |
   Docker Scout を Slack と連携して、脆弱性やポリシーコンプライアンスに関するリアルタイムの更新を Slack チャンネルで受け取る方法
 ---
 
+import { Callout } from 'nextra/components'
+
 # Docker ScoutをSlackと連携する
 
 Docker ScoutをSlackと統合することで、SlackのWebhookを作成し、Docker Scoutダッシュボードに追加できます。これにより、新しい脆弱性が公開され、その脆弱性が1つ以上のイメージに影響を与えた場合に通知を受け取ることができます。
@@ -14,9 +16,9 @@ Docker ScoutをSlackと統合することで、SlackのWebhookを作成し、Doc
 
 連携を設定すると、Docker Scout はリポジトリのポリシーコンプライアンスや脆弱性の露出に関する変更を、Webhook に関連付けられたSlackチャンネルに通知します。
 
-> [!NOTE]
->
-> 通知は、各リポジトリの「最後にプッシュされた」イメージタグに対してのみトリガーされます。「最後にプッシュされた」とは、レジストリに最後にプッシュされ、Docker Scoutによって分析されたイメージタグを指します。最後にプッシュされたイメージが新しく公開されたCVEの影響を受けていない場合、通知はトリガーされません。
+<Callout type="info" emoji="ℹ️">
+  通知は、各リポジトリの「最後にプッシュされた」イメージタグに対してのみトリガーされます。「最後にプッシュされた」とは、レジストリに最後にプッシュされ、Docker Scoutによって分析されたイメージタグを指します。最後にプッシュされたイメージが新しく公開されたCVEの影響を受けていない場合、通知はトリガーされません。
+</Callout>
 
 Docker Scoutの通知についての詳細は、[通知設定](/manuals/scout/explore/dashboard.md#notification-settings)をご覧ください。
 

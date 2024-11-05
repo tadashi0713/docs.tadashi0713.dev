@@ -3,6 +3,8 @@ title: アプリケーションを共有する
 description: 作成したアプリケーションのイメージを共有し、他の場所で実行したり、他の開発者がそれを利用できるようにします。
 ---
 
+import { Callout } from 'nextra/components'
+
 # アプリケーションを共有する
 
 イメージをビルドしたので、それを共有できます。Dockerイメージを共有するには、Dockerレジストリを使用する必要があります。デフォルトのレジストリはDocker Hubであり、これまで使用してきたすべてのイメージはここから取得されています。
@@ -60,16 +62,17 @@ description: 作成したアプリケーションのイメージを共有し、�
 
 イメージがビルドされ、レジストリにプッシュされたので、このコンテナイメージを見たことがない新しいインスタンスでアプリを実行してみましょう。これを行うには、Play with Dockerを使用します。
 
-> [!NOTE]
->
-> Play with Dockerはamd64プラットフォームを使用します。Appleシリコンを搭載したARMベースのMacを使用している場合は、Play with Dockerと互換性のあるイメージに再ビルドし、新しいイメージをリポジトリにプッシュする必要があります。
->
-> amd64プラットフォーム用のイメージをビルドするには、`--platform` フラグを使用します。
-> ```console
-> $ docker build --platform linux/amd64 -t YOUR-USER-NAME/getting-started .
-> ```
->
-> Docker buildxもマルチプラットフォームのイメージビルドをサポートしています。詳細は、[マルチプラットフォームイメージ](/build/building/multi-platform.md) を参照してください。
+<Callout type="info" emoji="ℹ️">
+  Play with Dockerはamd64プラットフォームを使用します。Appleシリコンを搭載したARMベースのMacを使用している場合は、Play with Dockerと互換性のあるイメージに再ビルドし、新しいイメージをリポジトリにプッシュする必要があります。
+
+  amd64プラットフォーム用のイメージをビルドするには、`--platform` フラグを使用します。
+
+  ```console
+  $ docker build --platform linux/amd64 -t YOUR-USER-NAME/getting-started .
+  ```
+  
+  Docker buildxもマルチプラットフォームのイメージビルドをサポートしています。詳細は、[マルチプラットフォームイメージ](/build/building/multi-platform.md) を参照してください。
+</Callout>
 
 1. ブラウザで [Play with Docker](https://labs.play-with-docker.com/) を開きます。
 

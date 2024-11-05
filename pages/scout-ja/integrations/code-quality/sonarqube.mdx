@@ -4,6 +4,8 @@ description: |
   プロジェクトで定義された SonarQube の品質ゲートを使ってイメージを評価する
 ---
 
+import { Callout } from 'nextra/components'
+
 # Docker Scout と SonarQube の統合
 
 SonarQube の統合により、Docker Scout はポリシー評価を通じて SonarQube の品質ゲートチェックを表示できます。これは新しい [SonarQube Quality Gates Policy](https://chatgpt.com/manuals/scout/policy/_index.md#sonarqube-quality-gates-policy) で利用できます。
@@ -14,9 +16,9 @@ SonarQube の統合により、Docker Scout はポリシー評価を通じて So
 
 新しいイメージをリポジトリにプッシュすると、Docker Scout はそのイメージに対応する SonarQube 分析記録の結果を評価します。Docker Scout はイメージに付随する Git のプロベナンスメタデータ（プロベナンスアテステーションまたは OCI アノテーション）を使用して、イメージリポジトリと SonarQube の分析結果をリンクします。
 
-> [!NOTE]
->
-> Docker Scout は過去の SonarQube 分析記録にはアクセスできません。統合を有効化した後に記録された分析結果のみが Docker Scout に利用可能です。
+<Callout type="info" emoji="ℹ️">
+  Docker Scout は過去の SonarQube 分析記録にはアクセスできません。統合を有効化した後に記録された分析結果のみが Docker Scout に利用可能です。
+</Callout>
 
 セルフマネージド型の SonarQube インスタンスと SonarCloud の両方がサポートされています。
 

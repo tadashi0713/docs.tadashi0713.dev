@@ -4,6 +4,7 @@ description: アプリケーション内でデータベースを永続化する
 ---
 
 import { Tabs } from 'nextra/components'
+import { Callout } from 'nextra/components'
 
 # データベースの永続化
 
@@ -87,15 +88,15 @@ CLIまたはDocker Desktopのグラフィカルインターフェースを使用
     $ docker run -dp 127.0.0.1:3000:3000 --mount type=volume,src=todo-db,target=/etc/todos getting-started
     ```
 
-    > [!NOTE]
-    >
-    > Git Bashを使用している場合、このコマンドの構文が異なります。
-    >
-    > ```console
-    > $ docker run -dp 127.0.0.1:3000:3000 --mount type=volume,src=todo-db,target=//etc/todos getting-started
-    > ```
-    >
-    > Git Bashの構文の違いについての詳細は、[Git Bashの使用](https://docs.docker.com/desktop/troubleshoot/topics/#working-with-git-bash) を参照してください。
+    <Callout type="info" emoji="ℹ️">
+      Git Bashを使用している場合、このコマンドの構文が異なります。
+      
+      ```console
+      $ docker run -dp 127.0.0.1:3000:3000 --mount type=volume,src=todo-db,target=//etc/todos getting-started
+      ```
+
+      Git Bashの構文の違いについての詳細は、[Git Bashの使用](https://docs.docker.com/desktop/troubleshoot/topics/#working-with-git-bash) を参照してください。
+    </Callout>
   </Tabs.Tab>
   <Tabs.Tab>
     ボリュームを作成するには:
@@ -115,9 +116,9 @@ CLIまたはDocker Desktopのグラフィカルインターフェースを使用
     2. 検索ウィンドウで **Images** タブを選択します。
     3. 検索ボックスにイメージ名 `getting-started` を指定します。
 
-    > [!TIP]
-    >
-    >  **Local images** のみを表示するために検索フィルタを使用してください。
+    <Callout emoji="💡">
+      **Local images** のみを表示するために検索フィルタを使用してください。
+    </Callout>
 
     4. イメージを選択し、**Run** を選択します。
     5. **Optional settings** を選択します。
