@@ -18,7 +18,7 @@ Docker Desktopを使用せずにDocker Engineを実行している場合は、[D
 - [Dockerクライアントの設定](#dockerクライアントの設定)
 - [CLIでプロキシを設定する](#cliでプロキシを設定する)
 
-<Callout type="info" emoji="ℹ️">
+<Callout type="info">
   残念ながら、Webクライアントがプロキシ環境変数をどのように処理するべきか、またそれを定義するフォーマットに関する標準は存在しません。
 
   これらの変数の歴史について興味がある場合、GitLabチームによるブログ記事をご覧ください：[We need to talk: Can we standardize NO_PROXY?](https://about.gitlab.com/blog/2021/01/27/we-need-to-talk-no-proxy/)。
@@ -40,7 +40,7 @@ Dockerクライアントのプロキシ設定は、`~/.docker/config.json`にあ
 }
 ```
 
-<Callout type="warning" emoji="⚠️">
+<Callout type="warning">
   プロキシ設定には機密情報が含まれることがあります。例えば、いくつかのプロキシサーバーは認証情報をURLに含める必要がある場合があり、あるいは会社の環境におけるIPアドレスやホスト名が露出する可能性があります。
 
   環境変数はコンテナの設定にプレーンテキストとして保存されるため、リモートAPI経由で確認したり、docker commitコマンドを使用してイメージにコミットされた場合に検査される可能性があります。

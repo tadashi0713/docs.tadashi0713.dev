@@ -75,7 +75,7 @@ import { Callout } from 'nextra/components'
 
 このコマンドでは、`--network-alias` フラグが使用されています。後のセクションでこのフラグについて詳しく学びます。
 
-  <Callout emoji="💡">
+  <Callout>
     上記のコマンドには、MySQLのデータが保存される場所である /var/lib/mysql にマウントされた todo-mysql-data という名前のボリュームが含まれています。しかし、docker volume create コマンドを実行していません。Dockerは名前付きボリュームを使用したいことを認識し、自動的に作成してくれます。
   </Callout>
 
@@ -166,7 +166,7 @@ Todoアプリでは、MySQL接続設定を指定するためにいくつかの�
 - `MYSQL_PASSWORD` - 接続に使用するパスワード
 - `MYSQL_DB` - 接続後に使用するデータベース
 
-<Callout type="info" emoji="ℹ️">
+<Callout type="info">
   環境変数を使って接続設定を行うことは開発時には一般的に認められていますが、本番環境での使用は強く推奨されません。DockerのセキュリティリーダーであったDiogo Monicaが、[なぜ環境変数を使って秘密データを扱うべきではないのかについての素晴らしいブログ記事](https://diogomonica.com/2017/03/27/why-you-shouldnt-use-env-variables-for-secret-data/)を書いています。
 
   より安全な方法は、コンテナオーケストレーションフレームワークが提供するシークレットサポートを使用することです。ほとんどの場合、これらのシークレットは実行中のコンテナにファイルとしてマウントされます。

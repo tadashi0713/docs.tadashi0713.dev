@@ -17,7 +17,7 @@ Docker Desktop や Docker CLI を使用して、Artifactory イメージの脆�
 docker login {URL}
 ```
 
-<Callout type="info" emoji="ℹ️">
+<Callout type="info">
   クラウドホスト型の Artifactory では、Artifactory UI でリポジトリを選択し、**Set Me Up** ボタンをクリックすると、リポジトリの認証情報を確認できます。
 </Callout>
 
@@ -119,7 +119,7 @@ Docker Scout Artifactory エージェントは、[Docker Hub 上のイメージ]
 
 以下は `docker run` を使用して Docker Scout Artifactory エージェントを実行する例です。このコマンドは、先に作成した JSON 設定ファイルが含まれるディレクトリを `/opt/artifactory-agent/data` にバインドマウントします。使用するマウントパスが `config.json` ファイルを含むディレクトリであることを確認してください。
 
-<Callout type="info" emoji="ℹ️">
+<Callout type="info">
   Artifactory エージェントイメージの `v1` タグを使用してください。`latest` タグの使用は避けてください。互換性のない変更が発生する可能性があります。
 </Callout>
 

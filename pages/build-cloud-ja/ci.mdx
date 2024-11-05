@@ -20,13 +20,13 @@ CIでDocker Build Cloudを使用する場合、イメージをロードしてか
 
 ビルドして結果を破棄したい場合は、結果をビルドキャッシュにエクスポートするか、イメージにタグを付けずにビルドします。Docker Build Cloudを使用する際、タグ付きイメージをビルドすると、Buildxは自動的にビルド結果をロードします。詳細は[ビルド結果のロード](./usage/#loading-build-results)をご覧ください。
 
-<Callout type="info" emoji="ℹ️">
+<Callout type="info">
   Docker Build Cloudのビルドには2時間のタイムアウト制限があります。2時間以上実行されるビルドは自動的にキャンセルされます。
 </Callout>
 
 <Tabs items={['GitHub Actions', 'GitLab', 'Circle CI', 'Buildkite', 'Jenkins', 'Travis CI', 'Bitbucket Pipelines', 'Shell', 'Docker Compose']}>
   <Tabs.Tab>
-    <Callout type="info" emoji="ℹ️">
+    <Callout type="info">
       `docker/build-push-action`および`docker/bake-action`のバージョン4.0.0以降では、[デフォルトでProvenance Attestationsを使用](https://docs.docker.com/manuals/build/ci/github-actions/attestations.md#default-provenance)してイメージをビルドします。Docker Build Cloudは、イメージをレジストリにプッシュしない場合、自動的にローカルのイメージストアにロードしようとします。
 
       これにより、タグ付きイメージをビルドしてレジストリにプッシュしない場合、Docker Build CloudがAttestationsを含むイメージをロードしようとしても、GitHubランナーのローカルイメージストアがAttestationsをサポートしていないため、イメージのロードに失敗します。

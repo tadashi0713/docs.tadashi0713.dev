@@ -180,7 +180,7 @@ $ docker build --provenance=true --sbom=true --push -t <ORG_NAME>/scout-demo:v3 
 
 イメージページには、Scoutが有効になっているリポジトリが一覧表示されます。リスト内のイメージを選択して **Image details** サイドバーを開きます。サイドバーには、リポジトリの最後にプッシュされたタグのコンプライアンス概要が表示されます。
 
-<Callout type="warning" emoji="⚠️">
+<Callout type="warning">
   ポリシー結果がまだ表示されていない場合、ページを更新してください。初めてDocker Scout Dashboardを使用する場合、結果が表示されるまでに数分かかることがあります。
 </Callout>
 
@@ -188,7 +188,7 @@ $ docker build --provenance=true --sbom=true --push -t <ORG_NAME>/scout-demo:v3 
 
 ポリシー名の横にある **View fix** ボタンを選択すると、違反の詳細と修正方法に関する推奨事項が表示されます。この場合、推奨されるアクションは [Docker ScoutのGitHubインテグレーション](./integrations/source-code-management/github.md)を有効にすることです。これにより、ベースイメージを自動的に最新の状態に保つことができます。
 
-<Callout emoji="💡">
+<Callout>
   このガイドで使用されているデモアプリでは、この統合を有効にすることはできません。コードを所有するGitHubリポジトリにプッシュして、この統合を試してみてください！
 </Callout>
 
