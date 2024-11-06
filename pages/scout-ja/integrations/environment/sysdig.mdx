@@ -1,0 +1,69 @@
+---
+title: Docker Scout と Sysdig の統合
+description: Docker Scout を使用した実行環境の統合（Sysdig 使用）
+keywords: scout, sysdig, 統合, イメージ分析, 環境, サプライチェーン
+---
+
+import { Callout } from 'nextra/components'
+
+# Docker Scout と Sysdig の統合
+
+Sysdig 統合により、Docker Scout は実行中のワークロードで使用されているイメージを自動的に検出できます。この統合を有効にすると、セキュリティ体制に関するリアルタイムのインサイトが得られ、ビルド内容と本番環境での実行内容を比較できるようになります。
+
+## 仕組み
+
+Sysdig Agent は、コンテナワークロードのイメージをキャプチャします。Docker Scout は Sysdig API と統合して、クラスター内のイメージを発見します。この統合では Sysdig の Risk Spotlight 機能が使用されます。詳細は [Risk Spotlight Integrations (Sysdig docs)](https://docs.sysdig.com/en/docs/sysdig-secure/integrations-for-sysdig-secure/risk-spotlight-integrations/) を参照してください。
+
+各 Sysdig 統合は環境にマップされます。Sysdig 統合を有効にする際に、クラスターの環境名（例: `production` や `staging`）を指定します。Docker Scout はクラスター内のイメージを対応する環境に割り当て、環境フィルターを使用して環境の脆弱性状況やポリシー準拠状況を確認できるようにします。
+
+Docker Scout によって分析されたイメージのみが環境に割り当てられます。Sysdig 実行時の統合自体ではイメージ分析をトリガーしません。イメージを自動的に分析するには、[レジストリ統合](https://chatgpt.com/_index.md#container-registries)を有効にしてください。
+
+イメージ分析は必ずしも実行環境統合の前に行う必要はありませんが、Docker Scout がイメージを分析すると環境への割り当てが行われます。
+
+## 前提条件
+
+- 統合したいクラスターに Sysdig Agent をインストールします。詳細は [Sysdig Agent のインストール (Sysdig docs)](https://docs.sysdig.com/en/docs/installation/sysdig-monitor/install-sysdig-agent/) を参照してください。
+
+- Sysdig で Risk Spotlight 統合用のプロファイリングを有効化します。詳細は [プロファイリング (Sysdig docs)](https://docs.sysdig.com/en/docs/sysdig-secure/policies/profiling/#enablement) を参照してください。
+
+- Docker Scout ダッシュボードで統合を有効化するには、Organization のオーナーである必要があります。
+
+## 環境の統合
+
+1. Docker Scout ダッシュボードの Sysdig 統合ページ に移動します。
+
+2. **How to integrate** セクションで、この統合の設定名を入力します。Docker Scout はこのラベルを統合の表示名として使用します。
+
+3. **Next** を選択します。
+
+4. Risk Spotlight API トークンを入力し、ドロップダウンリストからリージョンを選択します。
+
+   Risk Spotlight API トークンは、Docker Scout が Sysdig と統合するために必要な Sysdig トークンです。トークンの生成方法については [Risk Spotlight Integrations (Sysdig docs)](https://docs.sysdig.com/en/docs/sysdig-secure/integrations-for-sysdig-secure/risk-spotlight-integrations/docker-scout/#generate-a-token-for-the-integration) を参照してください。
+
+   リージョンは Sysdig Agent をデプロイするときに設定する `global.sysdig.region` 構成パラメーターに対応します。
+
+5. **Next** を選択します。
+
+   **Next** を選択すると、Docker Scout は Sysdig に接続して Sysdig アカウントのクラスター名を取得します。クラスター名は、Sysdig Agent デプロイ時に設定される `global.clusterConfig.name` 構成パラメーターに対応します。
+
+   トークンで Sysdig に接続できない場合はエラーが表示され、統合を続行できません。設定情報が正しいかどうかを確認してください。
+
+6. ドロップダウンリストからクラスター名を選択します。
+
+7. **Next** を選択します。
+
+8. このクラスターの環境名を割り当てます。
+
+   既存の環境を再利用するか、新しい環境を作成できます。
+
+9. **Enable integration** を選択します。
+
+統合を有効化すると、Docker Scout はクラスター内で実行中のイメージを自動的に検出し、それらのイメージをクラスターに関連付けられた環境に割り当てます。環境についての詳細は、[環境モニタリング](/scout-ja/integrations/environment) を参照してください。
+
+<Callout type="info">
+  Docker Scout は、分析されたイメージのみを検出します。イメージ分析をトリガーするには、[レジストリ統合](/scout-ja/integrations#コンテナレジストリ) を有効にして、イメージをレジストリにプッシュしてください。
+
+  この統合用に新しい環境を作成した場合、少なくとも 1 つのイメージが分析されると、その環境が Docker Scout に表示されます。
+</Callout>
+
+追加のクラスターを統合するには、[Sysdig 統合ページ](https://scout.docker.com/settings/integrations/sysdig/)に移動して、**Add** ボタンを選択します。
