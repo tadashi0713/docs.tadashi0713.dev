@@ -1,0 +1,121 @@
+---
+description: CLI クライアントを使用して、実行環境を Docker Scout に統合します。
+keywords: Docker Scout, 統合, イメージ分析, 実行環境, ワークロード, CLI, 環境
+title: CLI を使用した環境統合
+---
+
+import { Tabs } from 'nextra/components'
+
+# CLI を使用した環境統合
+
+Docker Scout CLI クライアントを CI ワークフローで実行することで、環境統合を作成できます。CLI クライアントは GitHub のバイナリと Docker Hub のコンテナイメージとして利用可能です。クライアントを使用して `docker scout environment` コマンドを呼び出し、イメージを環境に割り当てます。
+
+`docker scout environment` コマンドの使用方法の詳細については、[CLI リファレンス](https://chatgpt.com/reference/cli/docker/scout/environment.md)を参照してください。
+
+## 例
+
+開始前に、以下の環境変数を CI システムに設定してください：
+
+- `DOCKER_SCOUT_HUB_USER`: Docker Hub のユーザー名
+- `DOCKER_SCOUT_HUB_PASSWORD`: Docker Hub の個人アクセス トークン
+
+これらの変数がプロジェクトでアクセスできることを確認してください。
+
+<Tabs items={['Circle CI', 'GitLab', 'Azure DevOps', 'Jenkins']}>
+  <Tabs.Tab>
+  ```yaml
+  version: 2.1
+
+  jobs:
+    record_environment:
+      machine:
+        image: ubuntu-2204:current
+      image: namespace/repo
+      steps:
+        - run: |
+            if [[ -z "$CIRCLE_TAG" ]]; then
+              tag="$CIRCLE_TAG"
+              echo "Running tag '$CIRCLE_TAG'"
+            else
+              tag="$CIRCLE_BRANCH"
+              echo "Running on branch '$CI_COMMIT_BRANCH'"
+            fi    
+            echo "tag = $tag"
+        - run: docker run -it \
+            -e DOCKER_SCOUT_HUB_USER=$DOCKER_SCOUT_HUB_USER \
+            -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_SCOUT_HUB_PASSWORD \
+            docker/scout-cli:1.0.2 environment \
+            --org "<MY_DOCKER_ORG>" \
+            "<ENVIRONMENT>" ${image}:${tag}
+  ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+  次の例では、[Docker executor](https://docs.gitlab.com/runner/executors/docker.html)を使用します。
+
+  ```yaml
+  variables:
+    image: namespace/repo
+
+  record_environment:
+    image: docker/scout-cli:1.0.2
+    script:
+      - |
+        if [[ -z "$CI_COMMIT_TAG" ]]; then
+          tag="latest"
+          echo "Running tag '$CI_COMMIT_TAG'"
+        else
+          tag="$CI_COMMIT_REF_SLUG"
+          echo "Running on branch '$CI_COMMIT_BRANCH'"
+        fi    
+        echo "tag = $tag"
+      - environment --org <MY_DOCKER_ORG> "PRODUCTION" ${image}:${tag}
+  ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+  ```yaml
+  trigger:
+    - main
+
+  resources:
+    - repo: self
+
+  variables:
+    tag: "$(Build.BuildId)"
+    image: "namespace/repo"
+
+  stages:
+    - stage: Docker Scout
+      displayName: Docker Scout 環境統合
+      jobs:
+        - job: Record
+          displayName: 環境の記録
+          pool:
+            vmImage: ubuntu-latest
+          steps:
+            - task: Docker@2
+            - script: docker run -it \
+                -e DOCKER_SCOUT_HUB_USER=$DOCKER_SCOUT_HUB_USER \
+                -e DOCKER_SCOUT_HUB_PASSWORD=$DOCKER_SCOUT_HUB_PASSWORD \
+                docker/scout-cli:1.0.2 environment \
+                --org "<MY_DOCKER_ORG>" \
+                "<ENVIRONMENT>" $(image):$(tag)
+  ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+  ```groovy
+  stage('Analyze image') {
+    steps {
+        // Docker Scout のインストール
+        sh 'curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s -- -b /usr/local/bin'
+        
+        // Docker Hub にログイン
+        sh 'echo $DOCKER_SCOUT_HUB_PASSWORD | docker login -u $DOCKER_SCOUT_HUB_USER --password-stdin'
+
+        // 重大または高の脆弱性がある場合に失敗する分析を実行
+        sh 'docker-scout environment --org "<MY_DOCKER_ORG>" "<ENVIRONMENT>" $IMAGE_TAG'
+    }
+  }
+  ```
+  </Tabs.Tab>
+</Tabs>
+
