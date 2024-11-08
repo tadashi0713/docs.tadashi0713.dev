@@ -27,22 +27,22 @@ Docker Scout に実行環境を追加する方法は以下の通りです：
 Docker Scout は以下の実行環境統合をサポートしています：
 
 - [Docker Scout GitHub Action](https://github.com/marketplace/actions/docker-scout#record-an-image-deployed-to-an-environment)
-- [CLI クライアント](https://chatgpt.com/c/cli.md)
-- [Sysdig 統合]()
+- [CLI クライアント](/scout-ja/integrations/environment/cli)
+- [Sysdig 統合](/scout-ja/integrations/environment/sysdig)
 
 <Callout type="info">
-  新しい環境の作成や統合設定は、組織のオーナーのみが可能です。また、Docker Scout は、イメージが[分析済み](https://chatgpt.com/manuals/scout/explore/analysis.md)である場合、または[レジストリ統合](https://chatgpt.com/manuals/scout/integrations/_index.md#container-registries)を通じて分析された場合にのみ、イメージを実行環境に割り当てます。
+  新しい実行環境の作成や統合設定は、Organization のオーナーのみが可能です。また、Docker Scout は、イメージが[分析済み](/scout-ja//explore/analysis)である場合、または[レジストリ統合](/scout-ja/integrations#コンテナレジストリ)を通じて分析された場合にのみ、イメージを実行環境に割り当てます。
 </Callout>
 
 ## 環境の一覧表示
 
-Organization の利用可能な環境を確認するには、`docker scout env` コマンドを使用します。
+Organization の利用可能な実行環境を確認するには、`docker scout env` コマンドを使用します。
 
 ```console
 $ docker scout env
 ```
 
-デフォルトでは、個人の Docker Organization のすべての環境が表示されます。他の Organization の環境を表示するには、--org フラグを使用します。
+デフォルトでは、個人の Docker Organization のすべての実行環境が表示されます。他の Organization の実行環境を表示するには、--org フラグを使用します。
 
 ```console
 $ docker scout env --org <org>
@@ -54,9 +54,9 @@ $ docker scout env --org <org>
 $ docker scout config organization <org>
 ```
 
-## 環境間の比較
+## 実行環境間の比較
 
-イメージを環境に割り当てることで、環境間での比較が可能になります。これは、GitHub のプルリクエストなどで、PR のコードからビルドされたイメージとステージングや本番のイメージを比較する場合に役立ちます。
+イメージを実行環境に割り当てることで、実行環境間での比較が可能になります。これは、GitHub のプルリクエストなどで、PR のコードからビルドされたイメージとステージングや本番のイメージを比較する場合に役立ちます。
 
 また、`docker scout compare` CLI コマンドの `--to-env` フラグを使用してストリームと比較することもできます。
 
@@ -64,15 +64,15 @@ $ docker scout config organization <org>
 $ docker scout compare --to-env production myorg/webapp:latest
 ```
 
-## 環境のイメージを表示する
+## 実行環境のイメージを表示する
 
-環境のイメージを表示するには：
+実行環境のイメージを表示するには：
 
 1. Docker Scout ダッシュボードの[イメージページ](https://scout.docker.com/)に移動します。
 2. **Environments** ドロップダウンメニューを開きます。
-3. 表示したい環境を選択します。
+3. 表示したい実行環境を選択します。
 
-リストには、選択した環境に割り当てられたすべてのイメージが表示されます。同じ環境内に同一イメージの複数バージョンがデプロイされている場合、それらすべてがリストに表示されます。
+リストには、選択した実行環境に割り当てられたすべてのイメージが表示されます。同じ実行環境内に同一イメージの複数バージョンがデプロイされている場合、それらすべてがリストに表示されます。
 
 または、`docker scout env` コマンドを使用してターミナルからイメージを表示することもできます。
 
@@ -83,4 +83,4 @@ docker/scout-demo-service:main@sha256:ef08dca54c4f371e7ea090914f503982e890ec81d2
 
 ### タグの不一致
 
-**Images** タブで環境を選択したとき、リスト内のタグはイメージのデプロイに使用されたタグを表しています。タグは変更可能であるため、タグが指すイメージのダイジェストを変更することができます。Docker Scout がタグが古いダイジェストを指していると検出すると、イメージ名の横に警告アイコンが表示されます。
+**Images** タブで実行環境を選択したとき、リスト内のタグはイメージのデプロイに使用されたタグを表しています。タグは変更可能であるため、タグが指すイメージのダイジェストを変更することができます。Docker Scout がタグが古いダイジェストを指していると検出すると、イメージ名の横に警告アイコンが表示されます。
