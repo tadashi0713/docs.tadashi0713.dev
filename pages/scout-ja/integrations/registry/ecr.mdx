@@ -11,13 +11,13 @@ Docker Scout と Amazon Elastic Container Registry (ECR) を統合すること�
 
 ## 仕組み
 
-Docker Scout と ECR を統合するために、CloudFormation スタックテンプレートを使用して、ECR レジストリと Docker Scout の統合に必要な AWS リソースを作成および設定できます。AWS リソースの詳細については、[CloudFormation スタックテンプレート](https://chatgpt.com/c/67207bde-7068-800b-b539-1ad3678a88b6#cloudformation-stack-template)をご参照ください。
+Docker Scout と ECR を統合するために、CloudFormation スタックテンプレートを使用して、ECR レジストリと Docker Scout の統合に必要な AWS リソースを作成および設定できます。AWS リソースの詳細については、[CloudFormation スタックテンプレート](#cloudformation-スタックテンプレート)をご参照ください。
 
 次の図は、Docker Scout ECR 統合の仕組みを示しています。
 
 ![ECR 統合の仕組み](/scout-ja/Scout-ECR.png)
 
-統合後、Docker Scout は ECR レジストリにプッシュされたイメージを自動的に取得して分析します。イメージのメタデータは Docker Scout プラットフォームに保存されますが、Docker Scout はコンテナイメージ自体を保存しません。Docker Scout のデータ取り扱い方法の詳細については、[データの取り扱い](https://chatgpt.com/manuals/scout/deep-dive/data-handling.md)をご参照ください。
+統合後、Docker Scout は ECR レジストリにプッシュされたイメージを自動的に取得して分析します。イメージのメタデータは Docker Scout プラットフォームに保存されますが、Docker Scout はコンテナイメージ自体を保存しません。Docker Scout のデータ取り扱い方法の詳細については、[データの取り扱い](/scout-ja/deep-dive/data-handling)をご参照ください。
 
 ## CloudFormation スタックテンプレート
 
