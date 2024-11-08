@@ -1,0 +1,180 @@
+---
+title: Docker Scout でのポリシー評価を始めよう
+description: Docker Scout のポリシーを使用して、アーティファクトに対するサプライチェーンのルールと閾値を定義し、 時間経過に伴ってこれらの要件に対するアーティファクトのパフォーマンスを追跡します。
+keywords: scout, サプライチェーン, 脆弱性, パッケージ, CVE, ポリシー
+---
+
+import { Tabs } from 'nextra/components'
+import { Callout } from 'nextra/components'
+
+# Docker Scout でのポリシー評価を始めよう
+
+ソフトウェアサプライチェーン管理では、アーティファクトのセキュリティと信頼性を維持することが最優先事項です。Docker Scout のポリシー評価により、既存の分析機能に加えて管理レイヤーが追加され、アーティファクトに対するサプライチェーンルールを定義し、これに対するパフォーマンスを追跡できるようになります。
+
+ポリシー評価を使用して、アーティファクトが確立されたベストプラクティスに沿っているかを確認する方法を学びましょう。
+
+## ポリシー評価の仕組み
+
+Docker Scout をリポジトリで有効化すると、プッシュしたイメージが[自動的に分析](https://chatgpt.com/manuals/scout/explore/analysis.md)されます。この分析により、イメージの構成や含まれているパッケージ、脆弱性についてのインサイトが得られます。ポリシー評価は、このイメージ分析機能に基づき、分析結果をポリシーで定義されたルールと比較します。
+
+ポリシーは、アーティファクトが満たすべきイメージ品質の基準を定義します。たとえば、**No AGPL v3 licenses** ポリシーは、AGPL v3 ライセンスで配布されるパッケージを含むイメージにフラグを付けます。イメージにそのようなパッケージが含まれている場合、そのイメージはこのポリシーに準拠していないと見なされます。一部のポリシー（**No AGPL v3 licenses** ポリシーなど）は設定が可能で、Organization のニーズに合わせて基準を調整できます。
+
+Docker Scout では、ポリシーを使用してサプライチェーンのセキュリティや信頼性を段階的に向上させることを目的としています。他のツールが合格/不合格のステータスを提供するのに対し、Docker Scout のポリシーは、小さな変更がポリシーのステータスにどのように影響するかを可視化します。ポリシーの要求をまだ満たしていない場合でも、失敗ギャップが時間とともにどのように変化するかを追跡することで、アーティファクトがポリシーに対して改善しているのか、悪化しているのかを容易に確認できます。
+
+ポリシーは必ずしもアプリケーションセキュリティや脆弱性に関連する必要はありません。サプライチェーン管理の他の側面、例えばオープンソースライセンスの使用状況やベースイメージの最新性などを測定および追跡するためにもポリシーを使用できます。
+
+## ポリシータイプ
+
+Docker Scout では、ポリシーはポリシータイプから派生します。ポリシータイプはポリシーの主要なパラメータを定義するテンプレートであり、各ポリシーは対応するポリシータイプから作成されたインスタンスとして機能します。
+
+Docker Scout は次のポリシータイプをサポートしています：
+
+- [Severity-Based Vulnerability](#severity-based-vulnerability)
+- [Compliant Licenses](#compliant-licenses)
+- [Up-to-Date Base Images](#up-to-date-base-images)
+- [High-Profile Vulnerabilities](#high-profile-vulnerabilities)
+- [Supply Chain Attestations](#supply-chain-attestations)
+- [Default Non-Root User](#default-non-root-user)
+- [Approved Base Images](#approved-base-images)
+- [SonarQube Quality Gates](#sonarqube-quality-gates)
+
+Docker Scout は、SonarQube Quality Gates ポリシーを除くすべてのポリシーをデフォルトで提供しています。SonarQube Quality Gates ポリシーを利用するには、[SonarQube との統合](/scout-ja/integrations/code-quality/sonarqube)が必要です。
+
+サポートされているポリシータイプからカスタムポリシーを作成したり、プロジェクトに適用できないデフォルトポリシーを削除したりできます。詳細については、[ポリシーの設定](/scout-ja/policy/configure)を参照してください。
+
+### Severity-Based Vulnerability
+
+**Severity-Based Vulnerability** ポリシータイプは、アーティファクトが既知の脆弱性にさらされているかどうかを確認します。
+
+デフォルトでは、修正バージョンが利用可能なクリティカルおよび高重大度の脆弱性にのみフラグが立てられます。これは、脆弱なパッケージを修正バージョンにアップグレードすることで、修正を容易に適用できることを意味します。
+
+カスタムバージョンを作成することで、ポリシーのパラメータを設定できます。以下のパラメータがカスタマイズ可能です：
+
+- **Age**: 脆弱性が最初に公開されてからの最小日数
+
+  新たに発見された脆弱性が評価の失敗原因とならないよう、一定の期間経過後の脆弱性にのみフラグを立てる理由があります。
+
+- **Severities**: 考慮する重大度レベル(デフォルト: `Critical, High`)
+
+- **Fixable vulnerabilities only**: 修正バージョンが利用可能な脆弱性のみを報告するかどうか（デフォルトで有効）。
+
+- **Package types**: 考慮するパッケージタイプのリスト。
+
+  このオプションを使用すると、[PURL パッケージタイプの定義](https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst)としてポリシー評価に含めるパッケージタイプを指定できます。デフォルトでは、ポリシーはすべてのパッケージタイプを考慮します。
+
+ポリシーの設定についての詳細は、[ポリシーの設定](https://chatgpt.com/c/configure.md)を参照してください。
+
+### Compliant Licenses
+
+**Compliant Licenses** ポリシータイプは、イメージが不適切なライセンスで配布されているパッケージを含んでいるかどうかを確認します。イメージにそのようなライセンスのパッケージが含まれている場合、準拠していないと見なされます。
+
+このポリシーが確認すべきライセンスのリストや、許可リスト（PURL 形式）で例外を設定することができます。[ポリシーの設定](https://chatgpt.com/c/configure.md)を参照してください。
+
+### Up-to-Date Base Images
+
+**Up-to-Date Base Images** ポリシータイプは、使用しているベースイメージが最新であるかどうかを確認します。
+
+このポリシーに準拠していない場合、使用しているタグが異なるダイジェストを指していることを意味します。つまり、使用しているベースイメージが最新でない可能性があります。
+
+このポリシーが正しく評価されるには、イメージにプロベナンスアテステーションが必要です。詳細は [No base image data](#no-base-image-data) を参照してください。
+
+### High-Profile Vulnerabilities
+
+**High-Profile Vulnerabilities** ポリシータイプは、Docker Scout のキュレーションされたリストに基づいて、イメージが広く認識されているリスクの高い脆弱性を含んでいるかどうかを確認します。
+
+このリストには以下の脆弱性が含まれています：
+
+- [CVE-2014-0160 (OpenSSL Heartbleed)](https://scout.docker.com/v/CVE-2014-0160)
+- [CVE-2021-44228 (Log4Shell)](https://scout.docker.com/v/CVE-2021-44228)
+- [CVE-2023-38545 (cURL SOCKS5 heap buffer overflow)](https://scout.docker.com/v/CVE-2023-38545)
+- [CVE-2023-44487 (HTTP/2 Rapid Reset)](https://scout.docker.com/v/CVE-2023-44487)
+- [CVE-2024-3094 (XZ backdoor)](https://scout.docker.com/v/CVE-2024-3094)
+- [CVE-2024-47176 (OpenPrinting - `cups-browsed`)](https://scout.docker.com/v/CVE-2024-47176)
+- [CVE-2024-47076 (OpenPrinting - `libcupsfilters`)](https://scout.docker.com/v/CVE-2024-47076)
+- [CVE-2024-47175 (OpenPrinting - `libppd`)](https://scout.docker.com/v/CVE-2024-47175)
+- [CVE-2024-47177 (OpenPrinting - `cups-filters`)](https://scout.docker.com/v/CVE-2024-47177)
+
+このポリシーは、設定をカスタマイズして重要と見なされる CVE を変更できます。カスタム設定オプションには以下が含まれます：
+
+- **Excluded CVEs**: このポリシーで無視したい CVE を指定します。
+
+  デフォルト: `[]`（すべての重要な CVE が対象）
+
+- **CISA KEV**: CISA の既知の悪用された脆弱性（KEV）カタログからの脆弱性の追跡を有効にします。
+
+  [CISA KEV カタログ](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)には、実際に悪用されている脆弱性が含まれています。このオプションを有効にすると、CISA KEV カタログに含まれる脆弱性を持つイメージにポリシーフラグが付きます。
+
+  デフォルトで有効です。
+
+ポリシーの設定についての詳細は、[ポリシーの設定](https://chatgpt.com/c/configure.md)を参照してください。
+
+### Supply Chain Attestations
+
+**Supply Chain Attestations** ポリシータイプは、イメージに [SBOM](https://chatgpt.com/manuals/build/metadata/attestations/sbom.md) と[プロベナンス アテステーション](https://chatgpt.com/manuals/build/metadata/attestations/slsa-provenance.md)があるかを確認します。
+
+イメージが SBOM アテステーションまたはプロベナンスアテステーションのどちらかを欠いている場合、準拠していないと見なされます。ビルド時にアテステーションを追加するには、次のコマンドを使用してください：
+
+```console
+$ docker buildx build --provenance=true --sbom=true -t <IMAGE> --push .
+```
+
+ビルド時にアテステーションを使用する方法についての詳細は、[アテステーション](https://chatgpt.com/manuals/build/metadata/attestations/_index.md)をご覧ください。
+
+GitHub Actions を使用してイメージをビルドおよびプッシュする場合は、SBOM とプロベナンスアテステーションを適用するためのアクションの[設定方法](https://chatgpt.com/manuals/build/ci/github-actions/attestations.md)を確認してください。
+
+### Default Non-Root User
+
+デフォルトでは、Dockerfile で異なるユーザーを指定しない限り、コンテナは `root` スーパーユーザーとして実行され、コンテナ内でのフルシステム管理権限を持ちます。特権ユーザーとしてコンテナを実行すると、コンテナ内で実行されるコードが管理操作を実行できるため、実行時のセキュリティが弱まります。
+
+**Default Non-Root User** ポリシータイプは、デフォルトで `root` ユーザーとして実行されるように設定されたイメージを検出します。このポリシーに準拠するには、イメージ構成で非ルートユーザーを指定する必要があります。実行時ステージで非ルートのデフォルトユーザーが指定されていないイメージは、ポリシーに準拠していないと見なされます。
+
+準拠していないイメージについては、評価結果に `root` ユーザーが明示的に設定されているかどうかが表示されます。これにより、`root` ユーザーが暗黙的に設定されているイメージと、意図的に `root` ユーザーが設定されているイメージの違いを識別することができます。
+
+次の Dockerfile では、明示的に設定されていなくてもデフォルトで `root` として実行されます：
+
+```dockerfile
+FROM alpine
+RUN echo "Hi"
+```
+
+次の例では、root ユーザーが明示的に設定されています：
+
+```dockerfile
+FROM alpine
+USER root
+RUN echo "Hi"
+```
+
+<Callout type="info">
+  このポリシーは、イメージ構成 blob で設定されたデフォルトユーザーのみをチェックします。非ルートのデフォルトユーザーを指定していても、`docker run` コマンドの `--user` フラグを使用するなどして、実行時にデフォルトユーザーを上書きすることが可能です。
+</Callout>
+
+このポリシーに準拠するためには、`Dockerfile` の[`USER`](https://chatgpt.com/reference/dockerfile.md#user)命令を使用して、実行時ステージでルート権限を持たないデフォルトユーザーを設定してください。
+
+以下の Dockerfile スニペットは、準拠しているイメージと準拠していないイメージの違いを示しています。
+
+<Tabs items={['準拠していない', '準拠している']}>
+  <Tabs.Tab>
+    ```dockerfile
+    FROM alpine AS builder
+    COPY Makefile ./src /
+    RUN make build
+
+    FROM alpine AS runtime
+    COPY --from=builder bin/production /app
+    ENTRYPOINT ["/app/production"]
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```dockerfile
+    FROM alpine AS builder
+    COPY Makefile ./src /
+    RUN make build
+
+    FROM alpine AS runtime
+    COPY --from=builder bin/production /app
+    USER nonroot
+    ENTRYPOINT ["/app/production"]
+    ```
+  </Tabs.Tab>
+</Tabs>

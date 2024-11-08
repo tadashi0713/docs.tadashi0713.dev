@@ -4,4 +4,5 @@ export default {
   'concepts': 'コンセプト',
   'explore': '探る',
   'integrations': 'インテグレーション',
+  'policy': 'ポリシー評価',
 }
