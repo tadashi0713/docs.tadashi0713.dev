@@ -1,15 +1,15 @@
 ---
-description: Docker Scoutを他のシステムと連携する方法について説明します。
-title: Docker Scoutを他のシステムと連携する
+description: Docker Scoutを他のシステムと統合する方法について説明します。
+title: Docker Scoutを他のシステムと統合する
 ---
 
-# Docker Scoutを他のシステムと連携する
+# Docker Scoutを他のシステムと統合する
 
-デフォルトでは、Docker Scout は Docker Organization と Docker Hub 上の Docker Scout 対応リポジトリと連携されています。Docker Scout をサードパーティシステムと連携することで、さらに多くのインサイト、特に実行中のワークロードに関するリアルタイム情報を得ることができます。
+デフォルトでは、Docker Scout は Docker Organization と Docker Hub 上の Docker Scout 対応リポジトリと統合されています。Docker Scout をサードパーティシステムと統合することで、さらに多くのインサイト、特に実行中のワークロードに関するリアルタイム情報を得ることができます。
 
-## インテグレーションカテゴリ
+## 統合カテゴリ
 
-Docker Scout をどのように、どこで連携するかによって、得られるインサイトが異なります。
+Docker Scout をどのように、どこで統合するかによって、得られるインサイトが異なります。
 
 ### コンテナレジストリ
 
@@ -17,42 +17,42 @@ Docker Scout をサードパーティのコンテナレジストリと連携す�
 
 以下のコンテナレジストリ統合が利用可能です。
 
-- Artifactory
-- Amazon Elastic Container Registry
-- Azure Container Registry
+- [Artifactory](/scout-ja/integrations/registry/artifactory)
+- [Amazon Elastic Container Registry](/scout-ja/integrations/registry/ecr)
+- [Azure Container Registry](/scout-ja/integrations/registry/acr)
 
 ### 継続的インテグレーション (CI)
 
-Docker Scout を継続的インテグレーション（CI）システムと連携すると、インナーループ内でセキュリティ状況に関する即時かつ自動的なフィードバックを得ることができます。CI での分析は、さらに多くのインサイトを得るために役立つ追加のコンテキストの恩恵も受けます。
+Docker Scout を継続的インテグレーション（CI）システムと統合すると、インナーループ内でセキュリティ状況に関する即時かつ自動的なフィードバックを得ることができます。CI での分析は、さらに多くのインサイトを得るために役立つ追加のコンテキストの恩恵も受けます。
 
 以下のCI統合が利用可能です。
-- GitHub Actions
-- GitLab
-- Microsoft Azure DevOps Pipelines
-- Circle CI
-- Jenkins
+- [GitHub Actions](/scout-ja/integrations/ci/gha)
+- [GitLab](/scout-ja/integrations/ci/gitlab)
+- [Microsoft Azure DevOps Pipelines](/scout-ja/integrations/ci/azure)
+- [Circle CI](/scout-ja/integrations/ci/circle-ci)
+- [Jenkins](/scout-ja/integrations/ci/jenkins)
 
-### Environment モニタリング
+### 実行環境モニタリング
 
-Environment モニタリングとは、Docker Scout をデプロイメントと連携することを指します。これにより、実行中のコンテナワークロードに関するリアルタイム情報を得ることができます。
+実行環境モニタリングとは、Docker Scout をデプロイメントと統合することを指します。これにより、実行中のコンテナワークロードに関するリアルタイム情報を得ることができます。
 
-Environment と連携することで、プロダクションワークロードをイメージリポジトリや他の環境にあるバージョンと比較できます。
+実行環境と統合することで、プロダクションワークロードをイメージリポジトリや他の環境にあるバージョンと比較できます。
 
-以下の Environment モニタリング連携が利用可能です。
+以下の実行環境モニタリング統合が利用可能です。
 
-- Sysdig
+- [Sysdig](/scout-ja/integrations/environment/sysdig)
 
-Environment 連携の詳細については、Environment をご覧ください。
+実行環境統合の詳細については、[実行環境](/scout-ja/integrations/environment)をご覧ください。
 
 ### コード品質
 
-Docker Scout をコード分析ツールと連携すると、ソースコード上で直接品質チェックが行われ、バグ、セキュリティ問題、テストカバレッジなどを追跡できます。イメージ分析や Environment モニタリングに加え、コード品質ゲートにより、Docker Scoutを使用してサプライチェーン管理をシフトレフトさせることができます。
+Docker Scout をコード分析ツールと統合すると、ソースコード上で直接品質チェックが行われ、バグ、セキュリティ問題、テストカバレッジなどを追跡できます。イメージ分析や実行環境モニタリングに加え、コード品質ゲートにより、Docker Scoutを使用してサプライチェーン管理をシフトレフトさせることができます。
 
-コード品質連携を有効にすると、Docker Scout はその連携が有効になっているリポジトリに対して、コード品質評価をポリシー評価結果として含めます。
+コード品質統合を有効にすると、Docker Scout はその統合が有効になっているリポジトリに対して、コード品質評価をポリシー評価結果として含めます。
 
 以下のコード品質統合が利用可能です。
 
-- SonarQube
+- [SonarQube](/scout-ja/integrations/code-quality/sonarqube)
 
 ### ソースコード管理
 
@@ -60,12 +60,12 @@ Docker Scout をバージョン管理システムと統合すると、Docker Sco
 
 以下のソースコード管理統合が利用可能です。
 
-- GitHub
+- [GitHub](/scout-ja/integrations/source-code-management/github)
 
 ### チームコラボレーション
 
-このカテゴリの連携では、Docker Scout をコラボレーションプラットフォームと連携し、ソフトウェアサプライチェーンに関する通知をリアルタイムでチームコミュニケーションプラットフォームに送信できます。
+このカテゴリの統合では、Docker Scout をコラボレーションプラットフォームと統合し、ソフトウェアサプライチェーンに関する通知をリアルタイムでチームコミュニケーションプラットフォームに送信できます。
 
-以下のチームコラボレーション連携が利用可能です。
+以下のチームコラボレーション統合が利用可能です。
 
-- Slack
+- [Slack](/scout-ja/integrations/team-collaboration/slack)

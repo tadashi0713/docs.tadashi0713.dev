@@ -3,6 +3,6 @@ export default {
   'quickstart': 'クイックスタート',
   'concepts': 'コンセプト',
   'explore': '探る',
-  'integrations': 'インテグレーション',
+  'integrations': '統合',
   'policy': 'ポリシー評価',
 }
