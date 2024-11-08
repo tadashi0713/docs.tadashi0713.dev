@@ -8,7 +8,7 @@ import { Callout } from 'nextra/components'
 
 # Docker Scout と SonarQube の統合
 
-SonarQube の統合により、Docker Scout はポリシー評価を通じて SonarQube の品質ゲートチェックを表示できます。これは新しい [SonarQube Quality Gates Policy](https://chatgpt.com/manuals/scout/policy/_index.md#sonarqube-quality-gates-policy) で利用できます。
+SonarQube の統合により、Docker Scout はポリシー評価を通じて SonarQube の品質ゲートチェックを表示できます。これは新しい [SonarQube Quality Gates Policy](/scout-ja/policy#sonarqube-quality-gates) で利用できます。
 
 ## 動作の仕組み
 
@@ -26,8 +26,8 @@ SonarQube の統合により、Docker Scout はポリシー評価を通じて So
 
 Docker Scout を SonarQube と統合するには、以下を確認してください:
 
-- イメージリポジトリが [Docker Scout と統合されている](https://chatgpt.com/_index.md#container-registries)こと。
-- イメージが [プロベナンスアテステーション](https://chatgpt.com/manuals/build/metadata/attestations/slsa-provenance.md) または `org.opencontainers.image.revision` アノテーションを使用してビルドされ、Git リポジトリに関する情報を含んでいること。
+- イメージリポジトリが [Docker Scout と統合されている](/scout-ja/integrations#コンテナレジストリ)こと。
+- イメージが [プロベナンスアテステーション](https://docs.docker.com/build/metadata/attestations/slsa-provenance/) または `org.opencontainers.image.revision` アノテーションを使用してビルドされ、Git リポジトリに関する情報を含んでいること。
 
 ## SonarQube の統合を有効にする
 
@@ -46,4 +46,4 @@ Docker Scout を SonarQube と統合するには、以下を確認してくだ�
 
 6. 接続テストが成功すると、SonarQube 統合の概要ページにリダイレクトされ、すべての SonarQube 統合とそのステータスが一覧表示されます。
 
-統合の概要ページから直接 **SonarQube Quality Gates Policy** に移動できます。このポリシーには最初は結果が表示されません。このポリシーの評価結果を表示するには、新しい SonarQube の分析をプロジェクトで実行し、対応するイメージをリポジトリにプッシュしてください。詳細については、[ポリシーの説明](https://chatgpt.com/policy/_index.md#sonarqube-quality-gates)を参照してください。
+統合の概要ページから直接 **SonarQube Quality Gates Policy** に移動できます。このポリシーには最初は結果が表示されません。このポリシーの評価結果を表示するには、新しい SonarQube の分析をプロジェクトで実行し、対応するイメージをリポジトリにプッシュしてください。詳細については、[ポリシーの説明](/scout-ja/policy#sonarqube-quality-gates)を参照してください。

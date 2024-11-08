@@ -40,5 +40,5 @@ pipeline {
 このスクリプトは Docker Scout をインストールし、Docker Hub にログインしてから、指定されたイメージとタグに対して Docker Scout を実行して CVE レポートを生成します。表示されるのは重大または高優先度の脆弱性のみです。
 
 <Callout type="warning">
-  もしイメージキャッシュに関連する「permission denied」エラーが発生した場合は、[`DOCKER_SCOUT_CACHE_DIR`](scout/how-tos/configure-cli.md) 環境変数を書き込み可能なディレクトリに設定してください。もしくは、ローカルキャッシュを完全に無効化するために、`DOCKER_SCOUT_NO_CACHE=true` を設定することもできます。
+  もしイメージキャッシュに関連する「permission denied」エラーが発生した場合は、[`DOCKER_SCOUT_CACHE_DIR`](/scout-ja/how-tos/configure-cli) 環境変数を書き込み可能なディレクトリに設定してください。もしくは、ローカルキャッシュを完全に無効化するために、`DOCKER_SCOUT_NO_CACHE=true` を設定することもできます。
 </Callout>
