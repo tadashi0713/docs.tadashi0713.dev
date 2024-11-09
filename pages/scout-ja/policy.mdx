@@ -15,7 +15,7 @@ import { Callout } from 'nextra/components'
 
 ## ポリシー評価の仕組み
 
-Docker Scout をリポジトリで有効化すると、プッシュしたイメージが[自動的に分析](https://chatgpt.com/manuals/scout/explore/analysis.md)されます。この分析により、イメージの構成や含まれているパッケージ、脆弱性についてのインサイトが得られます。ポリシー評価は、このイメージ分析機能に基づき、分析結果をポリシーで定義されたルールと比較します。
+Docker Scout をリポジトリで有効化すると、プッシュしたイメージが[自動的に分析](/scout-ja/explore/analysis)されます。この分析により、イメージの構成や含まれているパッケージ、脆弱性についてのインサイトが得られます。ポリシー評価は、このイメージ分析機能に基づき、分析結果をポリシーで定義されたルールと比較します。
 
 ポリシーは、アーティファクトが満たすべきイメージ品質の基準を定義します。たとえば、**No AGPL v3 licenses** ポリシーは、AGPL v3 ライセンスで配布されるパッケージを含むイメージにフラグを付けます。イメージにそのようなパッケージが含まれている場合、そのイメージはこのポリシーに準拠していないと見なされます。一部のポリシー（**No AGPL v3 licenses** ポリシーなど）は設定が可能で、Organization のニーズに合わせて基準を調整できます。
 
@@ -62,13 +62,13 @@ Docker Scout は、SonarQube Quality Gates ポリシーを除くすべてのポ�
 
   このオプションを使用すると、[PURL パッケージタイプの定義](https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst)としてポリシー評価に含めるパッケージタイプを指定できます。デフォルトでは、ポリシーはすべてのパッケージタイプを考慮します。
 
-ポリシーの設定についての詳細は、[ポリシーの設定](https://chatgpt.com/c/configure.md)を参照してください。
+ポリシーの設定についての詳細は、[ポリシーの設定](/scout-ja/policy/configure)を参照してください。
 
 ### Compliant Licenses
 
 **Compliant Licenses** ポリシータイプは、イメージが不適切なライセンスで配布されているパッケージを含んでいるかどうかを確認します。イメージにそのようなライセンスのパッケージが含まれている場合、準拠していないと見なされます。
 
-このポリシーが確認すべきライセンスのリストや、許可リスト（PURL 形式）で例外を設定することができます。[ポリシーの設定](https://chatgpt.com/c/configure.md)を参照してください。
+このポリシーが確認すべきライセンスのリストや、許可リスト（PURL 形式）で例外を設定することができます。[ポリシーの設定](/scout-ja/policy/configure)を参照してください。
 
 ### Up-to-Date Base Images
 
@@ -106,11 +106,11 @@ Docker Scout は、SonarQube Quality Gates ポリシーを除くすべてのポ�
 
   デフォルトで有効です。
 
-ポリシーの設定についての詳細は、[ポリシーの設定](https://chatgpt.com/c/configure.md)を参照してください。
+ポリシーの設定についての詳細は、[ポリシーの設定](/scout-ja/policy/configure)を参照してください。
 
 ### Supply Chain Attestations
 
-**Supply Chain Attestations** ポリシータイプは、イメージに [SBOM](https://chatgpt.com/manuals/build/metadata/attestations/sbom.md) と[プロベナンス アテステーション](https://chatgpt.com/manuals/build/metadata/attestations/slsa-provenance.md)があるかを確認します。
+**Supply Chain Attestations** ポリシータイプは、イメージに [SBOM](https://docs.docker.com/build/metadata/attestations/sbom/) と[プロベナンス アテステーション](https://docs.docker.com/build/metadata/attestations/slsa-provenance/)があるかを確認します。
 
 イメージが SBOM アテステーションまたはプロベナンスアテステーションのどちらかを欠いている場合、準拠していないと見なされます。ビルド時にアテステーションを追加するには、次のコマンドを使用してください：
 
@@ -118,9 +118,9 @@ Docker Scout は、SonarQube Quality Gates ポリシーを除くすべてのポ�
 $ docker buildx build --provenance=true --sbom=true -t <IMAGE> --push .
 ```
 
-ビルド時にアテステーションを使用する方法についての詳細は、[アテステーション](https://chatgpt.com/manuals/build/metadata/attestations/_index.md)をご覧ください。
+ビルド時にアテステーションを使用する方法についての詳細は、[アテステーション](https://docs.docker.com/build/metadata/attestations/)をご覧ください。
 
-GitHub Actions を使用してイメージをビルドおよびプッシュする場合は、SBOM とプロベナンスアテステーションを適用するためのアクションの[設定方法](https://chatgpt.com/manuals/build/ci/github-actions/attestations.md)を確認してください。
+GitHub Actions を使用してイメージをビルドおよびプッシュする場合は、SBOM とプロベナンスアテステーションを適用するためのアクションの[設定方法](https://docs.docker.com/build/ci/github-actions/attestations/)を確認してください。
 
 ### Default Non-Root User
 
@@ -149,7 +149,7 @@ RUN echo "Hi"
   このポリシーは、イメージ構成 blob で設定されたデフォルトユーザーのみをチェックします。非ルートのデフォルトユーザーを指定していても、`docker run` コマンドの `--user` フラグを使用するなどして、実行時にデフォルトユーザーを上書きすることが可能です。
 </Callout>
 
-このポリシーに準拠するためには、`Dockerfile` の[`USER`](https://chatgpt.com/reference/dockerfile.md#user)命令を使用して、実行時ステージでルート権限を持たないデフォルトユーザーを設定してください。
+このポリシーに準拠するためには、`Dockerfile` の[`USER`](https://docs.docker.com/reference/dockerfile/#user)命令を使用して、実行時ステージでルート権限を持たないデフォルトユーザーを設定してください。
 
 以下の Dockerfile スニペットは、準拠しているイメージと準拠していないイメージの違いを示しています。
 
@@ -178,3 +178,75 @@ RUN echo "Hi"
     ```
   </Tabs.Tab>
 </Tabs>
+
+### Approved Base Images
+
+**Approved Base Images** ポリシータイプは、ビルドで使用するベースイメージが維持されており、安全であることを確認します。
+
+このポリシーは、ビルドで使用されるベースイメージがポリシー設定で指定されたパターンに一致するかどうかを確認します。以下は、このポリシーで使用できるパターンの例です。
+
+| 使用例                                                       | パターン                          |
+| ------------------------------------------------------------| -------------------------------- |
+| Docker Hub のすべてのイメージを許可する                          | `docker.io/*`                    |
+| Docker オフィシャルイメージをすべて許可する                       | `docker.io/library/*`            |
+| 特定の組織からのイメージを許可する                                | `docker.io/orgname/*`            |
+| 特定のリポジトリのタグを許可する                                  | `docker.io/orgname/repository:*` |
+| ホスト名 `registry.example.com` のレジストリ上のイメージを許可する | `registry.example.com/*`         |
+| NodeJS の slim タグ付きイメージを許可する                        | `docker.io/library/node:*-slim`  |
+
+アスタリスク (`*`) は、続く文字まで、またはイメージリファレンスの末尾までに一致します。Docker Hub イメージに一致させるには、`docker.io` プレフィックスが必要です。これは Docker Hub のレジストリホスト名です。
+
+このポリシーには次のオプションで設定できます：
+
+- **Approved base image sources**
+
+  許可するイメージリファレンスのパターンを指定します。ポリシーはこれらのパターンに基づいてベースイメージを評価します。
+
+  デフォルト：`[*]`（すべてのリファレンスが許可されるベースイメージ）
+
+- **Only supported tags**
+
+  Docker オフィシャルイメージのサポートされているタグのみを許可します。
+
+  このオプションを有効にすると、公式イメージのサポートされていないタグを使用しているイメージはポリシー違反となります。公式イメージのサポートされているタグは、Docker Hub のリポジトリ概要ページの **Supported tags** セクションに記載されています。
+
+  デフォルトで有効です。
+
+- **Only supported OS distributions**
+
+  サポートされている Linux ディストリビューションバージョンの Docker オフィシャルイメージのみを許可します。
+
+  このオプションを有効にすると、サポートされていない Linux ディストリビューション（例: `ubuntu:18.04`）を使用しているイメージはポリシー違反となります。
+
+  このオプションを有効にすると、OS バージョンが判定できない場合に「データなし」と表示される可能性があります。
+
+  デフォルトで有効です。
+
+このポリシーが正しく評価されるためには、イメージにプロベナンスアテステーションが必要です。詳細については、[No base image data](#no-base-image-data) を参照してください。
+
+### SonarQube Quality Gates
+
+**SonarQube Quality Gates** ポリシータイプは、[SonarQube 統合](/scout-ja/integrations/code-quality/sonarqube)に基づいてソースコードの品質を評価します。このポリシーは、SonarQube のコード分析結果を Docker Scout に取り込み、評価を行います。
+
+このポリシーの基準は、SonarQube の[品質ゲート](https://docs.sonarsource.com/sonarqube/latest/instance-administration/analysis-functions/quality-gates/)を使用して定義します。SonarQube は、SonarQube で定義した品質ゲートに基づいてソースコードを評価し、Docker Scout は SonarQube の評価結果を Docker Scout のポリシーとして表示します。
+
+Docker Scout は、[プロベナンス](https://docs.docker.com/build/metadata/attestations/slsa-provenance/)アテステーションや `org.opencontainers.image.revision` OCI アノテーションを使用して、SonarQube の分析結果とコンテナイメージをリンクします。SonarQube 統合を有効にするだけでなく、イメージにアテステーションまたはラベルが含まれていることを確認する必要があります。
+
+![Git コミット SHA により、イメージと SonarQube 分析をリンク](/scout-ja/scout-sq-commit-sha.webp)
+
+イメージをプッシュしてポリシー評価が完了すると、SonarQube の品質ゲートの結果が Docker Scout ダッシュボードおよび CLI にポリシーとして表示されます。
+
+<Callout type='info'>
+  Docker Scout は、統合を有効にした後に作成された SonarQube 分析結果にのみアクセスできます。過去の評価にはアクセスできません。統合を有効にした後に SonarQube 分析とポリシー評価をトリガーし、結果を Docker Scout で確認してください。
+</Callout>
+
+## No base image data
+
+ビルドで使用したベースイメージの情報が特定できない場合、**Up-to-Date Base Images** および **Approved Base Images** ポリシーには **No data** というフラグが付きます。
+
+この "no data" 状態は次のような場合に発生します：
+
+- Docker Scout が使用したベースイメージタグを把握していない
+- 使用したベースイメージバージョンが複数のタグを持っているが、すべてのタグが古いわけではない
+
+Docker Scout が常にベースイメージの情報を把握できるように、ビルド時に[プロベナンスアテステーション](https://docs.docker.com/build/metadata/attestations/slsa-provenance/)を添付できます。Docker Scout はプロベナンスアテステーションを使用してベースイメージバージョンを特定します。
