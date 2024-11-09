@@ -1,0 +1,80 @@
+---
+title: Docker Scout を使用した修正
+description: Docker Scout での修正機能を使用して、ソフトウェア品質を自動的に向上させる方法を学びます
+keywords: scout, サプライチェーン, セキュリティ, 修正, 自動化
+---
+
+import { Callout } from 'nextra/components'
+
+# Docker Scout を使用した修正
+
+Docker Scout の修正機能は現在[ベータ版](https://docs.docker.com/release-lifecycle/#Beta)です。
+
+Docker Scout は、ポリシー評価結果に基づいた推奨アクションを提供することで、サプライチェーンやセキュリティの問題を修正するのに役立ちます。推奨アクションは、ポリシー準拠の改善や、Docker Scout がより良い評価結果や推奨アクションを提供できるようにするためのメタデータの追加などが含まれます。
+
+Docker Scout は以下のデフォルトポリシータイプについて修正アドバイスを提供します:
+
+- [Up-to-Date Base Images](#supply-chain-attestations-の修正)
+- [Supply Chain Attestations](#supply-chain-attestations-の修正)
+
+<Callout type='info'>
+  カスタムポリシーにはガイド付きの修正機能はサポートされていません。
+</Callout>
+
+ポリシー違反のあるイメージには、準拠問題の解決や違反修正に焦点を当てた推奨が提示されます。Docker Scout が準拠状態を判断できないイメージには、評価を成功させるために必要な前提条件を満たすための推奨アクションが表示されます。
+
+## 推奨アクションの表示
+
+推奨アクションは、Docker Scout ダッシュボードのポリシー詳細ページに表示されます。アクセスするには：
+
+1. Docker Scout ダッシュボードの[ポリシーページ](https://scout.docker.com/reports/policy)に移動します。
+2. リストからポリシーを選択します。
+
+ポリシー詳細ページでは、評価結果がポリシーの状態に応じて以下の2つのタブに分けられています：
+
+- Violations（違反）
+- Compliance unknown（準拠不明）
+
+**Violations** タブには、選択したポリシーに準拠していないイメージが表示されます。**Compliance unknown** タブには、Docker Scout が準拠状況を判断できないイメージが表示され、これにはさらに情報が必要です。
+
+イメージの推奨アクションを表示するには、リスト内のイメージにカーソルを合わせ、**View fixes** ボタンをクリックします。
+
+![ポリシー違反の修正](/scout-ja/remediation.png)
+
+**View fixes** ボタンをクリックすると、推奨アクションが表示される修正サイドパネルが開きます。
+
+複数の推奨がある場合、主要な推奨が **Recommended fix** として表示され、追加の推奨が **Quick fixes** としてリストされます。クイックフィックスは一時的な解決策を提供することが一般的です。
+
+また、サイドパネルには利用可能な推奨に関連するヘルプセクションが含まれる場合もあります。
+
+## Up-to-Date Base Images の修正
+
+**Up-to-Date Base Images** ポリシーは、使用するベースイメージが最新かどうかを確認します。修正サイドパネルに表示される推奨アクションは、Docker Scout がイメージについて把握している情報量に依存します。利用可能な情報が多いほど、より適切な推奨が提供されます。
+
+以下は、イメージに関する情報に基づいた推奨アクションのシナリオです。
+
+### プロベナンスアテステーションがない場合
+
+Docker Scout がこのポリシーを評価するには、イメージに[プロベナンスアテステーション](https://docs.docker.com/build/metadata/attestations/slsa-provenance/)を追加する必要があります。イメージにプロベナンスアテステーションがない場合、準拠状況を判断できません。
+
+### プロベナンスアテステーションがある場合
+
+プロベナンスアテステーションが追加されていると、Docker Scout は使用しているベースイメージのバージョンを正確に検出できます。アテステーションで確認されたバージョンは、対応するタグの現在のバージョンと照合され、最新であるかどうかが判断されます。
+
+ポリシー違反がある場合、推奨アクションはベースイメージを最新バージョンに更新し、特定のダイジェストにピン留めする方法を示します。詳細については、[ベースイメージのバージョンをピン留め](https://docs.docker.com/build/building/best-practices/#pin-base-image-versions)を参照してください。
+
+### GitHub 統合が有効な場合
+
+イメージのソースコードを GitHub でホスティングしている場合、[GitHub 統合](/scout-ja/integrations/source-code-management/github)を有効にできます。この統合により、Docker Scout はさらに便利な修正アドバイスを提供し、Docker Scout ダッシュボードから直接違反に対する修正を開始できます。
+
+GitHub 統合が有効な場合、修正サイドパネルからイメージの GitHub リポジトリにプルリクエストを作成できます。このプルリクエストは、Dockerfile 内のベースイメージバージョンを最新バージョンに自動で更新します。
+
+この自動修正では、ベースイメージを特定のダイジェストにピン留めし、新しいバージョンが利用可能になるたびに最新の状態を維持できるようにします。ベースイメージをダイジェストにピン留めすることは再現性のために重要であり、サプライチェーンに意図しない変更が加わらないようにします。
+
+ベースイメージのピン留めについての詳細は、[ベースイメージのバージョンをピン留め](https://docs.docker.com/build/building/best-practices/#pin-base-image-versions)を参照してください。
+
+## Supply Chain Attestations の修正
+
+デフォルトの **Supply Chain Attestations** ポリシーは、イメージに完全なプロベナンスと SBOM アテステーションがあることを要求します。アテステーションが欠けている場合、またはアテステーションに十分な情報が含まれていない場合は、ポリシー違反と見なされます。
+
+修正サイドパネルで提供される推奨は、問題解決のために必要なアクションについてガイドします。たとえば、プロベナンスアテステーションがあるが情報が不十分な場合、`mode=max` のプロベナンスを使用してイメージを再ビルドすることが推奨されます。詳細については、[`mode=max`](https://docs.docker.com/build/metadata/attestations/slsa-provenance/#max)を参照してください。
