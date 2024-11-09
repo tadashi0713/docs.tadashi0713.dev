@@ -1,0 +1,116 @@
+---
+title: CI でのポリシー準拠の評価
+description: イメージのポリシー評価が基準に比べて悪化した場合にCIパイプラインを失敗させる設定方法
+keywords: scout, サプライチェーン, ポリシー, CI
+---
+
+import { Callout } from 'nextra/components'
+
+# CI でのポリシー準拠の評価
+
+CI パイプラインにポリシー評価を追加することで、コード変更によってポリシー準拠が基準と比較して悪化するケースを検出し、防止できます。
+
+CI 環境でのポリシー評価の推奨戦略は、ローカルイメージを評価し、その結果を基準と比較することです。ローカルイメージのポリシー準拠が基準よりも悪化している場合、CI ランはエラーで失敗します。ポリシー準拠が改善または変わらない場合、CI ランは成功します。
+
+この比較は相対的であり、CI イメージが基準と比べて「良い」か「悪い」かのみを評価します。すべてのポリシーを通過するかどうかをチェックする絶対的な基準ではありません。定義した基準に対して比較することで、変更がポリシー準拠に対してプラスかマイナスの影響を及ぼしているかをすぐに確認できます。
+
+## 仕組み
+
+CI でポリシー評価を実行する際には、CI パイプライン内でビルドしたイメージに対してローカルポリシー評価を実行します。ローカル評価を実行するためには、CI ワークフローが実行されている環境のイメージストアにイメージが存在する必要があります。イメージをビルドまたはプルした後に評価を実行します。
+
+ローカルイメージのポリシー準拠が基準よりも悪化している場合に失敗するようポリシー評価を実行するには、基準として使用するイメージバージョンを指定する必要があります。特定のイメージリファレンスをハードコーディングすることも可能ですが、より良い方法は[実行環境](/scout-ja/integrations/environment)を使用して自動的にイメージバージョンを推論することです。以下の例では、`production` 環境内のイメージと CI イメージを比較するために環境を使用しています。
+
+## 例
+
+CI でポリシー評価を実行する以下の例では、[Docker Scout GitHub Action](https://github.com/marketplace/actions/docker-scout) を使用して、CI でビルドされたイメージに対して `compare` コマンドを実行します。`compare` コマンドには `to-env` 入力があり、これを `production` という環境に対して比較を行うように設定します。`exit-on` 入力は `policy` に設定されており、ポリシー準拠が悪化した場合にのみ比較が失敗します。
+
+この例は、コンテナレジストリとして Docker Hub を使用していると仮定していません。そのため、このワークフローでは `docker/login-action` を2回使用しています:
+
+- コンテナレジストリへの認証のため
+- `production` イメージの分析結果を取得するために Docker への認証のため
+
+Docker Hub をコンテナレジストリとして使用している場合、認証は一度で済みます。
+
+<Callout type='info'>
+  Docker Engine の制限により、マルチプラットフォームイメージやアテステーションを含むイメージをイメージストアにロードすることはできません。
+
+  ポリシー評価を機能させるには、ランナーのローカルイメージストアにイメージをロードする必要があります。単一プラットフォームイメージをアテステーションなしでビルドし、ビルド結果をロードしていることを確認してください。そうでない場合、ポリシー評価は失敗します。
+</Callout>
+
+また、ジョブに `pull-requests: write` の権限が設定されていることにも注意してください。Docker Scout GitHub Action はデフォルトでポリシー評価結果を含むプルリクエストコメントを追加するため、この権限が必要です。詳細については、[プルリクエストコメント](https://github.com/docker/scout-action#pull-request-comments)を参照してください。
+
+```yaml
+name: Docker
+
+on:
+  push:
+    tags: ["*"]
+    branches:
+      - "main"
+  pull_request:
+    branches: ["**"]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: <IMAGE_NAME>
+  DOCKER_ORG: <ORG>
+
+jobs:
+  build:
+    permissions:
+      pull-requests: write
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+
+      - name: Build image
+        id: build-and-push
+        uses: docker/build-push-action@v4
+        with:
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          sbom: ${{ github.event_name != 'pull_request' }}
+          provenance: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+
+      - name: Authenticate with Docker
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PAT }}
+
+      - name: Compare
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: docker/scout-action@v1
+        with:
+          command: compare
+          image: ${{ steps.meta.outputs.tags }}
+          to-env: production
+          platform: "linux/amd64"
+          ignore-unchanged: true
+          only-severities: critical,high
+          organization: ${{ env.DOCKER_ORG }}
+          exit-on: policy
+```
+
+以下のスクリーンショットは、ポリシーが基準と比較して PR イメージで悪化しているためにポリシー評価チェックが失敗した際の GitHub PR コメントの例を示しています。
+
+![GitHub PR 内のポリシー評価コメント](/scout-ja/scout-policy-eval-ci.webp)
+
+この例は、GitHub Actions を使用して CI でポリシー評価を実行する方法を示しました。Docker Scout は他の CI プラットフォームもサポートしています。詳細については、[Docker Scout CI 統合](/scout-ja/integrations#継続的インテグレーション-ci)を参照してください。
