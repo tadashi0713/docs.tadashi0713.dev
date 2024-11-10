@@ -3,4 +3,5 @@ export default {
   'ci': 'CI でのポリシー準拠の評価',
   'remediation': 'Docker Scout を使用した修正',
   'scores': 'Docker Scout のヘルススコア',
+  'view': 'Docker Scout のポリシー状態を確認する',
 }

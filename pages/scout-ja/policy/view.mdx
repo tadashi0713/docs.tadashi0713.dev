@@ -1,0 +1,90 @@
+---
+title: Docker Scout のポリシー状態を確認する
+description: Docker Scout ダッシュボードおよび docker scout policy コマンドを使用して、イメージのポリシー状態を確認する方法
+keywords: scout, ポリシー, 状態, 脆弱性, サプライチェーン, CVE, ライセンス
+---
+
+# Docker Scout のポリシー状態を確認する
+
+アーティファクトのポリシー状態を[Docker Scout ダッシュボード](#ダッシュボード)または[CLI](#cli)を使用して確認できます。
+
+## ダッシュボード
+
+[Docker Scout ダッシュボード](https://scout.docker.com/)の **Overview** タブには、リポジトリのポリシーの最近の変更が要約表示されます。この要約には、最新のイメージとその前のイメージの間でポリシー評価が最も変化したイメージが表示されます。
+
+![ポリシー概要](/scout-ja/policy-overview.webp)
+
+### リポジトリごとのポリシー状態
+
+**Images** タブでは、選択した環境内のすべてのイメージについて、現在のポリシー状態と最近のポリシートレンドが表示されます。リスト内の **Policy status** 列には次の情報が示されます：
+
+- 満たされたポリシーの数と総ポリシー数
+- 最近のポリシートレンド
+
+![イメージリストのポリシー状態](/scout-ja/policy-image-list.webp)
+
+ポリシートレンドは、同じ環境内の前のイメージと比較して、ポリシーが良くなったか、悪化したか、または変化がないかを示します。
+
+- 緑の上向き矢印は、最新のプッシュイメージで改善したポリシー数を示します。
+- 赤の下向き矢印は、最新のプッシュイメージで悪化したポリシー数を示します。
+- 双方向の灰色の矢印は、最新バージョンのイメージで変更がなかったポリシー数を示します。
+
+リポジトリを選択すると、**Policy** タブで、最新の分析済みイメージとその前のイメージのポリシー差分について詳細な説明が表示されます。
+
+### 詳細な結果と修正
+
+イメージの完全な評価結果を表示するには、Docker Scout ダッシュボードのイメージタグに移動して **Policy** タブを開きます。これにより、現在のイメージのすべてのポリシー違反が詳細に表示されます。
+
+![詳細なポリシー評価結果](/scout-ja/policy-detailed-results.webp)
+
+このビューでは、違反したポリシーの改善方法についての推奨アクションも提供されます。
+
+![タグビューのポリシー詳細](/scout-ja/policy-tag-view.webp)
+
+脆弱性関連のポリシーでは、修正バージョンが利用可能な場合、そのバージョンが表示され、パッケージバージョンを修正バージョンにアップグレードすることで問題を解決できます。
+
+ライセンス関連のポリシーでは、ポリシー基準を満たさないライセンスを持つすべてのパッケージがリストされます。問題を解決するために、ライセンス違反のパッケージの依存関係を削除する方法を検討します。たとえば、より適切なライセンスで配布されている代替パッケージを探します。
+
+## CLI
+
+CLI からイメージのポリシー状態を確認するには、`docker scout policy` コマンドを使用します。
+
+```console
+$ docker scout policy \
+  --org dockerscoutpolicy \
+  --platform linux/amd64 \
+  dockerscoutpolicy/email-api-service:0.0.2
+
+    ✓ Pulled
+    ✓ Policy evaluation results found
+
+## Overview
+
+             │               Analyzed Image
+​─────────────┼──────────────────────────────────────────────
+  Target     │  dockerscoutpolicy/email-api-service:0.0.2
+    digest   │  17b1fde0329c
+    platform │ linux/amd64
+
+
+## Policies
+
+Policy status  FAILED  (2/8 policies met, 3 missing data)
+
+  Status │                  Policy                             │           Results
+​─────────┼─────────────────────────────────────────────────────┼──────────────────────────────
+  ✓      │ No copyleft licenses                                │    0 packages
+  !      │ Default non-root user                               │
+  !      │ No fixable critical or high vulnerabilities         │    2C     1H     0M     0L
+  ✓      │ No high-profile vulnerabilities                     │    0C     0H     0M     0L
+  ?      │ No outdated base images                             │    No data
+         │                                                     │    Learn more ↗
+  ?      │ SonarQube quality gates passed                      │    No data
+         │                                                     │    Learn more ↗
+  !      │ Supply chain attestations                           │    2 deviations
+  ?      │ No unapproved base images                           │    No data
+
+...
+```
+
+コマンドの詳細については、[CLI リファレンス](https://docs.docker.com/reference/cli/docker/scout/policy/)を参照してください。
