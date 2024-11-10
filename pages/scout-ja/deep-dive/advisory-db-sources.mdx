@@ -1,0 +1,68 @@
+---
+description: Docker Scout のアドバイザリデータベースと、CVE からパッケージへのマッチングサービスの詳細
+keywords: scout, スキャン, 分析, 脆弱性, Hub, サプライチェーン, セキュリティ, パッケージ, リポジトリ, エコシステム
+title: アドバイザリデータベースのソースとマッチングサービス
+---
+
+# アドバイザリデータベースのソースとマッチングサービス
+
+信頼性の高い情報源は、Docker Scout がソフトウェアアーティファクトに関する正確な評価を提供するための鍵です。業界における情報源と手法の多様性から、脆弱性評価結果における差異が発生することがあります。このページでは、Docker Scout のアドバイザリデータベースとその CVE-to-パッケージマッチングアプローチについて説明し、こうした差異に対処する方法を紹介します。
+
+## アドバイザリデータベースのソース
+
+Docker Scout は複数の情報源から脆弱性データを集約しています。このデータは継続的に更新され、セキュリティ状態がリアルタイムで最新の情報に基づいて表示されるようになっています。
+
+Docker Scout は次のパッケージリポジトリおよびセキュリティトラッカーを使用しています：
+
+- [Alpine secdb](https://secdb.alpinelinux.org/)
+- [AlmaLinux Security Advisory](https://errata.almalinux.org/)
+- [Amazon Linux Security Center](https://alas.aws.amazon.com/)
+- [Bitnami Vulnerability Database](https://github.com/bitnami/vulndb)
+- [CISA Known Exploited Vulnerability
+  Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+- [CISA Vulnrichment](https://github.com/cisagov/vulnrichment)
+- [Debian Security Bug Tracker](https://security-tracker.debian.org/tracker/)
+- [Exploit Prediction Scoring System (EPSS)](https://api.first.org/epss/)
+- [GitHub Advisory Database](https://github.com/advisories/)
+- [GitLab Advisory
+  Database](https://gitlab.com/gitlab-org/advisories-community/)
+- [Golang VulnDB](https://github.com/golang/vulndb)
+- [inTheWild - コミュニティ主導の脆弱性エクスプロイトデータベース](https://github.com/gmatuz/inthewilddb)
+- [National Vulnerability Database](https://nvd.nist.gov/)
+- [Oracle Linux Security](https://linux.oracle.com/security/)
+- [Python Packaging Advisory
+  Database](https://github.com/pypa/advisory-database)
+- [RedHat Security Data](https://www.redhat.com/security/data/metrics/)
+- [Rocky Linux Security Advisory](https://errata.rockylinux.org/)
+- [RustSec Advisory Database](https://github.com/rustsec/advisory-db)
+- [SUSE Security CVRF](http://ftp.suse.com/pub/projects/security/cvrf/)
+- [Ubuntu CVE Tracker](https://people.canonical.com/~ubuntu-security/cve/)
+- [Wolfi Security Feed](https://packages.wolfi.dev/os/security.json)
+- [Chainguard Security Feed](https://packages.cgr.dev/chainguard/osv/all.json)
+
+Docker Scout を Docker Organization で有効化すると、新しいデータベースインスタンスが Docker Scout プラットフォーム上にプロビジョニングされます。このデータベースには、イメージに関するソフトウェア部品表（SBOM）およびその他のメタデータが格納されます。脆弱性に関する新しい情報がセキュリティアドバイザリに追加されると、SBOM が CVE 情報と照合され、それがユーザーにどのような影響を与えるかが検出されます。
+
+イメージ分析の仕組みについての詳細は、[イメージ分析ページ](/scout-ja/explore/analysis/)を参照してください。
+
+## 脆弱性マッチング
+
+従来のツールは一般に広範な[Common Product Enumeration（CPE）](https://en.wikipedia.org/wiki/Common_Platform_Enumeration)マッチングに依存していますが、これにより多くの誤検出が発生する可能性があります。
+
+Docker Scout は[Package URLs (PURLs)](https://github.com/package-url/purl-spec)を使用して CVE に対するパッケージのマッチングを行うため、脆弱性の識別精度が向上します。PURLs を使用することで、誤検出の可能性が大幅に低減され、実際に影響を受けるパッケージのみが対象となります。
+
+## 対応しているパッケージエコシステム
+
+Docker Scout は次のパッケージエコシステムをサポートしています：
+
+- .NET
+- GitHub packages
+- Go
+- Java
+- JavaScript
+- PHP
+- Python
+- RPM
+- Ruby
+- `alpm` (Arch Linux)
+- `apk` (Alpine Linux)
+- `deb` (Debian Linux およびその派生)
