@@ -3,6 +3,10 @@ title: Docker Scout
 description: Docker Scout を使ってソフトウェアサプライチェーンのセキュリティを積極的に強化しましょう。
 ---
 
+import { Cards } from 'nextra/components'
+import { FaCompass, FaDatabase } from "react-icons/fa";
+import { MdOutlineRadar, MdMultipleStop, MdDashboard, MdPolicy } from "react-icons/md";
+
 # Docker Scout
 
 コンテナイメージはレイヤーやソフトウェアパッケージで構成されており、脆弱性の影響を受けやすくなっています。これらの脆弱性は、コンテナやアプリケーションのセキュリティを危険にさらす可能性があります。
@@ -10,3 +14,69 @@ description: Docker Scout を使ってソフトウェアサプライチェーン
 Docker Scoutは、ソフトウェアサプライチェーンのセキュリティを積極的に強化するためのソリューションです。イメージを分析することで、Docker Scoutはソフトウェア部品表（SBOM）と呼ばれるコンポーネントの一覧を作成します。このSBOMは、継続的に更新される脆弱性データベースと照合され、セキュリティの弱点を特定します。
 
 Docker Scoutは、Docker Desktop、Docker Hub、Docker CLI、Docker Scoutダッシュボードを使用して操作できる独立したサービスおよびプラットフォームです。さらに、Docker Scoutは、コンテナレジストリやCIプラットフォームなどのサードパーティシステムとの統合もサポートしています。
+
+<br />
+
+<Cards.Card
+  icon={<FaCompass />}
+  title="クイックスタート"
+  href="/scout-ja/quickstart"
+  arrow
+/>
+
+Docker Scout の機能を学び、使い始める方法を紹介します。
+
+<br />
+
+<Cards.Card
+  icon={<MdOutlineRadar />}
+  title="イメージ分析"
+  href="/scout-ja/explore/analysis"
+  arrow
+/>
+
+イメージの構成を明らかにし、詳細に調査することができます。
+
+<br />
+
+<Cards.Card
+  icon={<FaDatabase />}
+  title="アドバイザリデータベース"
+  href="/scout-ja/deep-dive/advisory-db-sources"
+  arrow
+/>
+
+Docker Scout が使用する情報源について学びます。
+
+<br />
+
+<Cards.Card
+  icon={<MdMultipleStop />}
+  title="統合"
+  href="/scout-ja/integrations"
+  arrow
+/>
+
+Docker Scout を CI、レジストリ、その他のサードパーティサービスと接続します。
+
+<br />
+
+<Cards.Card
+  icon={<MdDashboard />}
+  title="ダッシュボード"
+  href="/scout-ja/explore/dashboard"
+  arrow
+/>
+
+Docker Scout のウェブインターフェースです。
+
+<br />
+
+<Cards.Card
+  icon={<MdPolicy />}
+  title="ポリシー"
+  href="/scout-ja/policy"
+  arrow
+/>
+
+アーティファクトがサプライチェーンのベストプラクティスに準拠していることを確認します。
