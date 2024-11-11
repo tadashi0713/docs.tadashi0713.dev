@@ -1,0 +1,87 @@
+---
+title: 脆弱性例外の管理
+description: 例外により、脆弱性がアーティファクトに与える影響について追加のコンテキストや文書を提供し、適用されない脆弱性を抑制することができます。
+keywords: scout, cves, 抑制, vex, 例外
+---
+
+import { Tabs, Callout } from 'nextra/components'
+
+# 脆弱性例外の管理
+
+コンテナイメージで見つかった脆弱性には、追加のコンテキストが必要な場合があります。イメージに脆弱なパッケージが含まれていても、必ずしもその脆弱性が悪用可能であるとは限りません。Docker Scout の **例外** 機能を使うと、イメージ分析において受け入れ可能なリスクを認識したり、誤検出を修正したりすることができます。
+
+適用されない脆弱性を無効化することで、イメージにおける脆弱性のセキュリティへの影響を、利用者やダウンストリームのユーザーがより理解しやすくなります。
+
+Docker Scout では、例外が分析結果に自動的に反映されます。もし CVE を適用外としてフラグを立てる例外が設定されている場合、その CVE は分析結果から除外されます。
+
+## 例外を作成する
+
+イメージに例外を設定する方法は以下の通りです：
+
+- Docker Scout ダッシュボードや Docker Desktop の[GUI を使用する](/scout-ja/how-tos/create-exceptions-gui)。
+- [VEX](/scout-ja/how-tos/create-exceptions-vex)ドキュメントを作成し、それをイメージに添付する。
+
+例外を作成する推奨方法は Docker Scout ダッシュボードや Docker Desktop の GUI を使用することです。GUI は使いやすいインターフェースを提供し、複数のイメージや組織全体に一度に例外を適用することも可能です。
+
+## 例外を表示する
+
+イメージの例外を表示するには、適切な権限が必要です。
+
+- [GUI を使用して作成された例外](/scout-ja/how-tos/create-exceptions-gui)は、Docker Organizationのメンバーに表示されます。認証されていないユーザーや Organization のメンバーでないユーザーには表示されません。
+- [VEX ドキュメントを使用して作成された例外](/scout-ja/how-tos/create-exceptions-vex)は、イメージをプルできるユーザーなら誰でも確認できます。これは VEX ドキュメントがイメージのマニフェストやファイルシステムに格納されているためです。
+
+### Docker Scout ダッシュボードや Docker Desktop で例外を表示する
+
+Docker Scout ダッシュボードの [**Exceptions** タブ](https://scout.docker.com/reports/vulnerabilities/exceptions)では、Organization 内のすべてのイメージに対する例外が一覧表示されます。ここから、各例外の詳細、抑制されている CVE、例外が適用されているイメージ、例外の種類や作成方法などの情報を確認できます。
+
+GUI を使用して作成された例外の場合、アクションメニューから例外を編集または削除できます。
+
+特定のイメージタグに対するすべての例外を表示するには：
+
+<Tabs items={['Docker Scout ダッシュボード', 'Docker Desktop']}>
+  <Tabs.Tab>
+    1. [イメージページ](https://scout.docker.com/reports/images)に移動します。
+    2. 調査したいタグを選択します。
+    3. **Exceptions** タブを開きます。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. Docker Desktop の **Images** ビューを開きます。
+    2. **Hub** タブを開きます。
+    3. 調査したいタグを選択します。
+    4. **Exceptions** タブを開きます。
+  </Tabs.Tab>
+</Tabs>
+
+### CLI で例外を表示する
+
+<Callout emoji="🧪">
+  CLI での例外表示は実験的な機能です。最新バージョンの Docker Scout CLI プラグインが必要です。一部の例外は正しく表示されない可能性があります。
+</Callout>
+
+`docker scout cves <image>` コマンドを実行すると、CLI に例外がハイライト表示されます。例外で抑制された CVE には、CVE ID の横に `SUPPRESSED` ラベルが表示され、例外の詳細も表示されます。
+
+![CLI 出力の SUPPRESSED ラベル](/scout-ja/suppressed-cve-cli.png)
+
+<Callout type="info">
+  CLI で例外を表示するには、例外を作成した Docker Organization と同じ Organization を CLI に設定する必要があります。
+
+  CLI に Organization を設定するには、次のコマンドを実行します:
+
+  ```console
+  $ docker scout configure organization <organization>
+  ```
+
+  `<organization>` を Docker Organization の名前に置き換えてください。
+
+  また、--org フラグを使用して、コマンドごとに Organizationを指定することもできます:
+
+  ```console
+  $ docker scout cves --org <organization> <image>
+  ```
+</Callout>
+
+抑制された CVE を出力から除外するには、`--ignore-suppressed` フラグを使用します:
+
+```console
+$ docker scout cves --ignore-suppressed <image>
+```
