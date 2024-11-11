@@ -1,0 +1,178 @@
+---
+title: Docker Scout のイメージ分析
+description: Docker Scout のイメージ分析は、イメージの構成や含まれる脆弱性に関する詳細な情報を提供します。
+keywords: scout, スキャン, 脆弱性, サプライチェーン, セキュリティ, 分析
+---
+
+import { Callout } from 'nextra/components'
+
+# Docker Scout のイメージ分析
+
+リポジトリでイメージ分析を有効化すると、Docker Scout はそのリポジトリにプッシュされた新しいイメージを自動的に分析します。
+
+イメージ分析では、ソフトウェア部品表（SBOM）やその他のイメージメタデータを抽出し、[セキュリティアドバイザリ](/scout-ja/deep-dive/advisory-db-sources)の脆弱性データと照合します。
+
+CLI や Docker Desktop で一度だけイメージ分析を実行する場合、Docker Scout はイメージに関するデータを保存しません。しかし、コンテナイメージリポジトリで Docker Scout を有効化した場合、Docker Scout は分析後にイメージのメタデータスナップショットを保存します。新しい脆弱性データが利用可能になると、このメタデータスナップショットを使用してリアルタイムでセキュリティ状態を更新します。この動的評価により、新しい CVE 情報が公開されてもイメージを再分析する必要がありません。
+
+Docker Scout のイメージ分析は Docker Hub リポジトリにデフォルトで利用可能です。サードパーティレジストリや他のサービスとも統合できます。詳細については、[Docker Scout の他システムとの統合](/scout-ja/integrations)を参照してください。
+
+## リポジトリで Docker Scout を有効化する
+
+Docker Scout の無料プランでは、Docker 組織ごとに最大 3 つのリポジトリを利用できます。追加のリポジトリが必要な場合、Docker Scout のプランを更新できます。詳細は、[Docker Scout の請求](https://docs.docker.com/billing/scout-billing/)を参照してください。
+
+サードパーティのレジストリ内のリポジトリでイメージ分析を有効化するには、Docker Scout とそのレジストリを統合する必要があります。Docker Hub はデフォルトで統合されています。詳細については、[コンテナレジストリの統合](/scout-ja/integrations#コンテナレジストリ)を参照してください。
+
+<Callout type='info'>
+  Docker Organization で **Editor** または **Owner** の権限を持つユーザーのみがリポジトリでイメージ分析を有効化できます。
+</Callout>
+
+イメージ分析を有効化する手順：
+
+1. Docker Scout ダッシュボードの[リポジトリ設定](https://scout.docker.com/settings/repos)に移動します。
+2. 有効化したいリポジトリを選択します。
+3. **Enable image analysis** を選択します。
+
+リポジトリに既にイメージが含まれている場合、Docker Scout は最新のイメージを自動的に取得して分析します。
+
+## レジストリイメージを分析する
+
+レジストリ内のイメージの分析をトリガーするには、Docker Scout と統合されたレジストリに、イメージ分析が有効化されたリポジトリにイメージをプッシュします。
+
+<Callout type='info'>
+  Docker Scout プラットフォームでのイメージ分析には、SBOM アテステーションがない場合、イメージファイルサイズの上限が 10 GB です。詳細は[イメージの最大サイズ](#イメージの最大サイズ)を参照してください。
+</Callout>
+
+1. `docker login` コマンドまたは Docker Desktop の **Sign in** ボタンで Docker ID でサインインします。
+
+2. 分析したいイメージをビルドしてプッシュします。
+
+    ```console
+    $ docker build --push --tag <org>/<image:tag> --provenance=true --sbom=true .
+    ```
+
+    `--provenance=true` と `--sbom=true` フラグを指定してビルドすると、イメージに[ビルドアテステーション](https://docs.docker.com/build/metadata/attestations/)が追加されます。Docker Scout はアテステーションを使用してより詳細な分析結果を提供します。
+
+    <Callout type='info'>
+      デフォルトの `docker` ドライバは、[containerd イメージストア](https://docs.docker.com/desktop/features/containerd/)を使用する場合にのみビルドアテステーションをサポートします。
+    </Callout>
+
+3. Docker Scout ダッシュボードの[イメージページ](https://scout.docker.com/reports/images)に移動します。
+
+   イメージはレジストリにプッシュしてから間もなくリストに表示され、分析結果が表示されるまで数分かかることがあります。
+
+## ローカルでイメージを分析する
+
+Docker Scout を使用して Docker Desktop または `docker scout` コマンドでローカルイメージを分析できます。
+
+### Docker Desktop
+
+<Callout type='info'>
+  Docker Desktop のバックグラウンドインデックス作成は最大 10 GB のイメージに対応しています。詳細は[イメージの最大サイズ](#イメージの最大サイズ)を参照してください。
+</Callout>
+
+Docker Desktop GUI を使用してローカルでイメージを分析するには：
+
+1. 分析したいイメージをプルまたはビルドします。
+
+2. Docker ダッシュボードの **Images** ビューに移動します。
+
+3. リストからローカルイメージのいずれかを選択します。
+
+   これにより、[イメージ詳細ビュー](/scout-ja/explore/image-details-view)が開き、Docker Scout の分析で検出されたパッケージや脆弱性の内訳が表示されます。
+
+### CLI
+
+docker scout CLI コマンドを使用して、ターミナルから Docker Scout を操作できます。
+
+- `docker scout quickview`: 指定したイメージの概要を表示します。詳細は[Quickview](#quickview)を参照
+- `docker scout cves`: 指定したイメージのローカル分析を行います。詳細は[CVEs](#cves)を参照
+- `docker scout compare`: 2つのイメージを分析して比較します。
+
+デフォルトでは、結果は標準出力に表示されます。また、構造化形式でファイルに結果をエクスポートすることも可能です（SARIF 形式など）。
+
+#### Quickview
+
+`docker scout quickview` コマンドは、指定したイメージおよびそのベースイメージで検出された脆弱性の概要を提供します。
+
+```console
+$ docker scout quickview traefik:latest
+    ✓ SBOM of image already cached, 311 packages indexed
+
+  Your image  traefik:latest  │    0C     2H     8M     1L
+  Base image  alpine:3        │    0C     0H     0M     0L
+```
+
+ベースイメージが古い場合、`quickview` コマンドはベースイメージを更新した場合の脆弱性の変化も表示します。
+
+```console
+$ docker scout quickview postgres:13.1
+    ✓ Pulled
+    ✓ Image stored for indexing
+    ✓ Indexed 187 packages
+
+  Your image  postgres:13.1                 │   17C    32H    35M    33L
+  Base image  debian:buster-slim            │    9C    14H     9M    23L
+  Refreshed base image  debian:buster-slim  │    0C     1H     6M    29L
+                                            │    -9    -13     -3     +6
+  Updated base image  debian:stable-slim    │    0C     0H     0M    17L
+                                            │    -9    -14     -9     -6
+```
+
+#### CVEs
+
+`docker scout cves` コマンドは、イメージ内のすべての脆弱性の完全なリストを提供します。このコマンドには、重大度やパッケージタイプなどで脆弱性を絞り込むためのフラグがいくつかあります。
+
+```console
+$ docker scout cves --format only-packages --only-vuln-packages \
+  --only-severity critical postgres:13.1
+    ✓ SBOM of image already cached, 187 packages indexed
+    ✗ Detected 10 vulnerable packages with a total of 17 vulnerabilities
+
+     Name            Version         Type        Vulnerabilities
+───────────────────────────────────────────────────────────────────────────
+  dpkg        1.19.7                 deb      1C     0H     0M     0L
+  glibc       2.28-10                deb      4C     0H     0M     0L
+  gnutls28    3.6.7-4+deb10u6        deb      2C     0H     0M     0L
+  libbsd      0.9.1-2                deb      1C     0H     0M     0L
+  libksba     1.3.5-2                deb      2C     0H     0M     0L
+  libtasn1-6  4.13-3                 deb      1C     0H     0M     0L
+  lz4         1.8.3-1                deb      1C     0H     0M     0L
+  openldap    2.4.47+dfsg-3+deb10u5  deb      1C     0H     0M     0L
+  openssl     1.1.1d-0+deb10u4       deb      3C     0H     0M     0L
+  zlib        1:1.2.11.dfsg-1        deb      1C     0H     0M     0L
+```
+
+これらのコマンドとその使用方法についての詳細は、CLI リファレンスドキュメントを参照してください：
+
+- [`docker scout quickview`](https://docs.docker.com/reference/cli/docker/scout/quickview/)
+- [`docker scout cves`](https://docs.docker.com/reference/cli/docker/scout/cves/)
+
+## 脆弱性の重大度評価
+
+Docker Scout は、[アドバイザリソース](/scout-ja/deep-dive/advisory-db-sources)の脆弱性データに基づいて脆弱性に重大度を割り当てます。アドバイザリは、影響を受けるパッケージの種類に応じてランク付けおよび優先順位付けされます。たとえば、脆弱性が OS パッケージに影響を与える場合、ディストリビューションのメンテナーによって割り当てられた重大度レベルが優先されます。
+
+優先されるアドバイザリソースが CVE に重大度を割り当てているが CVSS スコアを提供していない場合、Docker Scout は他のソースからの CVSS スコアを表示します。アドバイザリによって割り当てられた重大度と、他のアドバイザリによる CVSS スコアが一緒に表示されるため、重大度が `LOW` でありながら CVSS スコアが 9.8 になる場合もあります。
+
+いずれのソースでも CVSS スコアが割り当てられていない脆弱性は、**Unspecified**（U）に分類されます。
+
+Docker Scout は独自の脆弱性評価システムを実装しておらず、すべてのメトリクスは統合されているセキュリティアドバイザリから継承しています。アドバイザリによっては異なる脆弱性分類基準が使用されていますが、多くは CVSS v3.0 仕様に従っており、以下の表に示すように CVSS スコアを重大度にマッピングしています。
+
+| CVSS スコア | 重大度            |
+| ---------- | ---------------- |
+| 0.1 - 3.9  | **Low** (L)      |
+| 4.0 - 6.9  | **Medium** (M)   |
+| 7.0 - 8.9  | **High** (H)     |
+| 9.0 - 10.0 | **Critical** (C) |
+
+詳細は、[脆弱性メトリクス (NIST)](https://nvd.nist.gov/vuln-metrics/cvss)を参照してください。
+
+先述のアドバイザリの優先順位付けとフォールバックメカニズムにより、Docker Scout に表示される重大度評価がこの評価システムと異なる場合があります。
+
+## イメージの最大サイズ
+
+Docker Scout プラットフォームでのイメージ分析、および Docker Desktop のバックグラウンドインデックス作成による分析には、イメージファイルサイズの上限が 10 GB（圧縮されていない状態）に設定されています。これ以上のサイズのイメージを分析するには、次のいずれかの方法を選択できます。
+
+- ビルド時に [SBOM アテステーション](https://docs.docker.com/build/metadata/attestations/sbom/)を添付する
+- [CLI](#cli) を使用してローカルでイメージを分析する
+
+CLI でローカル分析したイメージおよび SBOM アテステーションがあるイメージには、ファイルサイズの上限がありません。
