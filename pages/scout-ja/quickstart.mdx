@@ -37,7 +37,7 @@ Docker Scoutは、デフォルトでローカルのイメージを分析しま�
 
 1. `docker login` コマンドを使ってDockerアカウントにサインインするか、Docker Desktopの **Sign in** ボタンを使用します。
 
-2. 次に、`docker scout enroll` コマンドを使用して、組織をDocker Scoutに登録します。
+2. 次に、`docker scout enroll` コマンドを使用して、Organization をDocker Scoutに登録します。
 
   ```console
   $ docker scout enroll <ORG_NAME>
@@ -62,7 +62,7 @@ $ docker scout cves --only-package express
 
 Docker Scoutは、デフォルトで最後にビルドされたイメージを分析するため、この場合、イメージ名を指定する必要はありません。
 
-[`CLIリファレンスドキュメント`](/reference/cli/docker/scout/cves)で `docker scout cves` コマンドの詳細をご確認ください。
+[`CLIリファレンスドキュメント`](https://docs.docker.com/reference/cli/docker/scout/cves/)で `docker scout cves` コマンドの詳細をご確認ください。
 
 ## ステップ 4: アプリケーションの脆弱性を修正する
 
@@ -119,7 +119,7 @@ $ docker scout cves --only-package express
 
 Docker Scoutは、ポリシー評価をサポートしています。ポリシーは、イメージがサプライチェーン要件に準拠しているかどうかを追跡するためのカスタマイズ可能なルールのセットです。
 
-ポリシールールは組織ごとに固有のものなので、評価する際にはどの組織のポリシーを使用するか指定する必要があります。`docker scout config` コマンドを使用してDockerの組織を設定します。
+ポリシールールは Organization ごとに固有のものなので、評価する際にはどの Organization のポリシーを使用するか指定する必要があります。`docker scout config` コマンドを使用してDockerの Organization を設定します。
 
 ```console
 $ docker scout config organization <ORG_NAME>
@@ -160,7 +160,7 @@ Policy status  FAILED  (2/6 policies met, 2 missing data)
 
 さらに、より完全なポリシー評価結果を得るには、SBOMと生成元の証明がイメージに含まれている必要があります。Docker Scoutは、これらの生成元証明書を使用して、イメージがどのようにビルドされたかを判断し、より正確な評価結果を提供します。
 
-イメージに証明書を付けてビルドする前に、[containerd イメージストア](/manuals/desktop/containerd.md) を有効にするか、`docker-container` ドライバーを使用してカスタムビルダーを作成する必要があります。古いイメージストアはマニフェストリストをサポートしていないため、生成元証明書がイメージに付けられません。
+イメージに証明書を付けてビルドする前に、[containerd イメージストア](https://docs.docker.com/desktop/features/containerd/) を有効にするか、`docker-container` ドライバーを使用してカスタムビルダーを作成する必要があります。古いイメージストアはマニフェストリストをサポートしていないため、生成元証明書がイメージに付けられません。
 
 Docker Desktopの **Settings** を開き、**General** セクションの **Use containerd for pulling and storing images** オプションにチェックが入っていることを確認します。イメージストアを切り替えると、非アクティブなイメージストアのイメージやコンテナは一時的に非表示になります。
 
@@ -204,8 +204,8 @@ $ docker build --provenance=true --sbom=true --push -t <ORG_NAME>/scout-demo:v3 
 
 まだまだ発見することがたくさんあります。サードパーティのインテグレーション、ポリシーのカスタマイズ、リアルタイムでのランタイム環境モニタリングなど、以下のセクションもぜひご覧ください：
 
-- イメージ分析
-- データソース
-- Docker Scoutダッシュボード
-- 統合
-- ポリシー評価
+- [イメージ分析](/scout-ja/explore/analysis)
+- [データソース](/scout-ja/deep-dive/advisory-db-sources)
+- [Docker Scout ダッシュボード](/scout-ja/explore/dashboard)
+- [統合](/scout-ja/integrations)
+- [ポリシー評価](/scout-ja/policy)

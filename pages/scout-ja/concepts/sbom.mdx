@@ -22,13 +22,14 @@ SBOMには通常、以下の情報が含まれます：
 
 ## Docker ScoutがSBOMを使用する方法
 
-Docker Scoutは、Dockerイメージで使用されているコンポーネントを特定するためにSBOMを使用します。イメージを分析するとき、Docker Scoutはイメージに添付されたSBOM（[証明](https://docs.docker.com/manuals/build/metadata/attestations/_index.md)を使用）を使用するか、またはイメージの内容を分析してその場でSBOMを生成します。
+Docker Scoutは、Dockerイメージで使用されているコンポーネントを特定するためにSBOMを使用します。イメージを分析するとき、Docker Scoutはイメージに添付されたSBOM（[証明](https://docs.docker.com/build/metadata/attestations)を使用）を使用するか、またはイメージの内容を分析してその場でSBOMを生成します。
 
-SBOMは、[アドバイザリーデータベース](https://docs.docker.com/manuals/scout/deep-dive/advisory-db-sources.md)と照合され、イメージ内のコンポーネントに既知の脆弱性があるかどうかを確認します。
+SBOMは、[アドバイザリーデータベース](/scout-ja/deep-dive/advisory-db-sources)と照合され、イメージ内のコンポーネントに既知の脆弱性があるかどうかを確認します。
 
 ## 追加リソース
 
 SBOMの生成方法やDocker ScoutでのSBOMの活用方法について詳しく学ぶには、以下を参照してください：
 
-- [Docker Scoutにおけるイメージ分析](https://docs.docker.com/manuals/scout/explore/analysis.md)
-- [SBOMの表示と作成](https://docs.docker.com/manuals/scout/how-tos/view-create-sboms.md)
+- [Docker Scoutにおけるイメージ分析](/scout/explore/analysis)
+- [SBOMの表示と作成](/scout-ja/how-tos/view-create-sboms)
+
