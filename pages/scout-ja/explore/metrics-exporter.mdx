@@ -1,0 +1,313 @@
+---
+title: Docker Scout メトリクスエクスポーター
+description: Prometheus を使用して Docker Scout からデータをスクレイプし、Grafana を使って脆弱性やポリシーダッシュボードを作成する方法について学びます
+keywords: scout, エクスポーター, prometheus, grafana, メトリクス, ダッシュボード, api, compose
+---
+
+import { Table, Td, Th, Tr, Callout } from 'nextra/components'
+
+# Docker Scout メトリクスエクスポーター
+
+Docker Scout は、Prometheus または Datadog を使用して脆弱性やポリシーデータをスクレイプできるメトリクス HTTP エンドポイントを公開しています。これを使用して、サプライチェーンメトリクスを視覚化するためのセルフホスト型 Docker Scout ダッシュボードを作成できます。
+
+## メトリクス
+
+メトリクスエンドポイントでは、以下のメトリクスが公開されています：
+
+<br />
+
+<Table>
+  <thead>
+    <Tr>
+      <Th>メトリクス</Th>
+      <Th>説明</Th>
+      <Th>ラベル</Th>
+      <Th>タイプ</Th>
+    </Tr>
+  </thead>
+  <tbody>
+    <Tr>
+      <Td>`scout_stream_vulnerabilities`</Td>
+      <Td>ストリーム内の脆弱性数</Td>
+      <Td>`streamName`, `severity`</Td>
+      <Td>Gauge</Td>
+    </Tr>
+    <Tr>
+      <Td>`scout_policy_compliant_images`</Td>
+      <Td>ストリーム内でポリシーに準拠しているイメージ数</Td>
+      <Td>`id`, `displayName`, `streamName`</Td>
+      <Td>Gauge</Td>
+    </Tr>
+    <Tr>
+      <Td>`scout_policy_evaluated_images`</Td>
+      <Td>ストリーム内でポリシー評価を行ったイメージ数</Td>
+      <Td>`id`, `displayName`, `streamName`</Td>
+      <Td>Gauge</Td>
+    </Tr>
+  </tbody>
+</Table>
+
+<Callout type='info'>
+  **ストリーム**
+
+  Docker Scout のストリームは[実行環境](/scout-ja/integrations/environment)の上位概念です。 ストリームには、定義したすべての実行環境と、特別な latest-indexed ストリームが含まれます。 latest-indexed ストリームには、各リポジトリの最も最近プッシュされ（分析済み）のタグが含まれます。 ストリームは Docker Scout 内では主に内部的な概念ですが、このメトリクスエンドポイントを介してのみデータが公開されます。
+</Callout>
+
+## アクセストークンの作成
+
+組織のメトリクスをエクスポートするには、まず Organization が Docker Scout に登録されていることを確認してください。その後、パーソナルアクセストークン（PAT）を作成します。このトークンを使用してエクスポーターが Docker Scout API に認証できます。
+
+PAT に特定の権限は不要ですが、Docker Organization のオーナーによって作成される必要があります。PAT を作成する手順については、[アクセストークンの作成](https://docs.docker.com/security/for-developers/access-tokens/#create-an-access-token)を参照してください。
+
+PAT を作成したら安全な場所に保存してください。メトリクスをスクレイプする際にこのトークンをエクスポーターに提供する必要があります。
+
+## Prometheus
+
+このセクションでは、Prometheus を使用してメトリクスエンドポイントをスクレイプする方法を説明します。
+
+### Organization 用のジョブを追加する
+
+Prometheus の設定ファイルに Organization 用の新しいジョブを追加します。以下の設定を含め、ORG を Organization 名に置き換えてください：
+
+```yaml
+scrape_configs:
+  - job_name: <ORG>
+    metrics_path: /v1/exporter/org/<ORG>/metrics
+    scheme: https
+    static_configs:
+      - targets:
+          - api.scout.docker.com
+```
+
+`targets` フィールドのアドレスは Docker Scout API のドメイン名 `api.scout.docker.com` に設定します。このエンドポイントとの通信をブロックするファイアウォールルールがないことを確認してください。
+
+### Bearer トークン認証の追加
+
+Prometheus を使用して Docker Scout エクスポーターエンドポイントからメトリクスをスクレイプするには、PAT を Bearer トークンとして設定する必要があります。
+
+Prometheus 設定ファイルに `authorization` 設定ブロックを追加します。このブロックでは、PAT をファイルに保存された Bearer トークンとして定義します。
+
+```yaml
+scrape_configs:
+  - job_name: $ORG
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/token
+```
+
+ファイルの内容は平文の PAT です：
+
+```console
+dckr_pat_...
+```
+
+Prometheus を Docker コンテナや Kubernetes Pod で実行する場合、ファイルをボリュームやシークレットとしてコンテナにマウントします。
+
+最後に、Prometheus を再起動して変更を適用します。
+
+### Prometheus サンプルプロジェクト
+
+Prometheus サーバーが設定されていない場合、[サンプルプロジェクト](https://github.com/dockersamples/scout-metrics-exporter)を Docker Compose を使用して実行できます。このサンプルには、Docker Scout に登録された Docker Organization のメトリクスをスクレイプする Prometheus サーバーと、脆弱性およびポリシーメトリクスを視覚化するための Grafana が含まれます。
+
+1. Docker Scout メトリクスエンドポイントをスクレイプして視覚化する Compose サービスのセットをブートストラップするスターターテンプレートをクローンします：
+
+    ```console
+    $ git clone git@github.com:dockersamples/scout-metrics-exporter.git
+    $ cd scout-metrics-exporter/prometheus
+    ```
+
+2. [Docker アクセストークンを作成](https://docs.docker.com/security/for-developers/access-tokens/#create-an-access-token)し、テンプレートディレクトリの `/prometheus/prometheus/token` にプレーンテキストファイルとして保存します。
+
+    ```plaintext
+    $ echo $DOCKER_PAT > ./prometheus/token
+    ```
+
+3. `/prometheus/prometheus/prometheus.yml` の Prometheus 設定ファイルで、6 行目の metrics_path プロパティ内の ORG を Docker Organization のネームスペースに置き換えます。
+
+    ```yaml
+    global:
+      scrape_interval: 60s
+      scrape_timeout: 40s
+    scrape_configs:
+      - job_name: Docker Scout policy
+        metrics_path: /v1/exporter/org/<ORG>/metrics
+        scheme: https
+        static_configs:
+          - targets:
+              - api.scout.docker.com
+        authorization:
+          type: Bearer
+          credentials_file: /etc/prometheus/token
+    ```
+
+4. Compose サービスを起動します。
+
+    ```console
+    docker compose up -d
+    ```
+
+    このコマンドにより、Prometheus サーバーと Grafana の 2 つのサービスが起動します。Prometheus は Docker Scout エンドポイントからメトリクスをスクレイプし、Grafana はプリセットされたダッシュボードを使用してメトリクスを視覚化します。
+
+デモを停止し、作成されたリソースをクリーンアップするには、以下のコマンドを実行します：
+
+```console
+docker compose down -v
+```
+
+### Prometheus のアクセス
+
+サービスを開始した後、http://localhost:9090 にアクセスして Prometheus のエクスプレッションブラウザを使用できます。Prometheus サーバーは Docker コンテナ内で実行され、ポート 9090 でアクセス可能です。
+
+数秒後、Prometheus UI の http://localhost:9090/targets でメトリクスエンドポイントがターゲットとして表示されます。
+
+![Docker Scout メトリクスエクスポーターの Prometheus ターゲット](/scout-ja/scout-metrics-prom-target.png)
+
+### Grafana でメトリクスを表示
+
+Grafana ダッシュボードを表示するには、http://localhost:3000/dashboards にアクセスし、Docker Compose ファイルに定義された認証情報（ユーザー名: `admin`, パスワード: `grafana`）でサインインします。
+
+![Grafana の脆弱性ダッシュボード](/scout-ja/scout-metrics-grafana-vulns.png)
+
+![Grafana のポリシーダッシュボード](/scout-ja/scout-metrics-grafana-policy.png)
+
+これらのダッシュボードは、Prometheus によってスクレイプされた脆弱性およびポリシーメトリクスを視覚化するために事前設定されています。
+
+## Datadog
+
+このセクションでは、Datadog を使用してメトリクスエンドポイントをスクレイプする方法を説明します。Datadog は、カスタマイズ可能な[エージェント](https://docs.datadoghq.com/ja/agent/?tab=Linux)を実行して監視用のデータを取得し、利用可能なエンドポイントからメトリクスをスクレイプします。
+
+このガイドでは、Datadog アカウントと API キーが必要です。詳細については[Datadog ドキュメント](https://docs.datadoghq.com/agent)を参照してください。
+
+### Datadog エージェントの設定
+
+メトリクスを収集するには、OpenMetrics チェック用のエージェント設定ファイルを編集する必要があります。エージェントをコンテナとして実行する場合、このファイルは `/etc/datadog-agent/conf.d/openmetrics.d/conf.yaml` にマウントする必要があります。
+
+以下の例では、以下を指定しています：
+
+- Docker Organization `dockerscoutpolicy` の OpenMetrics エンドポイント
+- 収集したメトリクスに追加する `namespace`
+- エージェントがスクレイプするメトリクス（`scout_*`）
+- Docker PAT をベアラートークンとして使用する `auth_token`
+
+```yaml
+instances:
+  - openmetrics_endpoint: "https://api.scout.docker.com/v1/exporter/org/dockerscoutpolicy/metrics"
+    namespace: "scout-metrics-exporter"
+    metrics:
+      - scout_*
+    auth_token:
+      reader:
+        type: file
+        path: /var/run/secrets/scout-metrics-exporter/token
+      writer:
+        type: header
+        name: Authorization
+        value: Bearer <TOKEN>
+```
+
+<Callout type="warning">
+  **重要**
+
+  上記の設定例で `<TOKEN>` プレースホルダーを置き換えないでください。そのままにしてください。Docker PAT が Datadog エージェントに指定されたファイルシステムパスに正しくマウントされていることを確認してください。このファイルを `conf.yaml` として保存し、エージェントを再起動します。
+</Callout>
+
+エージェント設定ファイルの `openmetrics_endpoint` プロパティを編集し、収集する Docker Organization のネームスペースで `dockerscoutpolicy` を置き換えてください。
+
+### Datadog サンプルプロジェクト
+
+Datadog サーバーが設定されていない場合、[サンプルプロジェクト](https://github.com/dockersamples/scout-metrics-exporter)を Docker Compose で実行できます。このサンプルには、Docker Scout に登録された Docker Organization のメトリクスをスクレイプする Datadog エージェントが含まれています。
+
+1. Docker Scout メトリクスエンドポイントをスクレイプするための Datadog Compose サービスをブートストラップするスターターテンプレートをクローンします。
+
+    ```console
+    $ git clone git@github.com:dockersamples/scout-metrics-exporter.git
+    $ cd scout-metrics-exporter/datadog
+    ```
+
+2. [Docker アクセストークンを作成](https://docs.docker.com/security/for-developers/access-tokens/#create-an-access-token)を作成し、テンプレートディレクトリの `/datadog/token` にプレーンテキストファイルとして保存します。
+
+    ```console
+    $ echo $DOCKER_PAT > ./token
+    ```
+
+3. `/datadog/compose.yaml` ファイルで、Datadog デプロイメントの `DD_API_KEY` と `DD_SITE` 環境変数を更新します。
+
+    ```yaml
+    datadog-agent:
+      container_name: datadog-agent
+      image: gcr.io/datadoghq/agent:7
+      environment:
+        - DD_API_KEY=${DD_API_KEY} # e.g. 1b6b3a42...
+        - DD_SITE=${DD_SITE} # e.g. datadoghq.com
+        - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock:ro
+        - ./conf.yaml:/etc/datadog-agent/conf.d/openmetrics.d/conf.yaml:ro
+        - ./token:/var/run/secrets/scout-metrics-exporter/token:ro
+    ```
+
+    `volumes` セクションでホストからコンテナへの Docker ソケットをマウントします。これは、コンテナで実行する際の正確なホスト名取得に必要です（[詳細はこちら](https://docs.datadoghq.com/ja/agent/troubleshooting/hostname_containers/?tab=datadogoperator)）。
+
+4. `/datadog/config.yaml` ファイルで、`openmetrics_endpoint` プロパティ内の `<ORG>` プレースホルダーをメトリクスを収集する Docker Organization のネームスペースに置き換えます。
+
+    ```yaml
+    instances:
+      - openmetrics_endpoint: "https://api.scout.docker.com/v1/exporter/org/<<ORG>>/metrics"
+        namespace: "scout-metrics-exporter"
+    # ...
+    ```
+
+5. Compose サービスを開始します。
+
+    ```console
+    docker compose up -d
+    ```
+
+正しく構成されている場合、エージェントのステータスコマンドを実行すると、OpenMetrics チェックが表示され、出力は以下のようになります。
+
+```text
+openmetrics (4.2.0)
+-------------------
+  Instance ID: openmetrics:scout-prometheus-exporter:6393910f4d92f7c2 [OK]
+  Configuration Source: file:/etc/datadog-agent/conf.d/openmetrics.d/conf.yaml
+  Total Runs: 1
+  Metric Samples: Last Run: 236, Total: 236
+  Events: Last Run: 0, Total: 0
+  Service Checks: Last Run: 1, Total: 1
+  Average Execution Time : 2.537s
+  Last Execution Date : 2024-05-08 10:41:07 UTC (1715164867000)
+  Last Successful Execution Date : 2024-05-08 10:41:07 UTC (1715164867000)
+```
+
+より多くのオプションについては、OpenMetrics チェックの[サンプル設定ファイル](https://github.com/DataDog/integrations-core/blob/master/openmetrics/datadog_checks/openmetrics/data/conf.yaml.example)を参照してください。
+
+### データの視覚化
+
+エージェントが Prometheus メトリクスを取得するように設定されると、それらを使用して包括的な Datadog グラフ、ダッシュボード、およびアラートを作成できます。
+
+[メトリクス概要ページ](https://app.datadoghq.com/metric/summary?filter=scout_prometheus_exporter)に移動し、この例から収集されたメトリクスを確認できます。この設定により、`scout_` で始まるすべての公開メトリクスが `scout_metrics_exporter` の名前空間で収集されます。
+
+![Datadog メトリクスサマリー](/scout-ja/datadog_metrics_summary.png)
+
+以下のスクリーンショットは、特定のストリームに対する脆弱性やポリシー準拠のグラフを含む Datadog ダッシュボードの例を示しています。
+
+![Datadog ダッシュボード1](/scout-ja/datadog_dashboard_1.png)
+
+![Datadog ダッシュボード2](/scout-ja/datadog_dashboard_2.png)
+
+> グラフの線が平坦に見えるのは、脆弱性の性質（頻繁には変化しない）と、日付ピッカーで短い時間間隔を選択したためです。
+
+## スクレイプ間隔
+
+デフォルトでは、Prometheus と Datadog は 15 秒間隔でメトリクスをスクレイプします。脆弱性データの性質上、この API で公開されるメトリクスは高頻度で変化する可能性が低いため、メトリクスエンドポイントにはデフォルトで 60 分のキャッシュが設定されています。したがって、スクレイプ間隔は 60 分以上に設定することを推奨します。
+
+スクレイプ間隔を変更するには：
+
+- Prometheus: 設定ファイルの `scrape_interval` フィールドをグローバルまたはジョブレベルで設定します。
+- Datadog: Datadog エージェント設定ファイルの `min_collection_interval` プロパティを設定します。詳細は[Datadog ドキュメント](https://docs.datadoghq.com/developers/custom_checks/write_agent_check/#updating-the-collection-interval)を参照してください。
+
+## アクセストークンの取り消し
+
+PAT が漏洩した可能性がある場合や、もはや不要になった場合は、いつでも PAT を取り消すことができます。PAT を取り消すには、[アクセストークンの作成と管理](https://docs.docker.com/security/for-developers/access-tokens/#modify-existing-tokens)の手順に従ってください。
+
+PAT の取り消しはすぐにトークンを無効にし、Prometheus がそのトークンを使用してメトリクスを収集するのを防ぎます。新しい PAT を作成し、Prometheus の設定を更新して新しいトークンを使用する必要があります。
