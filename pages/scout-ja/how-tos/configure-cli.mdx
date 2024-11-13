@@ -1,0 +1,97 @@
+---
+title: Docker Scout の環境変数設定
+description: Docker Scout CLI コマンドの動作をこれらの環境変数を使用して設定します。
+keywords: scout, サプライチェーン, cli, 環境, 変数, env, vars, 設定
+---
+
+import { Table, Td, Th, Tr } from 'nextra/components'
+
+# Docker Scout の環境変数設定
+
+以下の環境変数を使用して、Docker Scout CLI コマンドおよび対応する `docker/scout-cli` コンテナイメージの動作を設定できます。
+
+<br />
+
+<Table>
+  <thead>
+    <Tr>
+      <Th>名前</Th>
+      <Th>形式</Th>
+      <Th>説明</Th>
+    </Tr>
+  </thead>
+  <tbody>
+    <Tr>
+      <Td>DOCKER_SCOUT_CACHE_FORMAT</Td>
+      <Td>String</Td>
+      <Td>ローカルイメージキャッシュの形式。`oci` または `tar` を指定（デフォルト: `oci`）</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_CACHE_DIR</Td>
+      <Td>String</Td>
+      <Td>ローカル SBOM キャッシュが保存されるディレクトリ（デフォルト: `$HOME/.docker/scout`）</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_NO_CACHE</Td>
+      <Td>Boolean</Td>
+      <Td>`true` に設定すると、ローカル SBOM キャッシュを無効化</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_OFFLINE</Td>
+      <Td>Boolean</Td>
+      <Td>SBOM のインデックス作成時に[オフラインモード](#オフラインモード)を使用</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_REGISTRY_TOKEN</Td>
+      <Td>String</Td>
+      <Td>イメージをプルする際にレジストリ認証に使用するトークン</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_REGISTRY_USER</Td>
+      <Td>String</Td>
+      <Td>イメージをプルする際にレジストリ認証に使用するユーザー名</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_REGISTRY_PASSWORD</Td>
+      <Td>String</Td>
+      <Td>イメージをプルする際にレジストリ認証に使用するパスワードまたは個人アクセストークン</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_HUB_USER</Td>
+      <Td>String</Td>
+      <Td>Docker Scout バックエンドに認証するための Docker Hub ユーザー名</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_HUB_PASSWORD</Td>
+      <Td>String</Td>
+      <Td>Docker Scout バックエンドに認証するための Docker Hub パスワードまたは個人アクセストークン</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_NEW_VERSION_WARN</Td>
+      <Td>Boolean</Td>
+      <Td>Docker Scout CLI の新バージョンについて警告</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_EXPERIMENTAL_WARN</Td>
+      <Td>Boolean</Td>
+      <Td>実験的機能についての警告</Td>
+    </Tr>
+    <Tr>
+      <Td>DOCKER_SCOUT_EXPERIMENTAL_POLICY_OUTPUT</Td>
+      <Td>Boolean</Td>
+      <Td>ポリシー評価の実験的な出力を無効化</Td>
+    </Tr>
+  </tbody>
+</Table>
+
+## オフラインモード
+
+通常、Docker Scout は npm、NuGet、proxy.golang.org などの外部システムと照合して、イメージ内のパッケージに関する追加情報を取得します。
+
+`DOCKER_SCOUT_OFFLINE` を `true` に設定すると、Docker Scout のイメージ分析がオフラインモードで実行され、外部システムへのリクエストが行われなくなります。
+
+オフラインモードを使用するには、次のように設定します：
+
+```console
+$ export DOCKER_SCOUT_OFFLINE=true
+```
