@@ -1,0 +1,216 @@
+---
+title: VEX を使用して例外を作成する
+description: VEX ドキュメントを使用してイメージ内の脆弱性に対する例外を作成します。
+keywords: Docker, 脆弱性, 例外, 作成, VEX
+---
+
+import { Callout } from 'nextra/components'
+
+# VEX を使用して例外を作成する
+
+Vulnerability Exploitability eXchange (VEX) は、ソフトウェアパッケージや製品に関連する脆弱性を文書化するための標準フォーマットです。Docker Scout では、イメージ内の脆弱性に対する例外を作成するために VEX ドキュメントをサポートしています。
+
+<Callout type='info'>
+  Docker Scout ダッシュボードや Docker Desktop の GUI を使用して例外を作成することもできます。GUI は複数のイメージや組織全体に対して一度に例外を作成するのに便利なインターフェースを提供します。詳細は、[GUI を使用して例外を作成する](/scout-ja/how-tos/create-exceptions-gui)を参照してください。
+</Callout>
+
+## 前提条件
+
+OpenVEX ドキュメントを使用して例外を作成するには、以下が必要です：
+
+- Docker Desktop または Docker Scout CLI プラグインの最新バージョン
+- [vexctl](https://github.com/openvex/vexctl) コマンドラインツール
+- [containerd イメージストア](https://docs.docker.com/desktop/features/containerd/)の有効化
+- イメージが保存されているレジストリリポジトリへの書き込み権限
+
+## VEX の概要
+
+VEX 標準は、アメリカ合衆国のサイバーセキュリティおよびインフラストラクチャセキュリティ庁（CISA）のワーキンググループによって定義されています。VEX の中心には、脆弱性の悪用可能性評価があり、特定の CVE の製品に対する影響を記述します。VEX の脆弱性ステータスには以下のものがあります：
+
+- Not affected: この脆弱性に関して対策は不要です。
+- Affected: この脆弱性に対する対策が推奨されます。
+- Fixed: この脆弱性が修正された製品バージョンです。
+- Under investigation: 脆弱性の影響があるかどうかまだ不明です。後で更新が提供されます。
+
+VEX の実装やフォーマットには複数ありますが、Docker Scout は [OpenVEX](https://github.com/openvex/spec) をサポートしています。いずれの実装でも、脆弱性の影響を記述するフレームワークを提供するという基本的な考え方は共通です。実装に関わらず、VEX の主な構成要素は以下のとおりです：
+
+**VEX document**: 脆弱性に関するアドバイザリとして使用される文書の形式。文書の形式は特定の実装によって異なります。
+
+**VEX statement**: 製品における脆弱性のステータスを示し、悪用可能かどうか、また問題の解決方法があるかどうかを記述します。
+
+**Justification and impact**: 脆弱性のステータスに応じて、製品が影響を受けない理由や、影響がある場合はその影響範囲を記述します。
+
+**Action statements**: 脆弱性の対策または緩和方法について説明します。
+
+## `vexctl` の例
+
+次の例では、VEX ドキュメントを作成し、以下の内容を記述します：
+
+- VEX ドキュメントが示すソフトウェア製品は Docker イメージ `example/app:v1` です。
+- このイメージには npm パッケージ `express@4.17.1` が含まれます。
+- npm パッケージは既知の脆弱性 `CVE-2022-24999` に影響を受けています。
+- イメージはこの CVE の影響を受けていません。なぜなら、脆弱なコードはこのイメージを実行するコンテナで実行されることがないためです。
+
+```console
+$ vexctl create \
+  --author="author@example.com" \
+  --product="pkg:docker/example/app@v1" \
+  --subcomponents="pkg:npm/express@4.17.1" \
+  --vuln="CVE-2022-24999" \
+  --status="not_affected" \
+  --justification="vulnerable_code_not_in_execute_path" \
+  --file="CVE-2022-24999.vex.json"
+```
+
+以下は、この例のオプションの説明です：
+
+- `--author`
+
+    VEX ドキュメントの作成者のメールアドレスです。
+
+- `--product` 
+
+    Docker イメージのパッケージ URL (PURL) です。PURL はイメージを識別する標準化された形式で、[仕様](https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#docker)に定義されています。Docker イメージの PURL は `pkg:docker` で始まり、リポジトリ名とバージョン（タグまたは SHA256 ダイジェスト）で構成されます。
+
+- `--subcomponents`
+
+    イメージ内の脆弱なパッケージの PURL です。この例では、脆弱性は npm パッケージに存在するため、`--subcomponents` は `pkg:npm/express@4.17.1` です。同じ脆弱性が複数のパッケージに存在する場合、`vexctl` で `--subcomponents` フラグを複数回指定できます。指定しない場合は、VEX ステートメントはイメージ全体に適用されます。
+
+- `--vuln`
+
+    VEX ステートメントが対象とする CVE の ID です。
+
+- `--status`
+
+    脆弱性のステータスです。OpenVEX では以下のステータスが指定可能です：
+
+    - `not_affected`
+    - `affected`
+    - `fixed`
+    - `under_investigation`
+
+    この例では、Docker イメージが脆弱性の影響を受けないことを示しています。`not_affected` ステータスのみが CVE の抑制を引き起こし、分析結果から CVE が除外されます。他のステータスは主に文書化の目的で使用されますが、例外作成には使用できません。
+
+- `--justification`
+
+    `not_affected` ステータスの正当化理由を記述します。この場合、`vulnerable_code_not_in_execute_path` を指定し、脆弱なコードが実行経路にないことを示しています。OpenVEX では、正当化理由に以下の5つの値が使用できます:
+
+    - `component_not_present`
+    - `vulnerable_code_not_present`
+    - `vulnerable_code_not_in_execute_path`
+    - `vulnerable_code_cannot_be_controlled_by_adversary`
+    - `inline_mitigations_already_exist`
+
+    これらの値や定義の詳細は、[OpenVEX 仕様](https://github.com/openvex/spec/blob/main/OPENVEX-SPEC.md#status-justifications)を参照してください。
+
+- `--file`
+
+    VEX ドキュメントの出力ファイル名です。
+
+## JSON ドキュメントの例
+
+このコマンドで生成される OpenVEX JSON ドキュメントは以下のようになります:
+
+```json
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://openvex.dev/docs/public/vex-749f79b50f5f2f0f07747c2de9f1239b37c2bda663579f87a35e5f0fdfc13de5",
+  "author": "author@example.com",
+  "timestamp": "2024-05-27T13:20:22.395824+02:00",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2022-24999"
+      },
+      "timestamp": "2024-05-27T13:20:22.395829+02:00",
+      "products": [
+        {
+          "@id": "pkg:docker/example/app@v1",
+          "subcomponents": [
+            {
+              "@id": "pkg:npm/express@4.17.1"
+            }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path"
+    }
+  ]
+}
+```
+
+VEX ドキュメントの構造について理解するのは少々難しいかもしれませんが、[OpenVEX 仕様](https://github.com/openvex/spec)には、ドキュメントやステートメントのフォーマットとすべてのプロパティの詳細が記載されています。仕様に従って、OpenVEX ドキュメントを正確に作成する方法を学びましょう。
+
+## VEX ドキュメントの検証
+
+作成した VEX ドキュメントが正しく形成され、期待通りの結果を生成するかどうかをテストするには、`docker scout cves` コマンドに `--vex-location` フラグを使用して、ローカルイメージ分析で VEX ドキュメントを適用します。
+
+以下のコマンドでは、指定した場所にあるすべての VEX ドキュメントを適用してローカルイメージ分析を実行します。この例では、カレントディレクトリにある VEX ドキュメントを使用しています。
+
+```console
+$ docker scout cves <IMAGE> --vex-location .
+```
+
+`docker scout cves` コマンドの出力には、指定した `--vex-location` にある VEX ステートメントが分析結果に反映されます。例えば、`not_affected` ステータスが割り当てられた CVE は結果から除外されます。出力に VEX ステートメントが反映されていない場合は、VEX ドキュメントが無効である可能性があります。
+
+### VEX ドキュメントのイメージへの添付
+
+作成した VEX ドキュメントをイメージに添付するには、以下の方法があります：
+
+- ドキュメントを[アテステーションとして添付](#アテステーションとして添付)
+- ドキュメントをイメージの[ファイルシステムに埋め込む](イメージファイルシステムに埋め込む)
+
+一度添付された VEX ドキュメントは削除できませんが、新しい VEX ドキュメントを作成して再度添付することで上書きすることが可能です。
+
+### アテステーションとして添付
+
+VEX ドキュメントをアテステーションとしてイメージに添付するには、`docker scout attestation add` CLI コマンドを使用します。VEX を使用して例外をイメージに添付する場合、アテステーションとして添付する方法が推奨されます。
+
+アテステーションは既にレジストリにプッシュされたイメージに対しても添付可能です。イメージを再ビルドや再プッシュする必要がありません。また、例外をアテステーションとしてイメージに添付することで、レジストリから直接イメージの例外を確認できるため、利便性が向上します。
+
+イメージにアテステーションを添付する手順：
+
+1. イメージをビルドしてレジストリにプッシュします。
+
+    ```console
+    $ docker build --provenance=true --sbom=true --tag <IMAGE> --push .
+    ```
+
+2. アテステーションとして例外をイメージに添付します。
+
+    ```console
+    $ docker scout attestation add \
+      --file <cve-id>.vex.json \
+      --predicate-type https://openvex.dev/ns/v0.2.0 \
+      <IMAGE>
+    ```
+
+    このコマンドのオプションは次の通りです：
+
+    - `--file`: VEX ドキュメントのファイルの場所とファイル名
+    - `--predicate-type`: OpenVEX 用の in-toto `predicateType`
+
+### イメージファイルシステムに埋め込む
+
+VEX ドキュメントをイメージファイルシステムに直接埋め込む方法もあります。この方法は、ビルド前に例外がわかっている場合に適しており、Dockerfile で VEX ドキュメントをイメージに `COPY` するだけで簡単に実行できます。
+
+この方法の欠点は、後から例外を変更・更新できないことです。イメージのレイヤーは不変であるため、イメージのファイルシステムに保存されたものは変更できません。柔軟性を確保したい場合は、[アテステーションとして添付](#アテステーションとして添付)する方法をお勧めします。
+
+<Callout type='info'>
+  イメージファイルシステムに埋め込まれた VEX ドキュメントは、アテステーションがあるイメージでは考慮されません。イメージに**アテステーションが存在する場合**、Docker Scout は例外をアテステーションでのみ確認し、イメージのファイルシステムは対象外となります。
+
+  イメージファイルシステムに埋め込まれた VEX ドキュメントを使用したい場合は、イメージからアテステーションを削除する必要があります。ただし、プロベナンスアテステーションはイメージに自動的に追加されることがあるため、ビルド時に `--provenance=false` および `--sbom=false` フラグを使用して、SBOM やプロベナンスアテステーションが追加されないように指定できます。
+</Callout>
+
+イメージのファイルシステムに VEX ドキュメントを埋め込むには、ビルド時に Dockerfile の一部としてファイルをイメージに `COPY` します。次の例では、ビルドコンテキストの `.vex/` ディレクトリにあるすべての VEX ドキュメントをイメージ内の `/var/lib/db` にコピーします。
+
+```dockerfile
+# syntax=docker/dockerfile:1
+
+FROM alpine
+COPY .vex/* /var/lib/db/
+```
+
+VEX ドキュメントのファイル名は `*.vex.json` のパターンに一致している必要があります。イメージのファイルシステム上の保存場所は任意ですが、最終的なイメージのファイルシステムに存在する必要があります。マルチステージビルドを使用している場合、最終ステージにドキュメントが保持されていることを確認してください。
