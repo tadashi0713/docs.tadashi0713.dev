@@ -1,0 +1,88 @@
+---
+title: Docker Scout SBOMs
+description: ocker Scout を使用してプロジェクトの SBOM（ソフトウェア部品表）を抽出する方法
+keywords: scout, サプライチェーン, sbom, ソフトウェア部品表, spdx, cli, アテステーション, ファイル
+---
+
+# Docker Scout SBOMs
+
+[イメージ分析](/scout-ja/explore/analysis)はイメージの SBOM を使用して、イメージ内に含まれるパッケージやバージョンを把握します。Docker Scout は、イメージに SBOM アテステーションが存在する場合（推奨）にそれを使用します。SBOM アテステーションがない場合は、イメージ内容をインデックス化して新たに SBOM を生成します。
+
+## CLI での表示
+
+Docker Scout が生成した SBOM の内容を表示するには、`docker scout sbom` コマンドを使用します。
+
+```console
+$ docker scout sbom [IMAGE]
+```
+
+デフォルトでは、SBOM は JSON 形式で標準出力に表示されます。`docker scout sbom` のデフォルトの JSON 形式は SPDX-JSON ではありません。SPDX 形式で出力するには、`--format spdx` フラグを使用します。
+
+```console
+$ docker scout sbom --format spdx [IMAGE]
+```
+
+人間が読みやすいリスト形式で出力するには、`--format list` フラグを使用します。
+
+```console
+$ docker scout sbom --format list alpine
+
+           Name             Version    Type
+───────────────────────────────────────────────
+  alpine-baselayout       3.4.3-r1     apk
+  alpine-baselayout-data  3.4.3-r1     apk
+  alpine-keys             2.4-r1       apk
+  apk-tools               2.14.0-r2    apk
+  busybox                 1.36.1-r2    apk
+  busybox-binsh           1.36.1-r2    apk
+  ca-certificates         20230506-r0  apk
+  ca-certificates-bundle  20230506-r0  apk
+  libc-dev                0.7.2-r5     apk
+  libc-utils              0.7.2-r5     apk
+  libcrypto3              3.1.2-r0     apk
+  libssl3                 3.1.2-r0     apk
+  musl                    1.2.4-r1     apk
+  musl-utils              1.2.4-r1     apk
+  openssl                 3.1.2-r0     apk
+  pax-utils               1.3.7-r1     apk
+  scanelf                 1.3.7-r1     apk
+  ssl_client              1.36.1-r2    apk
+  zlib                    1.2.13-r1    apk
+```
+
+`docker scout sbom` コマンドの詳細については、[CLI リファレンス](https://docs.docker.com/reference/cli/docker/scout/sbom/)を参照してください。
+
+## ビルドアテステーションとして添付
+
+ビルド時に SBOM を生成し、[アテステーション](https://docs.docker.com/build/metadata/attestations/)としてイメージに添付できます。BuildKit にはデフォルトの SBOM ジェネレーターがありますが、これは Docker Scout が使用するものとは異なります。Docker Scout SBOM ジェネレーターを使用するには、`docker build` コマンドの `--attest` フラグを設定します。Docker Scout SBOM インデクサーはより豊富な結果を提供し、Docker Scout のイメージ分析との互換性が向上します。
+
+```console
+$ docker build --tag <org>/<image> \
+  --attest type=sbom,generator=docker/scout-sbom-indexer:latest \
+  --push .
+```
+
+SBOM アテステーションを含むイメージをビルドするには、[containerd イメージストア](https://docs.docker.com/desktop/features/containerd/)機能を使用するか、`docker-container` ビルダーを `--push` フラグと組み合わせて使用し、イメージ（およびアテステーション）を直接レジストリにプッシュします。従来のイメージストアはマニフェストリストやイメージインデックスをサポートしていないため、アテステーションをイメージに追加することができません。
+
+## ファイルへのエクスポート
+
+イメージの SBOM を SPDX JSON ファイルにエクスポートするコマンドは、イメージがレジストリにプッシュされているかローカルにあるかによって異なります。
+
+### リモートイメージ
+
+リモートイメージの SBOM を抽出してファイルに保存するには、`docker buildx imagetools inspect` コマンドを使用します。このコマンドはレジストリにあるイメージにのみ対応しています。
+
+```console
+$ docker buildx imagetools inspect <image> --format "{{ json .SBOM }}" > sbom.spdx.json
+```
+
+### ローカルイメージ
+
+ローカルイメージの SPDX ファイルを抽出するには、`local` エクスポーターと scout-sbom-indexer SBOM ジェネレーターを使用してビルドします。
+
+次のコマンドは、`build/sbom.spdx.json` に SBOM を保存します。
+
+```console
+$ docker build --attest type=sbom,generator=docker/scout-sbom-indexer:latest \
+  --output build .
+```
