@@ -1,0 +1,63 @@
+---
+title: GUI を使用して例外を作成する
+description: Docker Scout ダッシュボードまたは Docker Desktop を使用して、イメージ内の脆弱性に対する例外を作成します。
+keywords: Docker, Docker Scout, Docker Desktop, 脆弱性, 例外, 作成, GUI
+---
+
+import { Tabs } from 'nextra/components'
+
+# GUI を使用して例外を作成する
+
+Docker Scout ダッシュボードおよび Docker Desktop は、コンテナイメージ内の脆弱性に対する[例外](/scout-ja/explore/exceptions)を作成するためのユーザーフレンドリーなインターフェースを提供します。例外を作成することで、受け入れ可能なリスクを認識したり、誤検出に対処したりできます。
+
+## 前提条件
+
+Docker Scout ダッシュボードまたは Docker Desktop で例外を作成するには、対象の Docker Organization に対して **Editor** または **Owner** 権限を持つ Docker アカウントが必要です。
+
+## 手順
+
+Docker Scout ダッシュボードまたは Docker Desktop を使用して、イメージ内の脆弱性に対する例外を作成するには：
+
+<Tabs items={['Docker Scout ダッシュボード', 'Docker Desktop']}>
+  <Tabs.Tab>
+    1. [イメージページ](https://scout.docker.com/reports/images)にアクセスします。
+    2. 例外を作成したい脆弱性が含まれているイメージタグを選択します。
+    3. **Image layers** タブを開きます。
+    4. 例外を作成したい脆弱性が含まれているレイヤーを選択します。
+    5. **Vulnerabilities** タブで、例外を作成したい脆弱性を見つけます。脆弱性はパッケージごとにグループ化されています。例外を作成したい脆弱性が含まれているパッケージを見つけて展開します。
+    6. 脆弱性の横にある **Create exception** ボタンを選択します。
+
+    **Create exception** ボタンを選択すると、**Create exception** サイドパネルが開きます。このパネルで例外の詳細を入力できます：
+
+    - **Exception type**: 例外のタイプ。サポートされているタイプは以下の通りです：
+      - **Accepted risk**: 最小限のセキュリティリスク、高い修正コスト、上流の修正への依存などの理由により脆弱性に対処しない。
+      - **False positive**: 特定の使用ケース、設定、または悪用を防ぐ対策により、脆弱性がセキュリティリスクを示さない。
+
+        **False positive** を選択した場合、その理由を説明する必要があります。
+
+    - **Additional details**: 例外に関する追加情報を提供します。
+
+    - **Scope**: 例外の適用範囲。スコープは次のいずれかです：
+
+      - **Image**: 選択したイメージに適用。
+      - **All images in repository**: リポジトリ内のすべてのイメージに適用。
+      - **Specific repository**: 指定したリポジトリ内のすべてのイメージに適用。
+      - **All images in my organization**: Organization 内のすべてのイメージに適用。
+    
+    - **Package scope**: 例外のパッケージ適用範囲。パッケージスコープは次のいずれかです：
+      - **Selected package**: 選択したパッケージに適用。
+      - **Any packages**: この CVE に脆弱なすべてのパッケージに適用。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. Docker Desktop の **Images** ビューを開きます。
+    2. **Hub** タブを開きます。
+    3. 例外を作成したい脆弱性が含まれているイメージタグを選択します。
+    4. 例外を作成したい脆弱性が含まれているレイヤーを選択します。
+    5. Vulnerabilities タブで、例外を作成したい脆弱性を見つけます。
+    6. 脆弱性の横にある **Create exception** ボタンを選択します。
+  </Tabs.Tab>
+</Tabs>
+
+詳細を入力したら、**Create** ボタンを選択して例外を作成します。
+
+これで例外が作成され、選択したイメージに対する分析結果に反映されます。例外は Docker Scout ダッシュボードの[脆弱性ページ](https://scout.docker.com/reports/vulnerabilities/exceptions)の **Exceptions** タブにも一覧表示されます。
