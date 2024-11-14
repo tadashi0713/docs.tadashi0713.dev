@@ -186,7 +186,7 @@ $ docker build --provenance=true --sbom=true --push -t <ORG_NAME>/scout-demo:v3 
 
 **Up-to-Date Base Images** ポリシーを確認します。このポリシーは、使用しているベースイメージが最新かどうかを確認します。この例では、古いバージョンの `alpine` をベースイメージとして使用しているため、非準拠のステータスになっています。
 
-ポリシー名の横にある **View fix** ボタンを選択すると、違反の詳細と修正方法に関する推奨事項が表示されます。この場合、推奨されるアクションは [Docker ScoutのGitHubインテグレーション](./integrations/source-code-management/github.md)を有効にすることです。これにより、ベースイメージを自動的に最新の状態に保つことができます。
+ポリシー名の横にある **View fix** ボタンを選択すると、違反の詳細と修正方法に関する推奨事項が表示されます。この場合、推奨されるアクションは [Docker ScoutのGitHubインテグレーション](/scout-ja/integrations/source-code-management/github)を有効にすることです。これにより、ベースイメージを自動的に最新の状態に保つことができます。
 
 <Callout>
   このガイドで使用されているデモアプリでは、この統合を有効にすることはできません。コードを所有するGitHubリポジトリにプッシュして、この統合を試してみてください！
