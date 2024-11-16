@@ -17,8 +17,7 @@ const config: DocsThemeConfig = {
     const url =
       'https://docs.tadashi0713.dev' +
       (defaultLocale === locale ? asPath : `/${locale}${asPath}`)
-    const title =
-      `${frontMatter.title} | tadashi0713 Docs` || 'tadashi0713 Docs'
+    const title = frontMatter.title || 'tadashi0713 Docs'
     const description =
       frontMatter.description ||
       'Collections of documents created by Tadashi Nemoto(tadashi0713)'
