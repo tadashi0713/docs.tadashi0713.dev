@@ -1,0 +1,139 @@
+---
+title: Testcontainers Cloud ドキュメント
+description: Testcontainers Cloudを使用してTestcontainersのテストを実行すると、すぐに利用できます。人気のある技術を使用してアプリケーションをテストするための同じTestcontainersモジュールにアクセスでき、ローカルマシンで重いコンテナを起動する必要がありません。
+---
+
+import Image from 'next/image'
+import { Callout } from 'nextra/components'
+
+# Testcontainers Cloud ドキュメント
+
+## 概要
+
+Testcontainers Cloud を使用して Testcontainers のテストを実行すると、すぐに利用できます。人気のある技術を使用してアプリケーションをテストするための同じ Testcontainers モジュールにアクセスでき、ローカルマシンで重いコンテナを起動する必要がありません。
+
+## Testcontainers Cloud はどのように動作するのか？
+
+Testcontainers Cloud エージェントは SSH トンネルを開き、クラウド環境内の Docker デーモンに接続します。
+
+Testcontainers Cloud を使用することで、ローカル環境でコンテナを実行する必要がなくなります。ローカル環境でテストを実行すると、Testcontainers Cloud エージェントが SSH トンネルを開き、クラウド環境内の Docker デーモンに接続します。この際、Testcontainers を使用したテストで定義された Docker イメージをクラウド環境で取得し、コンテナを起動します。クラウド環境への接続はテスト実行中のみアクティブであり、テストスイートの完了後、Testcontainers Cloud は短時間待機した後、自動的に接続を閉じ、割り当てられたリソースを削除します。
+
+![Testcontainers Desktopのクラウド接続図](/testcontainers-cloud-ja/tcd_cloud_diagram.png)
+
+## はじめる
+
+### クライアントをインストール
+
+1. Testcontainers Desktopをダウンロードしてインストールします
+2. `Run with Testcontainers Cloud` を選択します
+
+<br />
+
+<div align="center">
+  <Image src="/testcontainers-cloud-ja/tcd-cloud-runtime.png" alt="Testcontainers Desktop のクラウドランタイム" width={400} height={1000}/>
+</div>
+
+Testcontainers Cloud 上で実行されるコンテナを使用して、Testcontainers ベースのテストを実行できるようになりました。
+
+もし Testcontainers を使用した既存のテストがない場合は、Testcontainers Cloud があなたの環境で正しく設定されていることを確認するためのいくつかのテストを含むサンプルプロジェクトを利用することができます。
+
+### サンプルプロジェクト
+
+#### .NET
+
+```shell
+git clone https://github.com/AtomicJar/testcontainers-cloud-dotnet-example
+cd testcontainers-cloud-dotnet-example
+dotnet test --logger:"console;verbosity=detailed"
+```
+
+#### Go
+
+```shell
+git clone https://github.com/AtomicJar/testcontainers-cloud-go-example
+cd testcontainers-cloud-go-example
+go mod download
+go test -v -count=1
+```
+
+#### Java
+
+```shell
+git clone https://github.com/AtomicJar/testcontainers-cloud-java-example
+cd testcontainers-cloud-java-example
+./mvnw test
+```
+
+#### Node.js
+
+```shell
+git clone https://github.com/AtomicJar/testcontainers-cloud-nodejs-example
+cd testcontainers-cloud-nodejs-example
+npm install
+npm test
+```
+
+### 既存のテストの実行
+
+Testcontainers ベースの統合テストは、Testcontainers Cloud を使用することでそのまま実行できます。Testcontainers Cloud の使用感をより良く理解するために、短時間で2回連続してテストを実行することをおすすめします。これにより、ウォームアップされた環境での動作を体験できます。
+
+Testcontainers Cloud は、IDE からテストを実行する場合にも動作します。そのため、最初に IDE からいくつかのテストを実行して、プロジェクトのテストが Testcontainers Cloud でどのように動作するかを確認するのが便利です。通常の IDE の機能を使用してテストを実行し、Testcontainers Cloud が使用されている Docker 実装であることを確認するために出力ログをチェックしてください。
+
+ローカルの Docker に切り替えたい場合は、Testcontainers Cloud クライアントアプリを停止するだけで、Testcontainers ベースの統合テストがローカル Docker を使用して実行されるようになります。
+
+### 適切なコンテナランタイムの選択方法
+
+システムが Docker daemon と Testcontainers Cloud の両方にアクセスできる場合、Testcontainers ライブラリは次の順序で使用する Docker 環境を決定します:
+
+1. `~/.testcontainers.properties` ファイルを確認（存在する場合）:
+    - `tc.host` プロパティからDockerデーモンの場所を取得。
+
+2. 環境変数 `DOCKER_HOST` から Docker daemon の場所を取得。
+3. 現在のオペレーティングシステムのデフォルトの Docker ロケーションを試す。
+
+Testcontainers Cloud エージェント（Desktop と CI の両方）は、`~/.testcontainers.properties` ファイルに自分のロケーションを設定します。これにより、テストは自動的に Testcontainers Cloud を優先します。
+
+### 特定のプロジェクトで無効化
+
+Testcontainers Cloudを起動すると、デフォルトでローカル環境がTestcontainersのテストで使用されるように構成されます。ただし、特定のプロジェクトではこれを無効化したい場合があります。例えば、古いTestcontainersライブラリを使用しており、Testcontainers Cloudと互換性がない場合や、クラウドベースのコンテナ実行に適していないコードパターンを使用している場合です。
+
+特定のプロジェクトでグローバルな Testcontainers Cloud 設定を使用しないようにするには、プロジェクト内（クラスパス上）の `testcontainers.properties` 設定ファイルで `dockerconfig.source` プロパティを更新します。
+
+このオプションは Java 用 Testcontainers でのみ利用可能です。
+
+以下の内容を含む `testcontainers.properties` 設定ファイルをプロジェクトのクラスパスに追加してください：
+
+```
+dockerconfig.source=autoIgnoringUserProperties
+```
+
+Testcontainers Cloud クライアントアプリを実行したままにしても問題ありませんが、それ以上の変更は必要ありません。このプロジェクトは、通常の自動 Testcontainers 環境検出メカニズムを使用して、Docker と通信するための適切な方法を見つけるようになります。
+
+### Turbo モードでテストを並列化
+
+Testcontainers Cloud の Turbo モードを使用すると、テストを並列実行できるようになります。各テストプロセスが独自のクラウド環境を受け取るため、テストの並列化がスケーラブルになります。テストを並列化することは、ビルドの実行速度を向上させる方法の1つです。
+
+テストスイートの構成や利用可能なコンピューティングリソースによっては、ローカルリソースのボトルネックにより並列テストがパフォーマンス向上に繋がらない場合もあります。Testcontainers Cloud の Turbo モードでは、Testcontainers テストを実行する各プロセスに1つのクラウド環境が割り当てられるため、この問題を解決します。
+
+これにより、同時にテストを実行するプロセス数を増やしても、ローカルコンピュートリソースの負荷が直線的に増加することはありません。クラウド環境のスケーラビリティによって、テストの実行速度を向上させることができます。
+
+Turboモードは、大規模なテストスイートが許容範囲を超えて長時間実行される課題を抱えるユーザーにとって特に有益です。以下に、Testcontainers Cloud の Turbo モードを有効化してテストを並列実行する方法を説明します。
+
+<Callout type="info">
+  Turboモードは現在、Free アカウントでは制限されています。
+</Callout>
+
+### デスクトップで Testcontainers Cloud の Turbo モードを開始する
+
+Testcontainers Desktop アプリケーションで、Turbo モードを有効化するには、Turbo モードのチェックボックスを選択してください。
+
+<br />
+
+<div align="center">
+  <Image src="/testcontainers-cloud-ja/tcd-turbo-mode.png" alt="Testcontainers Cloud の Turbo モード" width={400} height={1000}/>
+</div>
+
+### CI で Turbo モードを有効化する方法
+
+CI でエージェントを起動する際、`--max-concurrency=N` フラグを指定すると、このエージェントを使用するプロセスが利用できる最大 N 個の並列 Testcontainers Cloud 環境を有効化できます。
+
