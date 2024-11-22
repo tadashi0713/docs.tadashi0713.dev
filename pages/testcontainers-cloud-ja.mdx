@@ -103,7 +103,7 @@ Testcontainers Cloudを起動すると、デフォルトでローカル環境が
 
 以下の内容を含む `testcontainers.properties` 設定ファイルをプロジェクトのクラスパスに追加してください：
 
-```
+```properties
 dockerconfig.source=autoIgnoringUserProperties
 ```
 
@@ -216,7 +216,7 @@ Testcontainers Desktop アプリケーションの「Connection」セクショ�
 
 - **Connected to**: 接続されているゾーン/リージョン（接続遅延がミリ秒単位で表示されます）
 
-- **Leases**: 開かれたコネクションのID（状態)
+- **Leases**: 開かれたコネクションのID（状態）
 
 `ACTIVE` Leases: コネクションがアクティブで、テストのための Testcontainers Cloud リソースが割り当てられている状態
 
@@ -334,4 +334,154 @@ myContainer.copyFileFromContainer(directoryInContainer + fileName, destinationOn
 ```
 
 ファイル操作に関する詳細な例は、[ライブラリのドキュメント](https://testcontainers.com/guides/)に記載されていますので参照してください。
+
+## ネットワーク設定
+
+### インターナル Docker レジストリの使用
+
+Testcontainers Cloud は、パブリックインターネットからアクセスできない「プライベート」レジストリからイメージを取得する必要があるユーザー向けに設定を提供します。Docker Hub、Amazon ECR、GCR などのレジストリを使用している場合、この機能は不要です。これらのレジストリはパブリックインターネットに公開されています。
+
+#### Testcontainers Desktop での設定方法
+
+ユーザーごとの設定を `~/.testcontainers.properties` ファイルに追加
+
+```properties
+cloud.private_registry.proxy.url = https://private.registry.example.com:8999
+```
+
+複数のレジストリを設定することも可能です：
+
+```properties
+cloud.private_registry.proxy.url = https://private.registry.example.com:8999
+cloud.private_registry.proxy.url.second = https://private2.registry.example.com:8999
+cloud.private_registry.proxy.url.test = https://test.registry.example.com:8999
+```
+
+<Callout type="info">
+  `.url.` の後の部分はユニークである必要がありますが、任意の値を使用できます（利便性のための識別子に過ぎません）。
+</Callout>
+
+特定のイメージ（例: `private.registry.example.com:8999/prefix/name`）を取得可能にするには、次の設定を行います：
+
+すべてのイメージを許可する場合：
+
+```properties
+cloud.private_registry.proxy.allowed_image_name_globs = **
+```
+
+より具体的に特定のイメージを許可する場合：
+
+```properties
+cloud.private_registry.proxy.allowed_image_name_globs = prefix/*,prefix/name
+```
+
+このように、取得を許可するイメージをカンマ区切りで指定します。このリストを （すべて許可）ではなく、可能な限り小さく保つ ことを推奨します。
+
+証明書関連の問題を無視する場合、以下の設定を使用します：
+
+```properties
+cloud.private_registry.proxy.insecure_skip_verify = true
+```
+
+ただし、この設定は推奨されません。この設定を有効にすると、中間者攻撃（MitM攻撃） のリスクが生じるため、接続問題をテストする場合など、限られた状況でのみ使用してください。
+
+これらの設定変更は、Testcontainers Cloudアプリケーションの起動時に読み込まれるため、設定を反映させるには**アプリケーションを再起動**する必要があります。
+
+#### エージェントCLIの使用方法
+
+CLIを使用してプライベートレジストリを設定する場合、以下のようにフラグを追加します（有効にしたい各レジストリごとに指定可能です）:
+
+```shell
+--private-registry-url=https://private.registry.example.com:8999 --private-registry-url=https://private2.registry.example.com:8999
+```
+
+以下のようなイメージを取得可能にします：
+
+- `private.registry.example.com:8999/prefix/name`
+- `private.registry.example.com:8999/name`
+
+すべてのイメージを許可する場合：
+
+```shell
+--private-registry-allowed-image-name-globs=**
+```
+
+より具体的に特定のイメージを許可する場合
+
+```shell
+--private-registry-allowed-image-name-globs=prefix/*,prefix/name
+```
+
+このように、取得を許可するイメージをカンマ区切りで指定します。すべてを許可するよりも、許可リストを可能な限り小さく保つことを推奨します。
+
+#### 現在の制限事項
+
+- イメージの取得のみサポート、イメージのプッシュ操作は許可されていません。
+- プロキシ設定は各マシンで設定する必要がありますが、将来的には組織全体で設定可能になる予定です。
+- パブリックおよびプライベートDockerレジストリの資格情報やトークンは、Testcontainers ライブラリおよび Testcontainers Cloud で可視化されます（データはプロキシされますが、保存はされません）。
+- 取得したイメージは、ユーザーの Testcontainers Cloud VM 内にキャッシュされます。このキャッシュは、約30分間非アクティブになると自動的に削除されます。
+
+<Callout type="info">
+  エージェントでは、セキュリティ対策として、プロキシ接続が設定された単一のレジストリホストに対してのみ許可されています。また、HTTPメソッドはHEADおよびGETに制限されており、リクエストが許可されるのは、あらかじめ設定された許可リストに一致するパスだけです。この許可リストは、エージェントで許可されたイメージに基づいています。
+
+  現在、この設定はインストール単位で構成されていますが、将来的には中央で一括管理できるようになる見込みです。
+</Callout>
+
+### プロキシ環境での使用方法
+
+Testcontainers Cloud クライアントをプロキシに向けるには、環境変数または Testcontainers の設定を使用して構成できます。HTTP プロキシを使用しているネットワークで Testcontainers Cloud クライアントを実行する場合、以下の3つの方法で設定が可能です。
+
+#### 1. 環境変数を使用する場合
+
+以下の環境変数のいずれかがプロキシを指すように設定されたシェルからクライアントを起動することで、クライアントは自動的にそれらを認識し、設定が完了します：
+
+```
+http_proxy または HTTP_PROXY
+https_proxy または HTTPS_PROXY
+no_proxy または NO_PROXY
+```
+
+#### 2. Testcontainers Cloud プロパティファイルを使用する場合
+
+シェルの環境変数を設定できない場合、次のオプション行を追加してプロキシ設定を行うことができます：
+
+```properties
+http_proxy=host:port
+https_proxy=host:port
+no_proxy=host1, host2
+```
+
+これを以下のいずれかの場所に保存されている `cloud.properties` ファイルに記述してください：
+
+##### MacOS および Linux
+
+`$XDG_CONFIG_HOME` が設定されている場合：
+
+```shell
+$XDG_CONFIG_HOME/testcontainers/cloud.properties
+```
+
+設定されていない場合：
+
+```shell
+$HOME/.config/testcontainers/cloud.properties
+```
+
+##### Windows
+
+`$XDG_CONFIG_HOME` が設定されている場合：
+
+```cmd
+%xdg_config_home%\testcontainers\cloud.properties
+```
+
+設定されていない場合：
+
+```cmd
+%userprofile%\.config\testcontainers\cloud.properties
+```
+
+#### 3. Testcontainers設定を使用する場合
+
+もう1つの方法として、設定を $HOME/.testcontainers.properties ファイルに記述してプロキシ設定を行うこともできます。使用するキーの名前は、前述の Testcontainers Cloud プロパティファイルと同じです
 
