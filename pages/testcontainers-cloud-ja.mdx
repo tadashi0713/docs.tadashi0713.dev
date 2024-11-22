@@ -288,3 +288,50 @@ URL は任意で、指定を省略することも可能です。GitHub Actions �
 
 これを行うには、エージェントを起動する際に `--terminate` フラグを引数として渡すだけです。あるいは、エージェントがまだ実行中の場合に `terminate` コマンドを呼び出すことでも実現できます。
 
+## Dockerとの互換性
+
+### Docker CLIの使用
+
+現在、Dockerコンテキストを使用して、基盤となる Docker API に直接アクセスすることが可能です:
+
+```shell
+docker context use tcc
+docker ps
+```
+
+また、TCCセッションのCPUやメモリ使用量に関する情報を確認するには、以下のコマンドを使用します:
+
+```shell
+docker stats
+```
+
+または
+
+```shell
+DOCKER_CONTEXT=tcc docker stats
+```
+
+ただし、Testcontainers Cloudは汎用的な「Docker-as-a-Service」ではなく、これらの機能は実装上の詳細として扱うべきである点に注意してください。
+
+### ローカルファイルシステムのマウント
+
+ローカルファイルシステムからコンテナへのファイルのマウントは現在実装されていません。その代わりに、`copyFileToContainer` および `copyFileFromContainer` メソッドの使用を検討してください。
+
+例えば、コンテナを定義する際にファイルをコピーする場合：
+
+```java
+GenericContainer myContainer = new GenericContainer(ALPINE_IMAGE)
+    .withCopyFileToContainer(
+        MountableFile.forClasspathResource("/mappable-resource/"),
+        directoryInContainer
+    );
+```
+
+また、コンテナからファイルをコピーする場合は以下のようにします：
+
+```java
+myContainer.copyFileFromContainer(directoryInContainer + fileName, destinationOnHost);
+```
+
+ファイル操作に関する詳細な例は、[ライブラリのドキュメント](https://testcontainers.com/guides/)に記載されていますので参照してください。
+
