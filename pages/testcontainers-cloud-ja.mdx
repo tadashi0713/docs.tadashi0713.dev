@@ -239,5 +239,36 @@ Testcontainers Desktop アプリケーションの「Connection」セクショ�
 <br />
 
 <div align="center">
-  <Image src="/testcontainers-cloud-ja/tcd-autostart.png" alt="Testcontainers Cloud の Turbo モード" width={400} height={1000}/>
+  <Image src="/testcontainers-cloud-ja/tcd-autostart.png" alt="Testcontainers Desktop autostart" width={400} height={1000}/>
 </div>
+
+## テストセッションにプロジェクトタグを付ける
+
+Testcontainers Cloud を使用してテストを実行する際、[project](https://newsletter.testcontainers.com/announcements/tag-your-test-sessions-by-project) または [workflow](https://newsletter.testcontainers.com/announcements/link-your-test-sessions-to-your-ci-pipeline) の名前や URL を指定できます。この情報は Testcontainers Cloud のダッシュボードに表示され、実行中のテストやワークフローを簡単に特定することができます。
+
+<br />
+
+<div align="center">
+  <Image src="/testcontainers-cloud-ja/tcc-project-and-workflow.png" alt="Testcontainers Desktop project and workflow" width={400} height={1000}/>
+</div>
+
+URL は任意で、指定を省略することも可能です。GitHub Actions を使用している場合、ワークフロー名と URL は自動的に検出され、Testcontainers Cloud ダッシュボードに表示されます。
+
+### CIで環境変数を使用して設定
+
+以下の環境変数を設定してください：
+
+- プロジェクトの場合
+    - `TCC_PROJECT_KEY` / `TCC_PROJECT_URL`
+    - または、`~/.testcontainers.properties` ファイルで `tcc.project.key` と `tcc.project.url` プロパティを設定できます。
+- ワークフローの場合
+    - `TCC_WORKFLOW_KEY` / `TCC_WORKFLOW_URL`
+    - または、`~/.testcontainers.properties` ファイルで `tcc.workflow.key` と `tcc.workflow.url` プロパティを設定できます。
+
+### Testcontainers tests 内のラベルを使用して設定
+
+- プロジェクト用
+    - `cloud.testcontainers.tcc.project.key` / `cloud.testcontainers.tcc.project.url`
+- ワークフロー用
+    - `cloud.testcontainers.tcc.workflow.key` / `cloud.testcontainers.tcc.workflow.url`
+
