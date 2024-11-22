@@ -123,7 +123,7 @@ Turboモードは、大規模なテストスイートが許容範囲を超えて
   Turboモードは現在、Free アカウントでは制限されています。
 </Callout>
 
-### デスクトップで Testcontainers Cloud の Turbo モードを開始する
+#### デスクトップで Testcontainers Cloud の Turbo モードを開始する
 
 Testcontainers Desktop アプリケーションで、Turbo モードを有効化するには、Turbo モードのチェックボックスを選択してください。
 
@@ -133,7 +133,111 @@ Testcontainers Desktop アプリケーションで、Turbo モードを有効化
   <Image src="/testcontainers-cloud-ja/tcd-turbo-mode.png" alt="Testcontainers Cloud の Turbo モード" width={400} height={1000}/>
 </div>
 
-### CI で Turbo モードを有効化する方法
+#### CI で Turbo モードを有効化する方法
 
 CI でエージェントを起動する際、`--max-concurrency=N` フラグを指定すると、このエージェントを使用するプロセスが利用できる最大 N 個の並列 Testcontainers Cloud 環境を有効化できます。
 
+- `--max-concurrency` のデフォルト値は4です。
+- 環境変数 `TC_CLOUD_CONCURRENCY` を使用して並列実行オプションを設定することもできます。例えば、以下のように設定します:
+
+```bash
+export TC_CLOUD_CONCURRENCY=2
+```
+
+これで、Testcontainers Cloud のスケーラビリティを利用して並列テストを実行する準備が整いました。並列テストを初めて行う場合、以下の一般的なビルドツールでの試し方をご覧ください。
+
+#### Gradleを使用したJavaプロジェクトでのTurboモード有効化
+
+Gradle でテストを並列実行するには、`build.gradle` ファイルのテストタスクに `maxParallelForks` を追加します：
+
+```groovy
+test.maxParallelForks = 4
+```
+
+これにより、Gradleは最大4つのプロセスを使用してテストを実行します。Turboモードが設定されている場合、各プロセスで作成されたコンテナは同じDocker環境をオーバーロードしません。
+
+JavaプロジェクトでTurboモードを試してみたい場合は、GitHubリポジトリの手順に従ってサンプルプロジェクトを使用してみてください。
+
+#### Mavenを使用したJavaプロジェクトでのTurboモード有効化
+
+Maven をビルドツールとして使用している場合、テスト実行には Surefire プラグインを使用している可能性があります。Surefire プラグインは並列テスト実行をサポートしており、その有効化方法は公式ドキュメントを参照できます。
+
+一般的に、Maven で並列テストを実行するには、`pom.xml` ファイルの Surefire または Failsafe プラグインの設定に `parallel` および `forkCount` プロパティを追加します。以下は、最新バージョンの Surefire プラグインのサンプル設定です：
+
+```xml
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <version>3.0.0-M7</version>
+  <configuration>
+    <parallel>classes</parallel>
+    <forkCount>4</forkCount>
+  </configuration>
+</plugin>
+```
+
+Java プロジェクトで Turbo モードを試したい場合は、GitHub リポジトリの手順に従ってサンプルプロジェクトを使用してみてください。
+
+#### Turboモードが有効化されたかを確認する方法
+
+Testcontainers Cloud で Turbo モードを有効化し、ビルドツールで並列テストを設定した場合、テストを実行すると Testcontainers Cloud アプリケーションの「connection」タブで複数のリース割り当てが表示されるはずです。
+
+![Testcontainers DesktopでTurboモードが有効になっているか確認する](/testcontainers-cloud-ja/tcd-turbo-mode-connected.png)
+
+#### Testcontainers Cloud がどのコンテナを同じクラウド環境で実行するかを決定する方法
+
+Testcontainers Cloud ではセッションを使用してコンテナを区別します。同じプロセスであれば、例えば複数のコンテナを起動する必要がある場合でも、同じクラウド環境に接続します。
+
+一方で、並列プロセスが実行される場合、現在実行中の Testcontainers Cloud エージェントの最大並列設定が許容する限り、新しいクラウド環境が割り当てられます。
+
+したがって、Turbo モードを設定している場合でも、テストプロセスが1つしかない場合は、すべてのコンテナが同じクラウド環境で実行されます。たとえその1つのプロセス内でテストを並列実行していたとしても同様です。
+
+複数のテストプロセス（例えばフォークされたJVM）を使用している場合、Turbo モードが有効になっていれば、可能な限り各JVMに専用のクラウド環境が割り当てられます。
+
+### メモリ制限
+
+各Testcontainers Cloudセッションには8GBのRAMが割り当てられます。この情報は接続が確立された際のログで確認できます:
+
+```shell
+Connected to docker: 
+  Server Version: 70+testcontainerscloud
+  API Version: 1.41
+  Operating System: Ubuntu 22.04 LTS
+  Total Memory: 7396 MB
+```
+
+現在、1つのTestcontainers Cloudセッションのメモリ使用量を拡張または制限することはできません。
+
+### テストがクラウドで実行されているか確認する方法
+
+Testcontainers Desktop アプリケーションの「Connection」セクションを確認します。
+
+ローカルマシンに Testcontainers Cloud アプリケーションをインストールしている場合、トレイメニューにアプリアイコンが表示されます。テストが Testcontainers Cloud アプリケーションを使用して実行されていることを確認するには、Testcontainers Cloud アプリケーションのアイコンをクリックしてください。接続状態として「Running」または「Passive」が表示されます。「Connection」サブメニューをクリックすると、詳細な接続情報が確認できます。
+
+- **Connected to**: 接続されているゾーン/リージョン（接続遅延がミリ秒単位で表示されます）
+
+- **Leases**: 開かれたコネクションのID（状態)
+
+`ACTIVE` Leases: コネクションがアクティブで、テストのための Testcontainers Cloud リソースが割り当てられている状態
+
+`PASSIVE` Leases: コネクションが閉じられ、Testcontainers Cloud リソースが割り当てられていない状態
+
+- **Data**: R: 読み取りデータ量（kB）, W: 書き込みデータ量（kB）
+
+#### 実行中の状態（Running State）
+
+![Testcontainers Desktop cloud connection status - active](/testcontainers-cloud-ja/tcd-cloud-connection-active.png)
+
+#### パッシブ状態 (Passive State)
+
+![Testcontainers Desktop cloud connection status - passive](/testcontainers-cloud-ja/tcd-cloud-connection-passive.png)
+
+### システム再起動時にクライアントを自動起動
+
+ユーザー体験を向上させるため、デスクトップアプリケーションのメニューに「Autostart」チェックボックスを追加しました。コンピュータを起動または再起動した際に Testcontainers Cloud を自動的に起動したい場合は、このチェックボックスを有効にしてください。この機能は、サポートされているすべてのオペレーティングシステムで同じように動作します。
+
+<br />
+
+<div align="center">
+  <Image src="/testcontainers-cloud-ja/tcd-autostart.png" alt="Testcontainers Cloud の Turbo モード" width={400} height={1000}/>
+</div>
