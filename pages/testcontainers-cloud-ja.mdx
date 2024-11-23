@@ -485,3 +485,95 @@ $HOME/.config/testcontainers/cloud.properties
 
 もう1つの方法として、設定を $HOME/.testcontainers.properties ファイルに記述してプロキシ設定を行うこともできます。使用するキーの名前は、前述の Testcontainers Cloud プロパティファイルと同じです
 
+## トラブルシューティング
+
+### ログへのアクセス
+
+#### Testcontainers Desktop
+
+アプリケーションはログをシステム依存の場所に保存します。ログへの最も簡単なアクセス方法は、メニューの `Preferences > Show logs...` からです。
+
+ログファイルの保存先を手動で確認する場合は以下の場所を参照してください：
+
+- macOS: `$HOME/Library/Logs/AtomicJar/testcontainers.cloud.desktop/testcontainers-cloud-desktop.log`
+- Linux: `${XDG_CACHE_HOME:-$HOME}/.cache/AtomicJar/testcontainers.cloud.desktop/testcontainers-cloud-desktop.log`
+- Windows: `%LocalAppData%/AtomicJar/testcontainers.cloud.desktop/testcontainers-cloud-desktop.log`
+
+<Callout type="info">
+  ログファイルは5MBを超えるとローテーションされます。
+</Callout>
+
+#### Testcontainers Cloud エージェント
+
+エージェントは実行時に `stderr` にログを書き込みます。ログをファイルに保存するには以下のようにエージェントを起動します:
+
+```shell
+./tcc-agent > "./tcc/agent.log" 2>&1 &
+```
+
+これにより、stdout と stderr の両方が指定したファイルにリダイレクトされます。
+
+#### GitHub Action
+
+公式の [GitHub Action](https://github.com/AtomicJar/testcontainers-cloud-setup-action) では `logfile` パラメータを使用して特定のログファイルへの書き込みをサポートしています。その後、[actions/upload-artifact](https://github.com/actions/upload-artifact)アクションを使用してログファイルをアップロードできます。
+
+### 詳細ログの有効化
+
+詳細ログは、追加のデバッグ情報を取得する際に役立ちます。
+
+#### Testcontainers Desktopでの設定
+
+`~/.testcontainers.properties` ファイルに次のプロパティを追加してください：
+
+```
+cloud.logs.verbose = true
+```
+
+設定を反映するには、クライアントを終了し、再起動する必要があります。
+
+#### エージェントCLIでの設定
+
+CLI呼び出しに以下のフラグを追加します:
+
+```shell
+--verbose
+```
+
+または、環境変数を設定します:
+
+```shell
+export TC_CLOUD_LOGS_VERBOSE=true
+```
+
+エージェントCLIは、Testcontainers Desktop の設定セクションで指定されたプロパティ値も尊重します。
+
+#### また、Linuxでは次の方法を試すことができます
+
+`~/.profile` ファイルに以下の行を追加します：
+
+```shell
+export TC_CLOUD_LOGS_VERBOSE=true
+```
+
+#### MacOSでのデバッグ
+
+環境変数を利用してデスクトップクライアントをターミナルから起動できます：
+
+```shell
+open -W --stdout $(tty) --stderr $(tty) /Applications/Testcontainers\ Desktop.app
+```
+
+すべての環境変数をインラインで設定することも可能です：
+
+```shell
+TC_CLOUD_LOGS_VERBOSE=true open -W --stdout $(tty) --stderr $(tty)
+/Applications/Testcontainers\ Desktop.app
+```
+
+#### 有効化の確認方法
+
+設定が正しく有効化されていれば、ログの初期段階で次のような行が表示されます:
+
+```shell
+2022-11-07T18:47:56.964Z --- DBG Verbose output enabled
+```
