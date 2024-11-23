@@ -577,3 +577,30 @@ TC_CLOUD_LOGS_VERBOSE=true open -W --stdout $(tty) --stderr $(tty)
 ```shell
 2022-11-07T18:47:56.964Z --- DBG Verbose output enabled
 ```
+
+### Dockerアクティビティが検出されない場合
+
+#### 主な原因
+
+「this worker was requested by the Testcontainers Cloud agent but seemingly didn't run any containers.」という警告メッセージが表示されることがあります。この警告は、ワーカーが想定された作業を行わなかったことを示します。この問題は以下の状況で発生する可能性があります：
+
+1. **ターミナルで直接Dockerコマンドを実行した** 通常、Testcontainers Cloud のユーザーは、コンテナのライフサイクルを管理するために Testcontainers オープンソースライブラリを使用します。TCC Docker コンテキストに対して生の Docker コマンドを直接実行することはサポートされていません。例えば、Testcontainers Cloud エージェントがアクティブだが接続中のワーカーがいない状態で、`docker ps` のような Docker コマンドを直接実行すると、新しいワーカーが意図せず起動してしまう可能性があります。
+
+2. **CI パイプラインで Testcontainers Cloudエージェントを起動したが、Testcontainers ベースのテストが含まれていない** CI/CDパイプライン内で Testcontainers Cloud エージェントを起動する場合、パイプラインジョブに Testcontainers ベースのテストが含まれていることを確認する必要があります。テストが含まれていない場合、ワーカーは待機状態のままとなり、実際には何も作業を行いません。
+
+#### トラブルシューティング手順
+
+「No activity detected」の警告が表示された場合は、以下の手順を試してください:
+
+1. CI パイプラインの設定を確認: CI/CDパイプラインの設定を確認し、Testcontainers ベースのテストが実行される適切なステージが構成されていることを確認してください。パイプラインがこれらのテストを実行するようトリガーを設定します。
+
+2. Docker コマンドの干渉を回避: Testcontainers Cloud エージェントがアクティブな状態で、デスクトップマシン上で直接 Docker コマンドを実行しないようにしてください。これらの外部コマンドは、エージェントがコンテナを制御および管理する能力に干渉する可能性があります。
+
+3. Testcontainers の統合を確認: テストコードベースに Testcontainers が正しく統合されていることを再確認してください。必要な依存関係と設定が正しく構成されていることを確認し、テストが Testcontainers API を使用してコンテナの作成と管理を適切に呼び出していることを確認します。
+
+#### 結論
+
+Testcontainers Cloud で表示される「No activity detected」の警告は、ワーカーが期待どおりにコンテナを実行しなかったことを示します。デスクトップでの外部 Docker コマンドの実行を避け、CI パイプラインが Testcontainers ベースのテストを実行するよう設定することで、「空の」ワーカーを最小限に抑え、Testcontainers Cloud の機能を最大限に活用できます。
+
+問題が解決しない場合は、Testcontainers Cloud のドキュメントを参照するか、サポートに問い合わせてさらに問題を解決してください。
+
