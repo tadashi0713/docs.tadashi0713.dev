@@ -738,3 +738,38 @@ workflows:
           pre-steps:
             - tcc/setup
 ```
+
+### Google Cloud Build での Testcontainers Cloud の使用
+
+Google Cloud Build で Testcontainers Cloud を使用するには、`TC_CLOUD_TOKEN` を対応するサービスアカウントトークンに設定する必要があります。このトークンは、[Testcontainers Cloud のダッシュボード](https://app.testcontainers.cloud/dashboard/install?target=cloudbuild)で生成できます。
+
+サービスアカウントのトークンは、[Google Cloud Secrets Manager](https://cloud.google.com/build/docs/securing-builds/use-secrets) に安全に保存することができます。シークレットを作成した後、以下を行います：
+
+1. アクセス権の付与
+
+    プリンシパルに `YOUR_PROJECT_ID@cloudbuild.gserviceaccount.com` を指定し、`Secret Manager Secret Accessor` ロールを割り当てます。
+
+2. Testcontainers Cloudエージェントのインストールと起動
+
+    次に、`Google Cloud Secrets Manager` から `TC_CLOUD_TOKEN` の値を取得し、環境変数として設定して、Testcontainers Cloud エージェントをインストールして起動します。
+
+以下のスクリプトを `cloudbuild.yaml` 設定に追加してください:
+
+```yaml
+steps:
+    - name: "docker-image:tag" # ex: maven:3-eclipse-temurin-19
+      args:
+          - "-c"
+          - |
+              curl -fsSL https://get.testcontainers.cloud/bash | sh
+              cp ~/.testcontainers.properties /root/.testcontainers.properties
+              # Your test command like "mvn test" or "npm test"
+      dir: "${_APP_NAME}"
+      entrypoint: bash
+      secretEnv:
+          - TC_CLOUD_TOKEN
+availableSecrets:
+    secretManager:
+        - versionName: projects/<PROJECT_ID>/secrets/TC_CLOUD_TOKEN/versions/latest
+          env: TC_CLOUD_TOKEN
+```
