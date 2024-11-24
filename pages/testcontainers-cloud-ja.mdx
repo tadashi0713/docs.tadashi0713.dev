@@ -773,3 +773,123 @@ availableSecrets:
         - versionName: projects/<PROJECT_ID>/secrets/TC_CLOUD_TOKEN/versions/latest
           env: TC_CLOUD_TOKEN
 ```
+
+### GitLab CI/CDでのTestcontainers Cloudの使用
+
+GitLab で Testcontainers Cloud を使用するには、`TC_CLOUD_TOKEN` を対応するサービスアカウントトークンに設定する必要があります。このトークンは [Testcontainers Cloud のダッシュボード](https://app.testcontainers.cloud/dashboard/install?target=gitlab)で生成できます。
+
+[GitLabのプロジェクト設定で環境変数](https://docs.gitlab.com/ee/ci/variables/#add-a-cicd-variable-to-a-project)として `TC_CLOUD_TOKEN` を追加し、トークンをジョブ内で使用できるようにします。
+
+次に、GitLab のパイプラインジョブを設定し、Testcontainers Cloud をインストールして使用できるようにします。Testcontainers Cloud エージェントのインストールスクリプトを使用し、テストを実行する前にエージェントを起動します。
+
+以下は、`.gitlab-ci.yml` の設定例です：
+
+```yaml
+image: "docker-image:tag" # ex: maven:3-eclipse-temurin-19
+
+job_name:
+    stage: test
+    script:
+        - curl -fsSL https://get.testcontainers.cloud/bash | sh
+        -  # ... existing steps go here (run tests, etc.)
+```
+
+### Azure Pipelines での Testcontainers Cloud の使用
+
+Azure Pipelines で Testcontainers Cloud を使用するには、`TC_CLOUD_TOKEN` を対応するサービスアカウントトークンに設定する必要があります。このトークンは [Testcontainers Cloud のダッシュボード](https://app.testcontainers.cloud/dashboard/install?target=azure-pipeline)で生成できます。
+
+その後、[トークンをパイプライン設定に追加](https://learn.microsoft.com/en-us/azure/devops/pipelines/process/variables?view=azure-devops&tabs=yaml%2Cbatch)し、タスク内で環境変数として使用できるように設定します。
+
+次に Azure Pipelines のジョブを構成し、Testcontainers Cloud をインストールして使用するようにします。Testcontainers Cloud エージェントのインストールスクリプトを使用し、テストを実行する前にエージェントを起動します。
+
+以下は、`azure-pipelines.yml` の設定例です:
+
+```yaml
+steps:
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: 'sh -c "$(curl -fsSL https://get.testcontainers.cloud/bash)"'
+  env:
+    TC_CLOUD_TOKEN: $(TC_CLOUD_TOKEN)
+```
+
+### Jenkins での Testcontainers Cloud の使用
+
+Jenkins で Testcontainers Cloud を使用するには、まず [Testcontainers Cloud ダッシュボード](https://app.testcontainers.cloud/dashboard/install?target=jenkins-pipeline)でトークンを生成する必要があります。その後、以下の手順でトークンをシークレットとして保存します：
+
+- **Dashboard** で **Manage Jenkins -> Manage Credentials** を選択します。
+- **Stores scoped to Jenkins** の下にある **(global)** ドメインをクリックし、**Add Credentials** を選択します。
+- 次の値を入力し、**Create** をクリックします：
+    - **Kind:** Secret text
+    - **Secret:** `YOUR_TOKEN_VALUE`
+    - **ID:** `tc-cloud-token-secret-id`
+
+次に、Jenkins パイプラインを設定して、上記で保存したシークレットを参照し、`TC_CLOUD_TOKEN` 環境変数を設定します。その後、Testcontainers Cloud エージェントのインストールスクリプトを使用し、テストを実行する前にエージェントを起動します。
+
+以下は、`Jenkinsfile` に追加する設定例です:
+
+```groovy
+pipeline {
+    agent any
+    stages {
+        stage('Setup Testcontainers Cloud') {
+            steps {
+                withCredentials([string(credentialsId: 'tc-cloud-token-secret-id', variable: 'TC_CLOUD_TOKEN')]) {
+                    sh 'curl -fsSL https://get.testcontainers.cloud/bash | sh'  // Testcontainers Cloudエージェントのインストールと起動
+                }
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                sh 'mvn verify'  // Testcontainersを使用したテストの実行
+            }
+        }
+    }
+}
+```
+
+### Tekton での Testcontainers Cloud の使用
+
+Tekton で Testcontainers Cloud を使用するには、`TC_CLOUD_TOKEN`を対応するサービスアカウントトークンに設定する必要があります。このトークンは [Testcontainers Cloud のダッシュボード](https://app.testcontainers.cloud/dashboard/install?target=tekton)で生成できます。その後、シークレットを作成し、パイプラインタスク内で変数として使用するよう設定します。
+
+例えば、次のように `secret.yaml` ファイルを作成してシークレットを定義します：
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tcc-token
+stringData:
+  token: YOUR_TOKEN_VALUE_GOES_HERE
+```
+
+次に、Tekton パイプラインを設定し、テストを実行する前に Testcontainers Cloud エージェントをインストールして使用できるようにします。そのために、Testcontainers Cloud エージェントのインストールスクリプトを使用します。
+
+以下は、先ほどのシークレットを `TC_CLOUD_TOKEN` 環境変数にバインドし、Testcontainers Cloud エージェントをインストールして起動した後、Maven のテストコマンドを実行する Tekton タスクのサンプル設定（task.build.yaml）です:
+
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-java-maven
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: maven-build
+      image: amazoncorretto:17.0.5-al2
+      env:
+        - name: TC_CLOUD_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: tcc-token
+              key: token
+      script: |
+        set -e
+        cd "$(workspaces.source.path)"
+        sh -c "$(curl -fsSL https://get.testcontainers.cloud/bash)"
+        ./mvnw test
+```
+
+これは柔軟なアプローチであり、`mvn` コマンドを対応するビルドツールのコマンドに置き換えることで、他の言語で記述されたテストを Tekton で Testcontainers Cloud を使用して実行することができます。
