@@ -661,3 +661,80 @@ Testcontainers Desktop を実行中でサインインしている場合、Testco
 
 さらに、Testcontainers Cloudではテストを並列実行することができ、[Turboモード](#turboモードを調整する)を有効にすると、各テストフォークが独自のVMに接続されるため、テストを3～4倍速く実行することが可能です。
 
+## CI 環境での Testcontainers Cloud の使用
+
+### CI ジョブでエージェントを起動する
+
+Testcontainers Cloud を CI 環境で使用するには、テストを実行する前に Testcontainers Cloud エージェントを起動するステップを CI ジョブに追加してください。また、Testcontainers Cloud のトークンを設定することを忘れないでください。
+
+さらに、内蔵の `wait` コマンドを使用して、Testcontainers Cloud への接続が確立されるまで待機することを推奨します。これにより、テストが準備完了状態の Testcontainers Cloud と確実に連携できるようになります。
+
+```shell
+# エージェントのバイナリを取得し、すぐに実行
+sh -c "$(curl -fsSL https://get.testcontainers.cloud/bash)"
+
+# 通常通りTestcontainersを使用したテストを実行
+mvn verify
+```
+
+Testcontainers Cloud トークンを設定する必要もあります。多くの環境では、環境変数 `TC_CLOUD_TOKEN` を使用するのが最も便利です。ただし、このトークンは可能な限り秘密に保持してください。
+
+### GitHub Actions での Testcontainers Cloud の使用
+
+GitHub Actions で Testcontainers Cloud を使用するには、`TC_CLOUD_TOKEN` を対応するトークン値に設定し、エージェントをダウンロードして起動するだけです。
+
+以下のスクリプトを使用して、ワークフローに必要なステップを追加できます:
+
+```yaml
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v3
+
+  - name: Set up Testcontainers Cloud agent
+    run: |
+      export TC_CLOUD_TOKEN=<your-token-here>
+      sh -c "$(curl -fsSL https://get.testcontainers.cloud/bash)"
+      
+  - name: Run tests
+    run: mvn verify
+```
+
+<Callout type="info">
+  Dependabot によってトリガーされたジョブが失敗する場合、Dependabot のシークレットにも `TC_CLOUD_TOKEN` を設定していることを確認してください。
+</Callout>
+
+### Kubernetes 環境での Testcontainers Cloud の使用
+
+Testcontainers Cloud は、Tekton や Jenkins X などの Kubernetes ベースの CI 環境でも使用可能です。
+
+エージェントをダウンロードして起動し、`TC_CLOUD_TOKEN` を対応するトークン値に設定するだけで利用可能です。
+
+```yaml
+command:
+    - sh -c "$(curl -fsSL https://get.testcontainers.cloud/bash)"
+    - mvn verify
+envs:
+    - name: TC_CLOUD_TOKEN
+      valueFromSecretRef: tccToken
+```
+
+### CircleCI での Testcontainers Cloud の使用
+
+CircleCI で Testcontainers Cloud を使用するには、`TC_CLOUD_TOKEN` を対応するサービスアカウントトークンに設定する必要があります。このトークンは [Testcontainers Cloud のダッシュボード](http://app.testcontainers.cloud/dashboard/install?target=circleci)で生成できます。その後、トークンを[CircleCIのプロジェクト設定で環境変数として追加](https://circleci.com/docs/set-environment-variable/#set-an-environment-variable-in-a-project)してください。
+
+次に、CircleCI のワークフローを設定して Testcontainers Cloud をインストールして使用できるようにします。[testcontainers-cloud-orb](https://circleci.com/developer/orbs/orb/atomicjar/testcontainers-cloud-orb) の setup を CircleCI Job の pre-step として追加できます。また、テストを実行する前に Testcontainers Cloud エージェントが起動するように構成します。
+
+以下のスクリプトを使用してワークフローに必要なステップを追加できます。この中で特に、`tcc:` orb と `tcc/setup` の設定が「pre-steps」に含まれている点に注目してください:
+
+```yaml
+version: "2.1"
+orbs:
+  tcc: atomicjar/testcontainers-cloud-orb@0.1.0
+workflows:
+  workflow_name:
+    jobs:
+      - job_name:
+          # ... existing steps go here (run tests, etc.)
+          pre-steps:
+            - tcc/setup
+```
