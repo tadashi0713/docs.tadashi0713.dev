@@ -604,3 +604,60 @@ Testcontainers Cloud で表示される「No activity detected」の警告は、
 
 問題が解決しない場合は、Testcontainers Cloud のドキュメントを参照するか、サポートに問い合わせてさらに問題を解決してください。
 
+### トラブルシューティング用にクラウドワーカーに接続する方法
+
+高度なトラブルシューティングが必要な場合、Testcontainers Cloud のワーカーに接続することが役立つ場合があります。
+
+#### Web ターミナルを使用して接続
+
+[ダッシュボード](https://app.testcontainers.cloud/dashboard)に移動すると、利用可能なクラウドワーカーの「live」アクティビティを確認できます。行をクリックして詳細ビューを展開し、「Connect」ボタンをクリックするとWebターミナルを開くことができます。
+
+![](/testcontainers-cloud-ja/tcc-connect.png)
+
+Webターミナルが開いたら、「Connect Terminal」をクリックすることで、選択したワーカーへの安全な接続が開始されます。
+
+![](/testcontainers-cloud-ja/tcc-connect-terminal.png)
+
+![](/testcontainers-cloud-ja/tcc-connect-terminal-connected.png)
+
+#### ローカルターミナルを使用して接続
+
+##### 1. 「Worker ID」を取得
+
+[ダッシュボード](https://app.testcontainers.cloud/dashboard)で利用可能なクラウドワーカーの「live」アクティビティを確認し、詳細ビューを展開します。対象ワーカーの右側にある「kebabメニュー」（3点アイコン）をクリックし、「Worker ID」をクリップボードにコピーします。
+
+![](/testcontainers-cloud-ja/tcc-connect-worker-id.png)
+
+##### 2. CI エージェントをダウンロードして実行可能にする
+
+Testcontainers Cloud のバイナリに接続機能が含まれています。エージェントをまだ持っていない場合は、[インストールページ](https://app.testcontainers.cloud/dashboard/install?target=linux-ci)または https://get.testcontainers.cloud/bash から直接ダウンロードしてください。
+
+```shell
+curl -o tcc-agent -L https://get.testcontainers.cloud/testcontainers-cloud-agent_darwin_arm64
+chmod +x tcc-agent
+```
+
+##### 3. クラウドワーカーに接続する
+
+ターミナルで以下のコマンドを使用して、取得した Worker ID をパラメータとしてワーカーに接続します:
+
+```shell
+./tcc-agent connect <worker-id>
+```
+
+Testcontainers Desktop を実行中でサインインしている場合、Testcontainers Cloud エージェントは認証トークンを自動的に再利用するため、追加の手順は必要ありません。それ以外の場合は、次の手順を参照してください。
+
+##### 4. (任意) Testcontainers Cloud 認証トークンを提供
+
+トークンを手動で渡したい場合は、`TC_CLOUD_TOKEN` 環境変数を設定するか、コマンドライン引数として指定することができます：
+
+```shell
+./tcc-agent --token <token> connect <worker-id>
+```
+
+### テストが遅くなる場合
+
+通常、インターネット接続が速い場合、テストの速度はローカルの Docker Desktop と同等またはそれ以上になります。もしテストが遅いと感じた場合は、Testcontainers Desktop アプリの「Connection」サブメニューを確認してください。最後に記録された遅延が表示されます。理想的な接続遅延は20ms以下です。
+
+さらに、Testcontainers Cloudではテストを並列実行することができ、[Turboモード](#turboモードを調整する)を有効にすると、各テストフォークが独自のVMに接続されるため、テストを3～4倍速く実行することが可能です。
+
