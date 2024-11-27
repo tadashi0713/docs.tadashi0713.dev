@@ -1,0 +1,280 @@
+---
+title: Java 向け Testcontainers 入門
+description: このガイドでは、Java 向け Testcontainers の使い方を始めるために、PostgreSQL を使用したテストの方法を説明します。
+---
+
+import { Callout } from 'nextra/components'
+
+# Java 向け Testcontainers 入門
+
+Testcontainers は、Docker コンテナでラップされた実際のサービスを使用して統合テストを簡単かつ軽量な API で構築できるテストライブラリです。Testcontainers を使用すると、本番環境で使用しているサービスと同じ種類のサービスと対話するテストを、モックやインメモリサービスを使用せずに記述できます。
+
+<Callout type="info">
+  Testcontainers を初めて使用する場合は、[Testcontainers とは何か、なぜ使うべきなのか？](/testcontainers-guides-ja/introducing-testcontainers)を読んで、Testcontainersについて詳しく学んでください。
+</Callout>
+
+Postgres データベースを使用した Java アプリケーションのテストに、Testcontainers をどのように活用できるか見てみましょう。
+
+## Maven を使用して Java プロジェクトを作成 
+
+お気に入りの IDE で Maven ビルドツールをサポートする Java プロジェクトを作成します。この記事では Maven を使用していますが、Gradle を使用したい場合はそちらでも問題ありません。プロジェクトを作成したら、次の依存関係を **pom.xml** に追加してください。
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>42.7.3</version>
+    </dependency>
+    <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.5.6</version>
+    </dependency>
+    <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <version>5.10.2</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.2.5</version>
+        </plugin>
+    </plugins>
+</build>
+```
+
+Postgres データベースと通信するために Postgres JDBC ドライバー、ロギング用に **logback-classic**、JUnit 5 を使用したテストのために **junit-jupiter** を追加しました。また、JUnit 5 のテストをサポートするために最新バージョンの **maven-surefire-plugin** を使用しています。
+
+## ビジネスロジックの実装
+
+顧客情報を管理するための **CustomerService** クラスを作成します。
+
+まず、以下のように **Customer** クラスを作成しましょう:
+
+```java
+package com.testcontainers.demo;
+
+public record Customer(Long id, String name) {}
+```
+
+**DBConnectionProvider.java** クラスを作成して、JDBC接続パラメータを保持し、データベース接続を取得するためのメソッドを次のように作成してください。
+
+```java
+package com.testcontainers.demo;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+
+class DBConnectionProvider {
+
+  private final String url;
+  private final String username;
+  private final String password;
+
+  public DBConnectionProvider(String url, String username, String password) {
+    this.url = url;
+    this.username = username;
+    this.password = password;
+  }
+
+  Connection getConnection() {
+    try {
+      return DriverManager.getConnection(url, username, password);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+```
+
+**CustomerService.java** クラスを作成し、以下のコードを追加してください。
+
+```java
+package com.testcontainers.demo;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CustomerService {
+
+  private final DBConnectionProvider connectionProvider;
+
+  public CustomerService(DBConnectionProvider connectionProvider) {
+    this.connectionProvider = connectionProvider;
+    createCustomersTableIfNotExists();
+  }
+
+  public void createCustomer(Customer customer) {
+    try (Connection conn = this.connectionProvider.getConnection()) {
+      PreparedStatement pstmt = conn.prepareStatement(
+        "insert into customers(id,name) values(?,?)"
+      );
+      pstmt.setLong(1, customer.id());
+      pstmt.setString(2, customer.name());
+      pstmt.execute();
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public List<Customer> getAllCustomers() {
+    List<Customer> customers = new ArrayList<>();
+
+    try (Connection conn = this.connectionProvider.getConnection()) {
+      PreparedStatement pstmt = conn.prepareStatement(
+        "select id,name from customers"
+      );
+      ResultSet rs = pstmt.executeQuery();
+      while (rs.next()) {
+        long id = rs.getLong("id");
+        String name = rs.getString("name");
+        customers.add(new Customer(id, name));
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+    return customers;
+  }
+
+  private void createCustomersTableIfNotExists() {
+    try (Connection conn = this.connectionProvider.getConnection()) {
+      PreparedStatement pstmt = conn.prepareStatement(
+        """
+        create table if not exists customers (
+            id bigint not null,
+            name varchar not null,
+            primary key (id)
+        )
+        """
+      );
+      pstmt.execute();
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
+```
+
+CustomerService クラスで行われていることを理解しましょう。
+
+- **connectionProvider.getConnection()** メソッドを呼び出し、JDBC API を使用してデータベース接続を取得しています。
+- **createCustomersTableIfNotExists()** メソッドは、customers テーブルが存在しない場合に作成します。
+- **createCustomer()** メソッドは、新しい顧客レコードをデータベースに挿入します。
+- **getAllCustomers()** メソッドは、**customers** テーブルからすべての行を取得し、それらを **Customer** オブジェクトに格納して Customer オブジェクトのリストを返します。
+
+次に、Testcontainers を使用して **CustomerService** のロジックをどのようにテストできるかを見ていきましょう。
+
+## Testcontainers の依存関係を追加する
+
+Testcontainers を使用したテストを書く前に、**pom.xml** ファイルに Testcontainers の依存関係を次のように追加しましょう。
+
+```xml
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>postgresql</artifactId>
+    <version>1.19.8</version>
+    <scope>test</scope>
+</dependency>
+```
+
+アプリケーションに PostgreSQL データベースを使用しているため、Testcontainers の PostgreSQL モジュールをテスト依存関係として追加しました。
+
+## Testcontainers を使ってユニットテストを書く
+
+以下は、**CustomerServiceTest.java** に Testcontainers を使用してテストを記述するコードの例です。**src/test/java** ディレクトリにこのクラスを作成してください。
+
+```java
+package com.testcontainers.demo;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.List;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.PostgreSQLContainer;
+
+class CustomerServiceTest {
+
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
+    "postgres:16-alpine"
+  );
+
+  CustomerService customerService;
+
+  @BeforeAll
+  static void beforeAll() {
+    postgres.start();
+  }
+
+  @AfterAll
+  static void afterAll() {
+    postgres.stop();
+  }
+
+  @BeforeEach
+  void setUp() {
+    DBConnectionProvider connectionProvider = new DBConnectionProvider(
+      postgres.getJdbcUrl(),
+      postgres.getUsername(),
+      postgres.getPassword()
+    );
+    customerService = new CustomerService(connectionProvider);
+  }
+
+  @Test
+  void shouldGetCustomers() {
+    customerService.createCustomer(new Customer(1L, "George"));
+    customerService.createCustomer(new Customer(2L, "John"));
+
+    List<Customer> customers = customerService.getAllCustomers();
+    assertEquals(2, customers.size());
+  }
+}
+```
+
+CustomerServiceTest の理解を深めましょう
+
+- **PostgreSQLContainer** を使用して、Docker イメージ **postgres:16-alpine** を指定して PostgreSQL コンテナを宣言しています。
+
+- **@BeforeAll** コールバック内で Postgres コンテナを起動します。このメソッドはすべてのテストメソッドの実行前に一度だけ呼び出されます。
+
+- 各テストメソッドの実行前に呼び出される **@BeforeEach** コールバック内で以下を行っています：
+    - **DBConnectionProvider** の作成: Postgres コンテナから取得した JDBC 接続パラメータを用いて、DBConnectionProvider インスタンスを作成。
+    - **CustomerService** の初期化: 上記の DBConnectionProvider を使用して **CustomerService** のインスタンスを作成。
+    - テーブルの作成: CustomerService のコンストラクタ内で、customers テーブルが存在しない場合に作成するロジックを実行。
+
+- テストケース (**shouldGetCustomers**)
+    - データベースに顧客レコードを 2 件挿入します。
+    - すべての顧客を取得し、その数をアサートして検証します。
+
+- **@AfterAll** コールバックで Postgres コンテナを停止します。このメソッドは、クラス内のすべてのテストメソッドが実行された後に一度だけ呼び出されます。
+
+**CustomerServiceTest** を実行すると、以下が確認できます：
+  - Testcontainers が Postgres の Docker イメージを DockerHub から取得（ローカルに存在しない場合）。
+  - コンテナを起動し、テストを実行。
+  - テスト終了後にコンテナを停止。
+
+Voila!!! あなたの Testcontainers を使った最初のテストが成功しました 🎉
+
+## まとめ
+
+Testcontainers を使用して Java アプリケーションをテストする方法を学びました。具体的には、Postgres データベースを利用したテストについて取り上げました。
+
+Testcontainers を用いた統合テストの記述方法は、IDE から実行可能な単体テストと非常によく似ていることがわかりました。また、プロジェクトをチームメンバーがクローンしても、ローカル環境に Postgres をインストールする必要がなく、同じテストを実行できる点が大きな利点です。
+
+さらに、Testcontainers は Postgres 以外にも、多くの一般的な SQL データベース、NoSQL データベース、メッセージキューなどに対応した専用モジュールを提供しています。そのため、テスト環境であらゆるコンテナ化された依存関係を簡単に使用することが可能です。
+
+Testcontainers についてさらに詳しく知りたい場合は、公式ウェブサイト https://www.testcontainers.com をご覧ください。
