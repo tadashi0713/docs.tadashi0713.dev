@@ -1,0 +1,337 @@
+---
+title: Java Spring Boot プロジェクトで Testcontainers を使い始める
+description: このガイドでは、Testcontainers を使用して Spring Boot および Spring Data JPA を基盤とした REST API をテストする方法を説明します。
+---
+
+# Java Spring Boot プロジェクトで Testcontainers を使い始める
+
+このガイドでは、以下の内容を学びます。
+
+- Spring Boot アプリケーションの作成方法
+- Spring MVC、Spring Data JPA、Postgres を使用した REST API エンドポイントの実装方法
+- Testcontainers と RestAssured を使用した REST API のテスト方法
+
+## 事前準備
+
+- Java 17 以上
+- 好みの IDE（Intellij IDEA、Eclipse、NetBeans、VS Code など）
+- Testcontainers がサポートする Docker 環境（詳細は [Testcontainers Supported Docker Environment](https://java.testcontainers.org/supported_docker_environment/) を参照）
+
+## このガイドで達成すること
+
+このガイドでは、Spring Data JPA と Postgres を使用した Spring Boot プロジェクトを作成し、データベースに保存されたすべての顧客情報を返す REST API エンドポイントを実装します。その後、**Testcontainers** の Postgres モジュールと **RestAssured** を使ってこの API をテストします。
+
+## はじめに
+
+[Spring Initializr](https://start.spring.io/) を使用して新しい Spring Boot プロジェクトを作成する際、**Spring Web**、**Spring Data JPA**、**PostgreSQL Driver**、および **Testcontainers** スターターを選択することができます。
+
+または、以下のリポジトリをクローンして **initial** ブランチに切り替える方法もあります：
+https://github.com/testcontainers/tc-guide-testing-spring-boot-rest-api.git
+
+**Maven** ビルドツールを選択している場合、**pom.xml** には以下の Spring Boot スターターおよび **Testcontainers** の Postgres モジュール依存関係が追加されていることが確認できます。
+
+```xml
+<properties>
+    <java.version>17</java.version>
+    <testcontainers.version>1.19.8</testcontainers.version>
+</properties>
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <scope>runtime</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>junit-jupiter</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>postgresql</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+Gradle ビルドツールを選択した場合は、**build.gradle** ファイルに選択した依存関係が設定されています。
+
+```groovy
+ext {
+    set('testcontainers.version', "1.19.8")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+}
+```
+
+Testcontainers の **BOM** (Bill Of Materials) を使用することを強くお勧めします。これにより、個々の Testcontainers モジュール依存関係ごとにバージョンを繰り返し指定する必要がなくなります。
+
+## JPA Entityを作成する
+
+まず、JPA Entity である **Customer.java** を作成することから始めましょう。
+
+```java
+package com.testcontainers.demo;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "customers")
+class Customer {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  @Column(nullable = false)
+  private String name;
+
+  @Column(nullable = false, unique = true)
+  private String email;
+
+  public Customer() {}
+
+  public Customer(Long id, String name, String email) {
+    this.id = id;
+    this.name = name;
+    this.email = email;
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+}
+```
+
+## Spring Data JPA Repository の作成
+
+Spring Data JPA は、JPA の上に構築された抽象化レイヤーであり、基本的な CRUD 操作、ソートやページネーション機能、メソッド名からの動的クエリ生成を提供します。
+
+それでは、**Customer** Entity 用の Spring Data JPA Repository インターフェースを作成しましょう。
+
+```java
+package com.testcontainers.demo;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+interface CustomerRepository extends JpaRepository<Customer, Long> {}
+```
+
+## スキーマ作成スクリプトの追加
+
+インメモリデータベースを使用していないため、何らかの方法で Postgres データベースのテーブルを作成する必要があります。推奨される方法は **Flyway** や **Liquibase** などのデータベースマイグレーションツールを使用することですが、このガイドでは Spring Boot が提供する簡易なスキーマ初期化機能を利用します。
+
+**src/main/resources** ディレクトリに、以下の内容を含む **schema.sql** ファイルを作成してください。
+
+```properties
+spring.sql.init.mode=always
+```
+
+## REST API エンドポイントの作成
+
+最後に、データベースからすべての customer 情報を取得する REST API エンドポイントを実装するコントローラーを作成します。
+
+```java
+package com.testcontainers.demo;
+
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+class CustomerController {
+
+  private final CustomerRepository repo;
+
+  CustomerController(CustomerRepository repo) {
+    this.repo = repo;
+  }
+
+  @GetMapping("/api/customers")
+  List<Customer> getAll() {
+    return repo.findAll();
+  }
+}
+```
+
+## API エンドポイントのテストを記述する
+
+**@SpringBootTest** アノテーションを使用して Spring コンテキストを起動し、**RestAssured** を用いて API を呼び出すことで、REST API の **GET /api/customers** エンドポイントをテストします。
+
+まず、**rest-assured** ライブラリの依存関係を追加します。
+
+**Maven** を使用している場合は、以下の依存関係を **pom.xml** ファイルに追加してください。
+
+```xml
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <scope>test</scope>
+</dependency>
+```
+
+Gradle ビルドツールを使用している場合は、以下の依存関係を **build.gradle** ファイルに追加してください。
+
+```groovy
+testImplementation 'io.rest-assured:rest-assured'
+```
+
+しかし、Spring コンテキストを正常に起動するには、Postgres データベースが稼働している必要があり、さらにそのデータベースと通信するようにコンテキストを設定する必要があります。この場面で Testcontainers が役立ちます。
+
+Testcontainers ライブラリを使用することで、Postgres データベースのインスタンスを Docker コンテナとして起動し、アプリケーションがそのデータベースと通信できるように次のように設定できます。
+
+```java
+package com.testcontainers.demo;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.hasSize;
+
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import java.util.List;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class CustomerControllerTest {
+
+  @LocalServerPort
+  private Integer port;
+
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(
+    "postgres:16-alpine"
+  );
+
+  @BeforeAll
+  static void beforeAll() {
+    postgres.start();
+  }
+
+  @AfterAll
+  static void afterAll() {
+    postgres.stop();
+  }
+
+  @DynamicPropertySource
+  static void configureProperties(DynamicPropertyRegistry registry) {
+    registry.add("spring.datasource.url", postgres::getJdbcUrl);
+    registry.add("spring.datasource.username", postgres::getUsername);
+    registry.add("spring.datasource.password", postgres::getPassword);
+  }
+
+  @Autowired
+  CustomerRepository customerRepository;
+
+  @BeforeEach
+  void setUp() {
+    RestAssured.baseURI = "http://localhost:" + port;
+    customerRepository.deleteAll();
+  }
+
+  @Test
+  void shouldGetAllCustomers() {
+    List<Customer> customers = List.of(
+      new Customer(null, "John", "john@mail.com"),
+      new Customer(null, "Dennis", "dennis@mail.com")
+    );
+    customerRepository.saveAll(customers);
+
+    given()
+      .contentType(ContentType.JSON)
+      .when()
+      .get("/api/customers")
+      .then()
+      .statusCode(200)
+      .body(".", hasSize(2));
+  }
+}
+```
+
+このテストで何が行われているのかを理解しましょう。
+
+- テストクラスには **@SpringBootTest** アノテーションが付与されており、webEnvironment 設定とともに使用されています。これにより、テストはアプリケーション全体をランダムな空きポートで起動した状態で実行されます。
+
+- **PostgreSQLContainer** のインスタンスを作成し、**postgres:16-alpine** Docker イメージを使用しています。Postgres コンテナは JUnit 5 の **@BeforeAll** コールバックメソッドを使って起動されます。このメソッドは、テストインスタンス内のいずれかのテストメソッドが実行される前に呼び出されます。
+
+- Postgres データベースはコンテナ内でポート 5432 で動作しており、ホスト側のランダムな空きポートにマッピングされています。
+
+- Spring Boot の **DynamicPropertyRegistry** を使用して、Postgres コンテナから動的に取得したデータベース接続プロパティを登録しています。
+
+- **@LocalServerPort** を使用して Spring Boot アプリケーションが起動したランダムなポートを注入し、そのポートを RestAssured の **baseURI** として登録しています。
+
+- JUnit 5 の **@BeforeEach** コールバックメソッドを使用し、各テストメソッドの実行前にすべての顧客レコードを削除しています。これにより、各テストでデータの状態が予測可能となり、テスト間でのデータ汚染を防ぎます。
+
+- 最後に、**shouldGetAllCustomers()** テストでは、テストデータを初期化し、**GET /api/customers** API エンドポイントを呼び出して、API から 2 件の顧客レコードが返されることを検証しています。
+
+## テストを実行する
+
+以下のコマンドを使用してテストを実行します：
+
+```shell
+# Maven を使用している場合
+./mvnw test
+
+# Gradle を使用している場合
+./gradlew test
+```
+
+Postgres の Docker コンテナが起動し、すべてのテストが成功するのを確認できるはずです。また、テスト実行後にコンテナが自動的に停止し、削除されることにも注目してください。
+
+## まとめ
+
+Testcontainers ライブラリを使用することで、モックやインメモリデータベースではなく、本番環境で使用しているのと同じ種類のデータベース（Postgres）を用いて統合テストを記述することができました。モックを使用せず、実際のサービスと通信しているため、コードをリファクタリングしてもアプリケーションが期待通りに動作していることを確認できます。
+
+Testcontainers についてさらに詳しく知りたい場合は、http://testcontainers.com をご覧ください。
