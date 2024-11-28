@@ -3,7 +3,19 @@ title: Testcontainersとは何か、なぜ使うべきなのか？
 description: このガイドでは、Testcontainers の概要を紹介し、Testcontainers がどのような問題を解決するのかを説明します。
 ---
 
+import { Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa";
+
 # Testcontainers とは何か、なぜ使うべきなのか？
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-introducing-testcontainers"
+/>
 
 現代のソフトウェアシステムは、さまざまな技術やツールを活用して複雑なビジネス問題を解決しています。今日では、ほとんどのソフトウェアシステムが単独で動作することはなく、通常はデータベース、メッセージングシステム、キャッシュプロバイダー、その他の外部サービスと連携しています。また、現在の競争の激しい市場では、タイム・トゥ・マーケット（市場投入までの時間） が非常に重要です。企業は製品を可能な限り早く市場に投入し、フィードバックを得てそれを反映しながら改善していくことを求めています。このようなアジャイルな開発を実現するには、堅実な継続的インテグレーション（CI）と継続的デプロイメント（CD）プロセスが必要です。
 CI/CDプロセスの重要な部分の1つが、自動化されたテストです。これにより、アプリケーションの挙動が正しいことを保証します。
