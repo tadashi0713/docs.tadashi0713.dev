@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/shuding/nextra-docs-template#readme",
   "dependencies": {
-    "@next/third-parties": "15.0.3",
+    "@next/third-parties": "15.0.4",
     "@vercel/analytics": "1.4.1",
     "@vercel/og": "0.6.4",
     "next": "14.2.20",
