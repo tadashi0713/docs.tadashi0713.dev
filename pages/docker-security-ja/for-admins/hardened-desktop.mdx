@@ -1,0 +1,37 @@
+---
+title: Hardened Docker Desktop
+description: Hardened Docker Desktopの概要と主な機能
+---
+
+import { Callout } from 'nextra/components'
+
+# Hardened Docker Desktop
+
+<Callout type="info">
+  Hardened Docker Desktop は、Docker Business 契約を持つ顧客のみが利用可能です。
+</Callout>
+
+Hardened Docker Desktop は、開発者の環境におけるセキュリティを向上させるために設計された一連のセキュリティ機能であり、開発者の体験や生産性に最小限の影響を与えるよう配慮されています。
+
+これにより、厳格なセキュリティ設定を適用し、開発者やそのコンテナが意図的または偶発的にこれらの制御を回避するのを防ぐことができます。また、コンテナの分離を強化することで、Docker Desktop の Linux VM やその基盤となるホストに悪意のあるペイロードが侵入するリスクを軽減できます。
+
+Hardened Docker Desktop では、Docker Desktop の設定に関する管理責任を Organization に移行します。これにより、設定したセキュリティ制御は Docker Desktop の利用者によって変更されることはありません。
+
+この機能は以下のようなセキュリティ意識の高い Organization 向けです:
+
+- ユーザーに対してルート権限や管理者権限を与えていない
+
+- Docker Desktop を Organization の中央管理下に置きたい
+
+- 特定のコンプライアンス要件を満たす必要がある
+
+### Organization にどのようなメリットがあるのか？
+
+Hardened Desktop の機能は個別に動作しますが、相互に連携して多層防御戦略を構築し、開発者の作業環境をさまざまな機能層（Docker Desktop の設定、コンテナイメージの取得、コンテナイメージの実行）における潜在的な攻撃から保護します。この多層防御アプローチにより、包括的なセキュリティを実現します。また、以下のような脅威を軽減します:
+
+- マルウェアやサプライチェーン攻撃: Registry Access Management や Image Access Management により、開発者が特定のコンテナレジストリやイメージタイプにアクセスするのを制限し、悪意のあるペイロードのリスクを大幅に低減します。また、Enhanced Container Isolation（ECI）により、Linux ユーザーネームスペース内でルート権限なしでコンテナを実行することで、悪意のあるペイロードを含むコンテナの影響を抑えます。
+
+- ラテラルムーブメント（水平移動）: Air-gapped containers を使用すると、コンテナのネットワークアクセス制限を設定でき、悪意のあるコンテナが Organization 内のネットワークでラテラルムーブメント（水平移動）を行うのを防ぐことができます。
+
+- 内部からの脅威: Settings Management により、Docker Desktop のさまざまな設定を構成・固定し、企業ポリシーを強制的に適用することで、開発者が意図的または偶発的に安全性の低い設定を導入するのを防ぎます。
+
