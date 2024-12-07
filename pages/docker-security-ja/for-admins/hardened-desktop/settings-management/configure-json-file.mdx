@@ -1,0 +1,185 @@
+---
+title: JSON ファイルを使用した Settings Management の構成
+description: Docker Desktop の Settings Management を JSON ファイルで構成する方法
+---
+
+import { Callout } from 'nextra/components'
+
+# JSON ファイルを使用した Settings Management の構成
+
+<Callout type="info">
+  Settings Management は、Docker Business 契約を持つ顧客のみが利用可能です。
+</Callout>
+
+このページでは、`admin-settings.json` ファイルを使用して Settings Management を構成する方法について説明します。このファイルを使用して構成パラメータを指定し、ロックすることで、企業や組織全体で標準化された Docker Desktop 環境を構築できます。
+
+Settings Management は、開発者にルートアクセスを許可しない組織向けに設計されています。
+
+## 前提条件
+
+まず、すべての Docker Desktop 開発者が Organization で認証を行うように[サインインの強制](/docker-security-ja/for-admins/enforce-sign-in)を行う必要があります。Settings Management は Docker Business 契約が必要であり、サインインを強制することで認証されたユーザーのみがアクセスでき、この機能が全ユーザーに一貫して適用されます。
+
+## 手順1: `admin-settings.json` ファイルを作成して適切な場所に保存
+
+macOS や Windows でインストーラーの `--admin-settings` フラグを使用して、`admin-settings.json` を自動作成して正しい場所に保存するか、手動で設定します。
+
+手動で設定する場合：
+
+1. 新しい空の JSON ファイルを作成し、`admin-settings.json` という名前を付けます。
+
+2. 以下の場所に `admin-settings.json` ファイルを保存します:
+    - Mac: `/Library/Application\ Support/com.docker.docker/admin-settings.json`
+    - Windows: `C:\ProgramData\DockerDesktop\admin-settings.json`
+    - Linux: `/usr/share/docker-desktop/admin-settings.json`
+    
+    ファイルを保護されたディレクトリに配置することで、開発者がこれを変更できないようにします。
+
+    <Callout>
+      **重要**
+      ファイルを指定された場所にプッシュする能力があることが前提です。これには [JAMF](https://www.jamf.com/) などのデバイス管理ソフトウェアを使用できます。
+    </Callout>
+
+## 手順2: ロックしたい設定を構成
+
+<Callout type='warning'>
+  一部の構成パラメータは、特定のプラットフォームや特定のDocker Desktopバージョンにのみ適用されます。以下の表で該当箇所を確認してください。
+</Callout>
+
+`admin-settings.json` ファイルには、ネストされた構成パラメータのリストが必要であり、各パラメータには `locked` プロパティが含まれている必要があります。要件に応じて構成パラメータを追加または削除できます。
+
+- `locked: true` の場合、ユーザーは Docker Desktop や CLI からこの設定を編集することはできません。
+
+- `locked: false` の場合、工場出荷時のデフォルト設定に似た動作をしますが、以下のような違いがあります：
+    - 新しいインストールの場合、`locked: false` は Docker Desktop のダッシュボードに関連する設定を事前に入力しますが、ユーザーはそれを変更することができます。
+    - 既に Docker Desktop がインストールされている場合、`locked: false` は無視されます。既存のユーザーが設定を変更している場合、その設定は対応する設定ファイル（たとえば `settings-store.json` や `settings.json`（Docker Desktop 4.34以前）や `daemon.json`）に保存されています。このような場合、ユーザーの設定が優先され、値は変更されません。この動作を制御するには `locked: true` を設定してください。
+
+以下の `admin-settings.json` コード例と表は、必要な構文、パラメータ、および値の説明を示しています:
+
+```json
+{
+  "configurationFileVersion": 2,
+  "exposeDockerAPIOnTCP2375": {
+    "locked": true,
+    "value": false
+  },
+  "proxy": {
+    "locked": true,
+    "mode": "system",
+    "http": "",
+    "https": "",
+    "exclude": [],
+    "windowsDockerdPort": 65000,
+    "enableKerberosNtlm": false
+  },
+  "containersProxy": {
+    "locked": true,
+    "mode": "manual",
+    "http": "",
+    "https": "",
+    "exclude": [],
+    "pac":"",
+    "transparentPorts": ""
+  },
+  "enhancedContainerIsolation": {
+    "locked": true,
+    "value": true,
+    "dockerSocketMount": {
+      "imageList": {
+        "images": [
+          "docker.io/localstack/localstack:*",
+          "docker.io/testcontainers/ryuk:*"
+        ]
+      },
+      "commandList": {
+        "type": "deny",
+        "commands": ["push"]
+      }
+    }
+  },
+  "linuxVM": {
+    "wslEngineEnabled": {
+      "locked": false,
+      "value": false
+    },
+    "dockerDaemonOptions": {
+      "locked": false,
+      "value":"{\"debug\": false}"
+    },
+    "vpnkitCIDR": {
+      "locked": false,
+      "value":"192.168.65.0/24"
+    }
+  },
+  "kubernetes": {
+     "locked": false,
+     "enabled": false,
+     "showSystemContainers": false,
+     "imagesRepository": ""
+  },
+  "windowsContainers": {
+    "dockerDaemonOptions": {
+      "locked": false,
+      "value":"{\"debug\": false}"
+    }
+  },
+  "disableUpdate": {
+    "locked": false,
+    "value": false
+  },
+  "analyticsEnabled": {
+    "locked": false,
+    "value": true
+  },
+  "extensionsEnabled": {
+    "locked": true,
+    "value": false
+  },
+  "scout": {
+    "locked": false,
+    "sbomIndexing": true,
+    "useBackgroundIndexing": true
+  },
+  "allowExperimentalFeatures": {
+    "locked": false,
+    "value": false
+  },
+  "allowBetaFeatures": {
+    "locked": false,
+    "value": false
+  },
+  "blockDockerLoad": {
+    "locked": false,
+    "value": true
+  },
+  "filesharingAllowedDirectories": [
+    {
+      "path": "$HOME",
+      "sharedByDefault": true
+    },
+    {
+      "path":"$TMP",
+      "sharedByDefault": false
+    }
+  ],
+  "useVirtualizationFrameworkVirtioFS": {
+    "locked": true,
+    "value": true
+  },
+  "useVirtualizationFrameworkRosetta": {
+    "locked": true,
+    "value": true
+  },
+  "useGrpcfuse": {
+    "locked": true,
+    "value": true
+  },
+  "displayedOnboarding": {
+    "locked": true,
+    "value": true
+  },
+  "desktopTerminalEnabled": {
+    "locked": false,
+    "value": false
+  }
+}
+```
