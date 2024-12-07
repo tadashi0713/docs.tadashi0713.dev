@@ -1,0 +1,87 @@
+---
+title: Settings Management
+description: Settings Management の仕組み、対象となるユーザー、メリットについて理解する
+---
+
+import { Callout } from 'nextra/components'
+
+# Settings Management
+
+<Callout type="info">
+  Settings Management は、Docker Business 契約を持つ顧客のみが利用可能です。
+</Callout>
+
+Settings Management は、開発者のマシン上でプロキシやネットワーク設定などの主要な Docker Desktop 設定を、Organization 内で管理するのに役立ちます。
+
+さらにセキュリティを強化するため、Settings Management を使用して[Enhanced Container Isolation](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation) を有効にし、ロックすることができます。これにより、コンテナが Settings Management の設定を変更するのを防ぎます。
+
+## 対象となるユーザー
+
+- Docker Desktop を Organization の中央管理下に置きたいと考えている組織
+- 大規模に標準化された Docker Desktop 環境を構築したいと考えている組織
+- 厳密に規制された環境内で Docker Desktop の使用を管理したい Docker Business の顧客
+
+## 仕組み
+
+いくつかの Docker Desktop 設定は以下のいずれかの方法で構成できます:
+
+- `admin-settings.json` ファイル: このファイルは Docker Desktop ホスト上にあり、ルートまたは管理者権限を持つ開発者のみがアクセス可能です。
+- Docker Admin Console で設定ポリシーを作成
+
+管理者によって定義された設定は、開発者が以前に設定した値を上書きし、変更できないようにします。
+
+## Settings Management で構成可能な機能
+
+`admin-settings.json` ファイルを使用して、以下を構成できます:
+
+- [Enhanced Container Isolation](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation) の有効化とロック
+- HTTP プロキシの設定
+- ネットワーク設定の構成
+- Kubernetes 設定の構成
+- WSL 2 ベースのエンジンまたは Hyper-V の使用を強制
+- Apple Silicon での x86_64/amd64 エミュレーション用の Rosetta 使用を強制
+- Docker Engine の設定
+- Docker Desktop の更新確認機能の無効化
+- Docker Extensions の無効化
+- Docker Scout SBOM インデックス作成の無効化
+- ベータ版および実験的機能の無効化
+- Docker Desktop のオンボーディングアンケートの無効化
+- 開発者が Docker ターミナルを使用できるかどうかの制御
+- macOS 上でのファイル共有実装の制御
+- 開発者が追加できるファイル共有パスの指定
+- Air-gapped containers の構成
+
+詳細な構文やオプションについては、[Settings Management の構成方法](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-json-file)を参照してください。
+
+## Settings Management の設定と適用方法
+
+まず、すべての Docker Desktop 開発者が Organization で認証を行うように[サインインの強制](/docker-security-ja/for-admins/enforce-sign-in)を行う必要があります。Settings Management 機能は Docker Business 契約が必要なため、サインインを強制することで、認証されたユーザーのみがアクセス可能となり、この機能が全ユーザーに一貫して適用されます。
+
+次に以下のいずれかを行います：
+
+- 手動で [`admin-settings.json` ファイルを作成および設定](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-json-file)するか、[macOS](https://docs.docker.com/desktop/setup/install/mac-install/#install-from-the-command-line) または [Windows](https://docs.docker.com/desktop/setup/install/windows-install/#install-from-the-command-line) でインストーラーの `--admin-settings` フラグを使用し、`admin-settings.json` を自動的に作成して適切な場所に保存
+- [Docker Admin Console](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-admin-console) の **Settings policy** 作成フォームに入力
+
+これが完了すると、Docker Desktop 開発者は以下のタイミングで変更された設定を受け取ります:
+
+- Docker Desktop を終了し、再起動してサインインした場合
+- 初めて Docker Desktop を起動してサインインした場合
+
+開発者の作業フローを中断させないため、Docker は設定変更後に再起動や再認証を自動的に要求することはありません。
+
+## 設定が適用された際に開発者に見えるもの
+
+適用された設定は Docker Desktop 上でグレーアウトして表示されます。これらは Docker Desktop のダッシュボード、CLI、または `settings-store.json`（Docker Desktop 4.34以前の場合は `settings.json`）から編集できません。
+
+さらに、Enhanced Container Isolation が適用されている場合、開発者は特権コンテナや類似の手法を使用して Docker Desktop Linux VM 内の強制設定を変更することはできません。例えば、プロキシやネットワーク設定、Docker Engine の再構成などが行えなくなります。
+
+<br />
+
+<div align="center">
+  ![プロキシ設定がグレーアウトされた状態](/docker-security-ja/grayed-setting.png)
+</div>
+
+## 次に進むべきステップ
+
+- [`.json` ファイルを使用した Settings Management の構成](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-json-file)
+- [Docker Admin Console を使用した Settings Management の構成](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-admin-console)
