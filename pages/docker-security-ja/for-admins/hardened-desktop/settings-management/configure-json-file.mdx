@@ -3,7 +3,7 @@ title: JSON ファイルを使用した Settings Management の構成
 description: Docker Desktop の Settings Management を JSON ファイルで構成する方法
 ---
 
-import { Callout } from 'nextra/components'
+import { Callout, Table, Td, Th, Tr } from 'nextra/components'
 
 # JSON ファイルを使用した Settings Management の構成
 
@@ -183,3 +183,159 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
   }
 }
 ```
+
+### 一般設定
+
+<Table>
+  <thead>
+    <Tr>
+      <Th>パラメーター</Th>
+      <Th>OS</Th>
+      <Th>説明</Th>
+      <Th>バージョン</Th>
+    </Tr>
+  </thead>
+  <tbody>
+    <Tr>
+      <Td>`configurationFileVersion`</Td>
+      <Td></Td>
+      <Td>設定ファイルフォーマットのバージョンを指定します。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`analyticsEnabled`</Td>
+      <Td></Td>
+      <Td>`value` が `false` に設定されている場合、Docker Desktop は使用状況統計を送信しません。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`disableUpdate`</Td>
+      <Td></Td>
+      <Td>`value` が `true` に設定されている場合、Docker Desktop の更新の確認および通知が無効になります。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`extensionsEnabled`</Td>
+      <Td></Td>
+      <Td>`value` が `false` に設定されている場合、Docker 拡張機能が無効になります。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`blockDockerLoad`</Td>
+      <Td></Td>
+      <Td>`value` が `true` に設定されている場合、ユーザーは [`docker load`](https://docs.docker.com/reference/cli/docker/image/load/) を実行できず、エラーが発生します。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`displayedOnboarding`</Td>
+      <Td></Td>
+      <Td>`value` が `true` に設定されている場合、新規ユーザーへのオンボーディング調査が表示されなくなります。`value` を `false` に設定しても影響はありません。</Td>
+      <Td>Docker Desktop バージョン 4.30 以降</Td>
+    </Tr>
+    <Tr>
+      <Td>`desktopTerminalEnabled`</Td>
+      <Td></Td>
+      <Td>`value` が `false` に設定されている場合、開発者は Docker Desktop を使用してホストマシンに直接アクセスしたり、コマンドを実行することができません。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`exposeDockerAPIOnTCP2375`</Td>
+      <Td>Windows のみ</Td>
+      <Td>Docker API を指定されたポートで公開します。`value` を `true` に設定すると、Docker API がポート 2375 で公開されます。注意: これは認証されていないため、適切なファイアウォールルールで保護されている場合のみ有効にしてください。</Td>
+      <Td></Td>
+    </Tr>
+  </tbody>
+</Table>
+
+### ファイル共有とエミュレーション
+
+<Table>
+  <thead>
+    <Tr>
+      <Th>パラメーター</Th>
+      <Th>OS</Th>
+      <Th>説明</Th>
+      <Th>バージョン</Th>
+    </Tr>
+  </thead>
+  <tbody>
+    <Tr>
+      <Td>`filesharingAllowedDirectories`</Td>
+      <Td></Td>
+      <Td>開発者がファイル共有を追加できるパスを指定します。`$HOME`、`$TMP`、または `$TEMP` をパス変数として受け入れます。パスが追加されると、そのサブディレクトリも許可されます。`sharedByDefault` を `true` に設定すると、工場出荷時リセット時または Docker Desktop の初回起動時にそのパスが追加されます。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`useVirtualizationFrameworkVirtioFS`</Td>
+      <Td>macOS のみ</Td>
+      <Td>`value` が `true` に設定されている場合、VirtioFS がファイル共有メカニズムとして設定されます。注意: `useVirtualizationFrameworkVirtioFS` と `useGrpcfuse` の両方が `true` に設定されている場合、VirtioFS が優先されます。また、両方が `false` の場合、osxfs がファイル共有メカニズムとして設定されます。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`useGrpcfuse`</Td>
+      <Td>macOS のみ</Td>
+      <Td>`value` が `true` に設定されている場合、gRPC Fuse がファイル共有メカニズムとして設定されます。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`useVirtualizationFrameworkRosetta`</Td>
+      <Td>macOS のみ</Td>
+      <Td>`value` が `true` に設定されている場合、Docker Desktop は Apple Silicon 上で x86_64/amd64 バイナリのエミュレーションを加速するために Rosetta をオンにします。この設定により、仮想化フレームワークの使用も自動的に有効になります。</Td>
+      <Td>Docker Desktop バージョン 4.29 以降</Td>
+    </Tr>
+  </tbody>
+</Table>
+
+### Docker Scout
+
+<Table>
+  <thead>
+    <Tr>
+      <Th>パラメーター</Th>
+      <Th>OS</Th>
+      <Th>説明</Th>
+      <Th>バージョン</Th>
+    </Tr>
+  </thead>
+  <tbody>
+    <Tr>
+      <Td>`scout`</Td>
+      <Td></Td>
+      <Td>`useBackgroundIndexing` を `false` に設定すると、イメージストアに読み込まれたイメージの自動インデックス作成が無効になります。`sbomIndexing` を `false` に設定すると、Docker Desktop または `docker scout` CLI コマンドを使用してイメージをインデックス作成することができなくなります。</Td>
+      <Td></Td>
+    </Tr>
+  </tbody>
+</Table>
+
+### プロキシ
+
+<Table>
+  <thead>
+    <Tr>
+      <Th>パラメーター</Th>
+      <Th>OS</Th>
+      <Th>説明</Th>
+      <Th>バージョン</Th>
+    </Tr>
+  </thead>
+  <tbody>
+    <Tr>
+      <Td>`proxy`</Td>
+      <Td></Td>
+      <Td>`mode` を `system` に設定すると、Docker Desktop はプロキシ値をシステムから取得し、`http`、`https`、および `exclude` に設定された値を無視します。プロキシサーバーを手動で設定するには、`mode` を `manual` に変更します。プロキシポートがカスタムの場合、`http` または `https` プロパティで指定します（例: `"https": "http://myotherproxy.com:4321"`）。`exclude` プロパティには、プロキシをバイパスするホストおよびドメインのコンマ区切りリストを指定します。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`windowsDockerdPort`</Td>
+      <Td>Windows のみ</Td>
+      <Td>Docker Desktop の内部プロキシを Windows Docker デーモンが接続できるようローカルでこのポートに公開します。値が 0 の場合、ランダムな空きポートが選択されます。値が 0 より大きい場合、その値がポートとして使用されます。デフォルト値は -1 で、これによりこのオプションが無効になります。</Td>
+      <Td></Td>
+    </Tr>
+    <Tr>
+      <Td>`enableKerberosNtlm`</Td>
+      <Td></Td>
+      <Td>`value` が `true` に設定されている場合、Kerberos および NTLM 認証が有効になります。デフォルトは false です。詳細は設定ドキュメントを参照してください。</Td>
+      <Td></Td>
+    </Tr>
+  </tbody>
+</Table>
