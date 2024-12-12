@@ -543,3 +543,22 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 <Callout type='info'>
   `admin-settings.json` ファイルで行った変更が期待通りに動作するかをローカルでテストしてください。
 </Callout>
+
+変更を適用するには:
+
+  - 新しいインストールでは、開発者が Docker Desktop を起動して、Organization に認証する必要があります。
+
+  - 既存のインストールでは、Docker メニューから Docker Desktop を終了し、再起動する必要があります。すでにサインインしている場合、再度サインインする必要はありません。
+
+    <Callout>
+      **重要**
+      Docker メニューから **Restart（再起動）** を選択するだけでは不十分です。これは Docker Desktop の一部のコンポーネントのみを再起動するためです。
+    </Callout>
+
+開発者の作業を妨げないようにするため、Docker は設定変更後に自動的に再起動や再認証を要求しません。
+
+Docker Desktop では、関連する設定がグレーアウトされ、「**Locked by your administrator**（管理者によってロックされています）」というメッセージが表示されます。
+
+<div align="center">
+  ![設定管理によるグレーアウトされたプロキシ設定](/docker-security-ja/grayed-setting.png)
+</div>
