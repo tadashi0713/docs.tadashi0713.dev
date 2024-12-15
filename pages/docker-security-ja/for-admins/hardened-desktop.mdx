@@ -3,7 +3,8 @@ title: Hardened Docker Desktop
 description: Hardened Docker Desktopの概要と主な機能
 ---
 
-import { Callout } from 'nextra/components'
+import { Callout, Cards } from 'nextra/components'
+import { GoShieldLock } from "react-icons/go"
 
 # Hardened Docker Desktop
 
@@ -35,3 +36,13 @@ Hardened Desktop の機能は個別に動作しますが、相互に連携して
 
 - 内部からの脅威: Settings Management により、Docker Desktop のさまざまな設定を構成・固定し、企業ポリシーを強制的に適用することで、開発者が意図的または偶発的に安全性の低い設定を導入するのを防ぎます。
 
+<br />
+
+<Cards.Card
+  icon={<GoShieldLock />}
+  title="Settings Management"
+  href="/docker-security-ja/for-admins/hardened-desktop/settings-management"
+  arrow
+/>
+
+Settings Management を活用して、開発者のワークフローをどのように保護できるかを学びましょう。
