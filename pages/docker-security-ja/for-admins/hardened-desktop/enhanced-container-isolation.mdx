@@ -1,0 +1,176 @@
+---
+title: Enhanced Container Isolation (強化されたコンテナ分離)
+description: Enhanced Container Isolation (強化されたコンテナー分離) - 利点、使用理由、Dockerのルートレスとの違い、対象者
+---
+
+import { Callout } from 'nextra/components'
+
+# Enhanced Container Isolation (強化されたコンテナ分離) とは？
+
+<Callout type="info">
+  強化されたコンテナ分離（Enhanced Container Isolation、以下ECI）は Docker Business のお客様のみが利用可能です。
+</Callout>
+
+強化されたコンテナ分離（ECI）は、コンテナ内で実行される悪意のあるワークロードが Docker Desktop やホストを侵害するのを防ぐ追加のセキュリティレイヤーを提供します。
+
+ECI は、開発者の生産性に影響を与えることなく、コンテナの分離を強化するためのさまざまな高度な技術を使用します。
+
+また、[レジストリアクセス管理ポリシー](/docker-security-ja/for-admins/hardened-desktop/registry-access-management/)や [Settings Management](/docker-security-ja/for-admins/hardened-desktop/settings-management/) を通じて管理者によって作成されたセキュリティ構成をロックします。
+
+<Callout type="info">
+  ECI は Docker で使用されている他のコンテナセキュリティ技術（例えば、Linux Capabilities の削減、seccomp、AppArmor）を補完するものです。
+</Callout>
+
+## 対象者
+
+- コンテナ攻撃を防ぎ、開発環境の脆弱性を低減したい組織や開発者。
+
+- 開発者のマシンで簡単かつ直感的に実施できる、より強力なコンテナ分離を実現したい組織。
+
+## Enhanced Container Isolation を有効にすると何が起こる？
+
+ECI を有効にすると、以下の機能とセキュリティ技術が適用されます：
+
+- すべてのユーザーコンテナは Linux ユーザーネームスペースで自動的に実行され、強力な分離が保証されます。各コンテナは専用の Linux ユーザーネームスペース内で実行されます。
+
+- コンテナ内の root ユーザーは Docker Desktop Linux VM 内の非特権ユーザーにマッピングされます。
+
+- コンテナが侵害されにくくなります。例えば、重要なシステムコールが精査され、`/proc` や `/sys` の一部がコンテナ内でエミュレートされます。
+
+- ホストディレクトリやボリュームのバインドマウントなど、ユーザーは通常通りコンテナを使用できます。
+
+- コンテナ実行方法に変更はなく、特別なコンテナイメージは必要ありません。
+
+- 特権コンテナ（例：`--privileged` フラグ）は機能しますが、コンテナの Linux ユーザーネームスペース内でのみ特権が与えられ、Docker Desktop VM では特権がありません。そのため、Docker Desktop VM を侵害することはできません。
+
+- Docker-in-Docker や Kubernetes-in-Docker も動作しますが、Docker Desktop Linux VM 内で非特権として実行されます。
+
+さらに、以下の制限が課されます：
+
+- コンテナは Docker Desktop VM とネームスペースを共有できません（例：`--network=host` や `--pid=host` は使用不可）。
+
+- コンテナは Docker Desktop VM 内の構成ファイルを変更できません（例: VM ディレクトリをコンテナにマウントすることは禁止されています）。
+
+- コンテナは Docker Engine にアクセスできません。例えば、Docker Engine のソケットをコンテナにマウントすることは制限され、悪意のあるコンテナが Docker Engine を制御するのを防ぎます。ただし、[信頼できるコンテナイメージ](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/config)に対しては管理者がこの制限を緩和できます。
+
+- Docker Desktop VM へのコンソールアクセスはすべてのユーザーに対して禁止されています。
+
+これらの機能と制限により、実行時のコンテナがより安全に保護される一方で、開発者の体験や生産性への影響は最小限に抑えられます。開発者は通常通り Docker Desktop を使用できますが、起動するコンテナはより強力に分離されます。
+
+ECI の動作について詳しくは、[仕組み](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/how-eci-works/)をご覧ください。
+
+<Callout>
+  **重要**
+  ECI はまだ Docker ビルド、Kubernetes ポッド、拡張コンテナを完全には保護していません。既知の制限や回避策については、[FAQ](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/faq/) を参照してください。
+</Callout>
+
+## Enhanced Container Isolation を有効にする方法
+
+### 開発者として
+
+開発者として ECI を有効にするには：
+
+- Organization が Docker Business サブスクリプションを利用していることを確認します。
+
+- Docker Desktop にサインインし、Organization に認証します。これにより、Docker Desktop の設定メニューで ECI 機能が利用可能になります。
+
+- 既存のすべてのコンテナを停止して削除します。
+
+- Docker Desktop の **Settings > General** に移動します。
+
+- **Use Enhanced Container Isolation** のチェックボックスを選択します。
+
+- **Apply and restart** を選択して設定を保存します。
+
+<Callout>
+  **重要**
+  ECI は有効化前に作成されたコンテナを保護しません。既知の制限や回避策については、[FAQ](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/faq/) を参照してください。
+</Callout>
+
+### 管理者として
+
+#### 前提条件
+
+[サインインの必須化](/docker-security-ja/for-admins/enforce-sign-in) をまず実施し、すべての Docker Desktop 開発者が Organization に認証するようにします。設定管理には Docker Business サブスクリプションが必要なため、サインインの必須化によって、認証されたユーザーだけが機能にアクセスでき、すべてのユーザーに一貫して機能が適用されるよう保証します。
+
+#### 設定方法
+
+[`admin-settings.json` ファイルを作成および設定](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-json-file) し、以下を指定します：
+
+```json
+{
+  "configurationFileVersion": 2,
+  "enhancedContainerIsolation": {
+    "value": true,
+    "locked": true
+  }
+}
+```
+
+`"value": true` を設定すると、ECI がデフォルトで有効になります。
+
+`"locked": true` を設定すると、開発者がこの機能を無効にできなくなります。開発者が機能を無効にできるようにしたい場合は、`"locked": false` を設定してください。
+
+さらに、[コンテナの Docker ソケットマウント権限を設定](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/config)することもできます。
+
+適用するには：
+
+- 新しいインストールの場合、開発者が Docker Desktop を起動して Organization に認証する必要があります。
+
+- 既存のインストールの場合、Docker メニューから Docker Desktop を終了し、再起動する必要があります。すでにサインインしている場合、変更を反映するために再度サインインする必要はありません。
+
+<Callout>
+  **重要**
+  Docker メニューから **Restart** を選択するだけでは不十分です。これは Docker Desktop の一部のコンポーネントのみを再起動するためです。
+</Callout>
+
+## 管理者がこの設定を強制した場合、ユーザーは何を見る？
+
+<Callout type="info">
+  これらの設定を [Docker Admin Console](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-admin-console) で構成することもできます。
+</Callout>
+
+ECI が有効な場合、ユーザーは以下を確認できます：
+
+- **Settings > General** で **Use Enhanced Container Isolation** がオンになっています。
+- コンテナは Linux ユーザーネームスペース内で実行されます。
+
+確認するには、以下を実行します：
+
+```console
+$ docker run --rm alpine cat /proc/self/uid_map
+```
+
+以下の出力が表示されます：
+
+```text
+         0     100000      65536
+```
+
+これは、コンテナの root ユーザー（0）が Docker Desktop VM 内の非特権ユーザー（100000）にマッピングされており、そのマッピングが64KのユーザーID範囲にわたることを示しています。コンテナプロセスがコンテナをエスケープした場合でも、VM レベルで特権を持たないことを意味します。このユーザーIDマッピングは各コンテナごとに異なり、各コンテナがホストユーザーIDの専用範囲を取得します。ユーザーIDのマッピングは Docker Desktop によって自動的に管理されます。詳細については、[ECI の仕組み](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/how-eci-works)を参照してください。
+
+一方、ECI が有効でない場合、Linux ユーザーネームスペースは使用されず、以下の出力が表示されます：
+
+```text
+         0          0 4294967295
+```
+
+これは、コンテナ内の root ユーザー（0）が Docker Desktop VM の root ユーザー（0）であり、コンテナ分離が低下することを意味します。
+
+ECI は [Sysbox コンテナランタイム](/security/for-admins/hardened-desktop/enhanced-container-isolation/how-eci-works/) を Docker Desktop Linux VM 内で使用しているため、ECI が有効かどうかを確認する別の方法として、`docker inspect` を使用できます：
+
+```console
+$ docker inspect --format='{{.HostConfig.Runtime}}' my_container
+```
+
+以下の出力が表示されます：
+
+```text
+sysbox-runc
+```
+
+ECI が有効でない場合、`docker inspect` は標準の OCI ランタイムである `runc` を出力します。
+
+## 関連リソース
+
+- [動画: Enhanced Container Isolation](https://www.youtube.com/watch?v=oA1WQZWnTAk)
