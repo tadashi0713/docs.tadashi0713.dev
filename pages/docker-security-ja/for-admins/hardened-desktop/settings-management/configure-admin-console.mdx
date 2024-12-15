@@ -1,0 +1,82 @@
+---
+description: Docker Admin Console を使用して Docker Desktop の Settings Management を構成する方法
+title: Admin Console を使用した Settings Management の構成
+---
+
+import { Callout } from 'nextra/components'
+
+# Admin Console を使用した Settings Management の構成
+
+<Callout>
+  Docker Admin Console の Settings Management は [Early Access](https://docs.docker.com/release-lifecycle/#early-access-ea) 機能であり、Docker Business のお客様のみが利用可能です。
+</Callout>
+
+このページでは、Docker Admin Console を使用して Settings Management を構成する方法について管理者向けに説明しています。構成パラメータを指定してロックすることで、Docker Company や Organization 全体で標準化された Docker Desktop 環境を作成できます。
+
+## 前提条件
+
+- [Docker Desktop 4.36.0 以降をダウンロードしてインストール](https://docs.docker.com/desktop/release-notes/)する
+- [ドメインを確認](/docker-security-ja/for-admins/single-sign-on/configure/#step-one-add-and-verify-your-domain)する
+- [サインインを必須](/docker-security-ja/for-admins/enforce-sign-in/)にする。Settings Management 機能を使用するには Docker Business サブスクリプションが必要です。そのため、Docker Desktop ユーザーは Organization に認証を行う必要があり、設定が有効になるようにします。
+
+## 設定ポリシーの作成
+
+1. [Docker Admin Console](https://admin.docker.com) 内で、設定ポリシーを定義したい Company または Organization を選択します。
+
+2. **Security and access** セクションで、**Desktop Settings Management** を選択します。
+
+3. 右上にある **Create a settings policy** を選択します。
+
+4. 設定ポリシーに名前とオプションで説明を入力します。
+
+    <Callout type='info'>
+      すでに Organization 向けに `admin-settings.json` ファイルを使用して Settings Management を構成している場合は、**Upload existing settings** ボタンを使用してアップロードできます。これにより、フォームが自動的に入力されます。
+      Docker Admin Console 経由で展開された設定ポリシーは、手動で展開された `admin-settings.json` ファイルよりも優先されます。
+    </Callout>
+
+5. Company や Organization 内のすべてのユーザー、または特定のユーザーに設定ポリシーを割り当てます。
+
+    <Callout type='info'>
+      設定ポリシーをすべてのユーザーに割り当てると、グローバルデフォルトポリシーとして設定されます。一度に保持できるグローバル設定ポリシーは1つだけです。
+      すでに特定のユーザーにユーザー固有の設定ポリシーが割り当てられている場合、そのユーザー固有のポリシーがグローバルポリシーよりも優先されます。
+    </Callout>
+    <Callout>
+      グローバル設定ポリシーを設定する前に、まずユーザー固有のポリシーとしてテストして、変更に満足していることを確認することをお勧めします。
+    </Callout>
+
+6. ポリシーの設定を構成します。各設定を確認し、以下のいずれかの設定状態を選択します：
+
+    - **User-defined**: 開発者がこの設定を制御および変更できます。
+    - **Always enabled**: 設定がオンになり、ユーザーは Docker Desktop または CLI からこの設定を編集できません。
+    - **Enabled**: 設定がオンになり、ユーザーは Docker Desktop または CLI からこの設定を編集できます。
+    - **常に無効**: 設定がオフになり、ユーザーは Docker Desktop または CLI からこの設定を編集できません。
+    - **無効**: 設定がオフになり、ユーザーは Docker Desktop または CLI からこの設定を編集できます。
+
+7. Create を選択します。
+
+設定ポリシーを適用するには：
+
+- 新しいインストールでは、ユーザーが Docker Desktop を起動し、組織に認証を行う必要があります。
+
+- 既存のインストールでは、ユーザーは Docker メニューから Docker Desktop を終了し、再起動する必要があります。すでにサインインしている場合、変更を適用するために再度サインインする必要はありません。
+
+    <Callout>
+      **重要**
+      Docker メニューから **Restart** を選択するだけでは不十分です。これは Docker Desktop の一部のコンポーネントのみを再起動するためです。
+    </Callout>
+
+ユーザーのワークフローを中断しないように、Docker は変更が行われた後に自動的に再起動を要求しません。
+
+<Callout type='info'>
+  設定は、ユーザーがサインインして Docker Desktop を開始したとき、または60分ごとに Docker Desktop と CLI に同期されます。
+</Callout>
+
+設定ポリシーをロールバックする必要がある場合は、ポリシーを削除するか、ポリシーを編集して個別の設定を **User-defined** に設定してください。
+
+## 設定ポリシーの操作
+
+Docker Admin Console の Desktop Settings Management ページにある **Actions** メニューから、以下の操作を実行できます：
+
+- 既存の設定ポリシーを編集または削除する。
+- 設定ポリシーを `admin-settings.json` ファイルとしてエクスポートする。
+- 特定のユーザーグループに適用されているポリシーを、新しいグローバルデフォルトポリシーとしてすべてのユーザーに適用するよう昇格させる。
