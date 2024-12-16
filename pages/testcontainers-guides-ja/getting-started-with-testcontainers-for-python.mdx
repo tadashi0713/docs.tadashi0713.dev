@@ -1,0 +1,152 @@
+---
+title: Python で Testcontainers を使い始める
+description: このガイドでは、PostgreSQL を使用したテストを例に、Python で Testcontainers を使い始める方法を説明します。
+---
+
+import { Callout, Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa";
+
+# Python で Testcontainers を使い始める
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-getting-started-with-testcontainers-for-python"
+/>
+
+Testcontainers for Python は、開発やテストの際に使い捨て可能なオンデマンドのコンテナを提供するオープンソースのフレームワークです。これにより、データベース、メッセージブローカー、ウェブブラウザ、その他 Docker コンテナで実行できるほぼすべてのものと簡単に連携できます。Testcontainers を使用すると、モックやインメモリサービスを使用せずに、本番環境と同じ種類のサービスと対話するテストを作成できます。
+
+<Callout type="info">
+  Testcontainers を初めて使用する場合は、[Testcontainers とは何か、なぜ使うべきなのか？](/testcontainers-guides-ja/introducing-testcontainers)を読んで、Testcontainersについて詳しく学んでください。
+</Callout>
+
+以下の手順に従って、PostgreSQL データベースを使用するシンプルな Python アプリケーションを作成し、Testcontainers を使用して実際の PostgreSQL データベースでテストを行う方法を学びましょう。
+
+## Python アプリケーションの作成
+
+まず、Python プロジェクトを作成し、`venv` モジュールを使用して仮想環境を設定します。仮想環境を使用することで、依存関係をグローバルにインストールすることを避け、プロジェクトごとに異なるバージョンのパッケージを使用できます。
+
+```bash
+$ mkdir tc-python-demo
+$ cd tc-python-demo
+$ python3 -m venv venv
+$ source venv/bin/activate
+```
+
+次に、PostgreSQL データベースと対話するために `psycopg3`、テストのために `pytest`、コンテナ内で PostgreSQL データベースを実行するために `testcontainers-python` を使用します。仮想環境をアクティブにした状態で、以下のコマンドで必要な依存関係をインストールします。
+
+```bash
+$ pip install psycopg pytest testcontainers[postgres]
+$ pip freeze > requirements.txt
+```
+
+依存関係をインストールしたら、`pip freeze` コマンドを使用して `requirements.txt` ファイルを生成します。これにより、他の人が同じバージョンのパッケージを簡単にインストールできます。
+
+## データベースヘルパーの実装
+
+**db/connection.py** ファイルを作成し、データベース接続を取得する関数を以下のように定義します。
+
+```python
+import os
+import psycopg
+
+def get_connection():
+    host = os.getenv("DB_HOST", "localhost")
+    port = os.getenv("DB_PORT", "5432")
+    username = os.getenv("DB_USERNAME", "postgres")
+    password = os.getenv("DB_PASSWORD", "postgres")
+    database = os.getenv("DB_NAME", "postgres")
+    return psycopg.connect(f"host={host} dbname={database} user={username} password={password} port={port}")
+```
+
+データベース接続パラメータをハードコーディングする代わりに、環境変数を使用して取得しています。これにより、コードを変更せずに異なる環境でアプリケーションを実行できます。
+
+## ビジネスロジックの実装
+
+**customers/customers.py** ファイルを作成し、**Customer** クラスを以下のように定義します。
+
+```python
+class Customer:
+    def __init__(self, cust_id, name, email):
+        self.id = cust_id
+        self.name = name
+        self.email = email
+
+    def __str__(self):
+        return f"Customer({self.id}, {self.name}, {self.email})"
+```
+
+次に、**customers/customers.py** ファイルに **create_table()** 関数を追加し、**customers** テーブルを作成します。
+
+```python
+from db.connection import get_connection
+
+def create_table():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE customers (
+                    id serial PRIMARY KEY,
+                    name varchar not null,
+                    email varchar not null unique)
+                """)
+            conn.commit()
+```
+
+**get_connection()** 関数を使用して新しいデータベース接続を取得し、**customers** テーブルを作成しています。**with** ステートメントを使用して、データベース接続を自動的に閉じるようにしています。
+
+さらに、**customers/customers.py** ファイルに以下の関数を実装します。
+
+- **create_customer(name, email)**: 新しい顧客を作成します。
+
+- **get_all_customers()**: すべての顧客を取得します。
+
+- **get_customer_by_email(email)**: メールアドレスで顧客を検索します。
+
+- **delete_all_customers()**: すべての顧客を削除します。
+
+```python
+def create_customer(name, email):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO customers (name, email) VALUES (%s, %s) RETURNING id
+                """, (name, email))
+            customer_id = cur.fetchone()[0]
+            conn.commit()
+            return Customer(customer_id, name, email)
+
+def get_all_customers():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, name, email FROM customers")
+            rows = cur.fetchall()
+            return [Customer(row[0], row[1], row[2]) for row in rows]
+
+def get_customer_by_email(email):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, name, email FROM customers WHERE email = %s", (email,))
+            row = cur.fetchone()
+            if row:
+                return Customer(row[0], row[1], row[2])
+            return None
+
+def delete_all_customers():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM customers")
+            conn.commit()
+```
+
+Python の DB-API を使用して、データベースから顧客のレコードを挿入、取得、削除するためのさまざまな機能を実装しました。
+
+<Callout type="info">
+  このガイドの目的を簡単にするため、各データベース操作ごとに新しい接続を作成しています。実際のアプリケーションでは、接続プールを使用して接続を再利用することをお勧めします。
+</Callout>
+
+## Testcontainers を使用したテストの作成
+
