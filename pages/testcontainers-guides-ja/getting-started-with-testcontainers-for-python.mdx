@@ -150,3 +150,125 @@ Python の DB-API を使用して、データベースから顧客のレコー�
 
 ## Testcontainers を使用したテストの作成
 
+Testcontainers を使用して PostgreSQL データベースコンテナのインスタンスを作成し、すべてのテストで同じデータベースを使用します。また、各テストの前にすべての顧客レコードを削除することで、テストをクリーンなデータベース環境で実行できるようにします。
+
+セットアップとテアダウン（後処理）のロジックを実装するために、pytest の fixtures を使用します。セットアップとテアダウンのロジックを実装する推奨方法は、[yield fixtures](https://pytest.org/en/7.4.x/how-to/fixtures.html#yield-fixtures-recommended) を使用することです。
+
+```python
+@pytest.fixture
+def setup():
+    # setup code
+    yield some_value
+    # teardown code
+```
+
+しかし、この方法では、セットアップコード内で例外が発生した場合、テアダウンコードが実行されない可能性があります。そのため、より良いアプローチとして以下のように [finalizers](https://pytest.org/en/7.4.x/how-to/fixtures.html#adding-finalizers-directly) を使用する方法があります：
+
+```python
+@pytest.fixture
+def setup(request):
+    # setup code
+
+    def cleanup():
+        # teardown code
+
+    request.addfinalizer(cleanup)
+    return some_value
+```
+
+**tests/test_customers.py** ファイルを作成し、以下のように fixtures を実装しましょう。
+
+```python
+import os
+import pytest
+from testcontainers.postgres import PostgresContainer
+
+from customers import customers
+
+postgres = PostgresContainer("postgres:16-alpine")
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup(request):
+    postgres.start()
+
+    def remove_container():
+        postgres.stop()
+
+    request.addfinalizer(remove_container)
+    os.environ["DB_CONN"] = postgres.get_connection_url()
+    os.environ["DB_HOST"] = postgres.get_container_host_ip()
+    os.environ["DB_PORT"] = postgres.get_exposed_port(5432)
+    os.environ["DB_USERNAME"] = postgres.username
+    os.environ["DB_PASSWORD"] = postgres.password
+    os.environ["DB_NAME"] = postgres.dbname
+    customers.create_table()
+
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_data():
+    customers.delete_all_customers()
+```
+
+**module** スコープの fixture を使用して、Testcontainers を用いて PostgreSQL コンテナを起動しています。この fixture は module 内のすべてのテストに対して一度だけ実行されます。**setup()** fixture 関数では、PostgreSQL コンテナを起動し、**customers** テーブルを作成しています。また、すべてのテストが終了した後にコンテナを削除するための finalizer を追加しています。
+
+**setup_data()** fixture 関数では、**customers** テーブル内のすべてのレコードを削除しています。この関数は関数スコープの fixture であり、各テストの実行前に実行されます。
+
+<Callout type="info">
+  現在のところ、Testcontainers for Python では [Ryuk](https://github.com/testcontainers/moby-ryuk) を使用した自動リソースクリーンアップが実装されていないため、finalizer を使用して明示的に作成したコンテナを削除しています。
+</Callout>
+
+それでは、以下のようにテストを実装しましょう：
+
+```python
+def test_get_all_customers():
+    customers.create_customer("Siva", "siva@gmail.com")
+    customers.create_customer("James", "james@gmail.com")
+    customers_list = customers.get_all_customers()
+    assert len(customers_list) == 2
+
+
+def test_get_customer_by_email():
+    customers.create_customer("John", "john@gmail.com")
+    customer = customers.get_customer_by_email("john@gmail.com")
+    assert customer.name == "John"
+    assert customer.email == "john@gmail.com"
+```
+
+- **test_get_all_customers()** テストでは、2つの顧客レコードをデータベースに挿入し、既存のすべての顧客を取得して顧客数をアサートします。
+
+- **test_get_customer_by_email()** テストでは、顧客レコードをデータベースに挿入し、メールアドレスで顧客を取得して、その詳細をアサートします。
+
+各テストの実行前にすべての顧客レコードを削除しているため、テストは任意の順序で実行することが可能です。
+
+## テストの実行
+
+Pytest の自動検出メカニズムを有効にするために、**tests** ディレクトリ内に空の内容の **__init__.py** ファイルを作成します。
+
+次に、以下のように pytest を使用してテストを実行します：
+
+```bash
+$ pytest
+```
+
+以下のような出力が表示されるはずです：
+
+```shell
+pytest
+=============== test session starts ==============
+platform darwin -- Python 3.12.0, pytest-7.4.3, pluggy-1.3.0
+rootdir: /Users/siva/dev/tc-python-demo
+collected 2 items
+
+tests/test_customers.py ..                       [100%]
+
+============== 2 passed in 3.02s =================
+```
+
+これらのテストはモックではなく、実際の PostgreSQL データベースを使用して実行されるため、実装に対する信頼性が向上します。
+
+## まとめ
+
+このガイドでは、**testcontainers-python** ライブラリを使用して PostgreSQL データベースを利用した Python アプリケーションのテスト方法を紹介しました。**testcontainers-python** は、PostgreSQL のほかにも、一般的に使用される多くの SQL データベース、NoSQL データベース、メッセージキューなどに対応した専用モジュールを提供しています。また、Testcontainers を使用することで、テストのために任意のコンテナ化された依存関係を実行することが可能です！
+
+Testcontainers の詳細については、公式サイト https://testcontainers.com/ をぜひご覧ください。
