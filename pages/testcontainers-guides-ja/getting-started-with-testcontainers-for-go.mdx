@@ -1,0 +1,463 @@
+---
+title: Go で Testcontainers を使い始める
+description: このガイドでは、PostgreSQL を使用したテストを例に、Go で Testcontainers を使い始める方法を説明します。
+---
+
+import { Callout, Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa";
+
+# Go で Testcontainers を使い始める
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-getting-started-with-testcontainers-for-python"
+/>
+
+このガイドでは、以下の内容を学びます：
+
+- モジュールサポートを使用して Go アプリケーションを作成する方法。
+
+- pgx ドライバを使用して、PostgreSQL データベースで顧客データを管理するリポジトリを実装する方法。
+
+- testcontainers-go を使用してデータベースとのやり取りをテストする方法。
+
+## 前提条件
+
+- Go 1.19 以上
+
+- お好みの IDE（VS Code や GoLand など）
+
+- Testcontainers がサポートする Docker 環境
+  https://golang.testcontainers.org/system_requirements/
+
+
+## このガイドで達成すること
+
+Go プロジェクトを作成し、PostgreSQL データベースを使用して顧客情報を保存および取得するリポジトリを実装します。その後、testcontainers-go の PostgreSQL モジュールを使用して、このリポジトリをテストします。
+
+## プロジェクトのセットアップ
+
+Go プロジェクトを作成しましょう。
+
+```bash
+$ mkdir testcontainers-go-demo
+$ cd testcontainers-go-demo
+$ go mod init github.com/testcontainers/testcontainers-go-demo
+```
+
+PostgreSQL データベースと対話するために [jackc/pgx](https://github.com/jackc/pgx) ドライバを使用し、テスト用に **testcontainers-go** [postgres module](https://golang.testcontainers.org/modules/postgres/) を利用して PostgreSQL Docker インスタンスを起動します。また、複数のテストを実行し、アサーションを書くために [testify](https://github.com/stretchr/testify) を使用します。
+
+<Callout type="info">
+  Testcontainers を初めて使用する場合は、[Testcontainers とは何か、なぜ使うべきなのか？](/testcontainers-guides-ja/introducing-testcontainers)を読んで、Testcontainersについて詳しく学んでください。
+</Callout>
+
+これらの依存関係をインストールします。
+
+```bash
+$ go get github.com/jackc/pgx/v5
+$ go get github.com/testcontainers/testcontainers-go
+$ go get github.com/testcontainers/testcontainers-go/modules/postgres
+$ go get github.com/stretchr/testify
+```
+
+依存関係をインストールした後、`go.mod` ファイルは次のようになります：
+
+```go
+module github.com/testcontainers/testcontainers-go-demo
+
+go 1.19
+
+require (
+   github.com/jackc/pgx/v5 v5.3.1
+   github.com/stretchr/testify v1.8.3
+   github.com/testcontainers/testcontainers-go v0.20.1
+   github.com/testcontainers/testcontainers-go/modules/postgres v0.20.1
+)
+
+require (
+   // indirect dependencies here
+)
+```
+
+## Customer struct の作成
+
+まず、`customer` パッケージに `types.go` ファイルを作成し、顧客情報をモデル化する Customer struct を定義します:
+
+```go
+package customer
+
+type Customer struct {
+	Id    int
+	Name  string
+	Email string
+}
+```
+
+## Repository の作成
+
+次に、`customer/repo.go` ファイルを作成し、`Repository` struct を定義して、新しい顧客を作成およびメールアドレスで取得するメソッドを追加します：
+
+```go
+package customer
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/jackc/pgx/v5"
+)
+
+type Repository struct {
+	conn *pgx.Conn
+}
+
+func NewRepository(ctx context.Context, connStr string) (*Repository, error) {
+	conn, err := pgx.Connect(ctx, connStr)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		return nil, err
+	}
+	return &Repository{
+		conn: conn,
+	}, nil
+}
+
+func (r Repository) CreateCustomer(ctx context.Context, customer Customer) (Customer, error) {
+	err := r.conn.QueryRow(ctx,
+		"INSERT INTO customers (name, email) VALUES ($1, $2) RETURNING id",
+		customer.Name, customer.Email).Scan(&customer.Id)
+	return customer, err
+}
+
+func (r Repository) GetCustomerByEmail(ctx context.Context, email string) (Customer, error) {
+	var customer Customer
+	query := "SELECT id, name, email FROM customers WHERE email = $1"
+	err := r.conn.QueryRow(ctx, query, email).
+		Scan(&customer.Id, &customer.Name, &customer.Email)
+	if err != nil {
+		return Customer{}, err
+	}
+	return customer, nil
+}
+```
+
+ここでの処理内容を理解しましょう:
+
+- `Repository` struct にはデータベース操作を行うための `*pgx.Conn` フィールドを定義しました。
+
+- データベース接続文字列を受け取り、`Repository` を初期化するヘルパー関数 `NewRepository` を定義しました。
+
+- `CreateCustomer()` と `GetCustomerByEmail()` メソッドを `Repository` のレシーバーとして実装しました。
+
+## testcontainers-go を使用した Repository のテスト
+
+`Repository` の実装が完了したので、PostgreSQL データベースを使用してテストを行います。**testcontainers-go** を使用して Docker コンテナ内で PostgreSQL データベースを起動し、テストを実行します。
+
+実際のアプリケーションではデータベースマイグレーションツールを使用することが一般的ですが、このガイドではシンプルなスクリプトを使ってデータベースを初期化します。
+
+`testdata/init-db.sql` ファイルを作成し、`CUSTOMERS` テーブルを作成し、サンプルデータを挿入します:
+
+```sql
+CREATE TABLE IF NOT EXISTS customers (id serial, name varchar(255), email varchar(255));
+
+INSERT INTO customers(name, email) VALUES ('John', 'john@gmail.com');
+```
+
+**testcontainers-go** ライブラリは、任意のコンテナ化されたサービスを実行するための汎用的な **Container** 抽象化を提供します。さらに簡単にするために、testcontainers-go は技術固有のモジュールを提供しており、これによりボイラープレートコードを削減し、コンテナインスタンスを簡単に構築するための関数オプションパターンも提供します。
+
+例えば、PostgresContainer では以下のような関数が用意されており、Postgres コンテナのさまざまなプロパティを簡単に設定できます：
+
+- `WithImage()`
+- `WithDatabase()`
+- `WithUsername()`
+- `WithPassword()`
+
+それでは、`customer/repo_test.go` ファイルを作成し、以下のようにテストを実装してみましょう：
+
+```go
+package customer
+
+import (
+	"context"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+func TestCustomerRepository(t *testing.T) {
+	ctx := context.Background()
+
+	pgContainer, err := postgres.RunContainer(ctx,
+		testcontainers.WithImage("postgres:15.3-alpine"),
+		postgres.WithInitScripts(filepath.Join("..", "testdata", "init-db.sql")),
+		postgres.WithDatabase("test-db"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("postgres"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		if err := pgContainer.Terminate(ctx); err != nil {
+			t.Fatalf("failed to terminate pgContainer: %s", err)
+		}
+	})
+
+	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	assert.NoError(t, err)
+
+	customerRepo, err := NewRepository(ctx, connStr)
+	assert.NoError(t, err)
+
+	c, err := customerRepo.CreateCustomer(ctx, Customer{
+		Name:  "Henry",
+		Email: "henry@gmail.com",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, c)
+
+	customer, err := customerRepo.GetCustomerByEmail(ctx, "henry@gmail.com")
+	assert.NoError(t, err)
+	assert.NotNil(t, customer)
+	assert.Equal(t, "Henry", customer.Name)
+	assert.Equal(t, "henry@gmail.com", customer.Email)
+}
+```
+
+ここでの処理内容を理解しましょう：
+
+- Docker イメージ `postgres:15.3-alpine` を指定して `PostgresContainer` のインスタンスを作成しています。このイメージを基にコンテナが作成されます。
+
+- `WithInitScripts(…)` を使用して初期化スクリプトを設定しました。これにより、データベースの起動後に `CUSTOMERS` テーブルが作成され、サンプルデータが挿入されます。
+
+- Postgres コンテナ用に、ユーザー名、パスワード、データベース名を指定しています。
+
+- `WaitStrategy` を設定することで、Postgres コンテナが完全に利用可能になったかどうかを判断できるようにしています。
+
+- `t.Cleanup(…)` を使用してテスト終了時に Postgres コンテナを削除するクリーンアップ関数を定義しています。
+
+- `PostgresContainer` からデータベース接続文字列を取得し、`Repository` を初期化しています。
+
+- メールアドレスが `henry@gmail.com` の顧客を作成し、データベース内に `henry@gmail.com` の顧客が存在することを確認しています。
+
+## 複数のテストでコンテナを再利用する
+
+前のセクションでは、1つのテストのために Postgres の Docker コンテナを起動する方法を紹介しました。しかし、通常、1つのファイル内に複数のテストが含まれることがあり、それらすべてのテストで同じ Postgres Docker コンテナを再利用したい場合があります。
+
+このような場合、共通のセットアップとテアダウン（後処理）を実装するために [testify suite](https://pkg.go.dev/github.com/stretchr/testify/suite) パッケージを使用できます。
+
+まず、`PostgresContainer` の作成ロジックを別ファイル `testhelpers/containers.go` に抽出しましょう。
+
+```go
+package testhelpers
+
+import (
+	"context"
+	"path/filepath"
+	"time"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
+)
+
+type PostgresContainer struct {
+	*postgres.PostgresContainer
+	ConnectionString string
+}
+
+func CreatePostgresContainer(ctx context.Context) (*PostgresContainer, error) {
+	pgContainer, err := postgres.RunContainer(ctx,
+		testcontainers.WithImage("postgres:15.3-alpine"),
+		postgres.WithInitScripts(filepath.Join("..", "testdata", "init-db.sql")),
+		postgres.WithDatabase("test-db"),
+		postgres.WithUsername("postgres"),
+		postgres.WithPassword("postgres"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("database system is ready to accept connections").
+				WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		return nil, err
+	}
+
+	return &PostgresContainer{
+		PostgresContainer: pgContainer,
+		ConnectionString:  connStr,
+	}, nil
+}
+```
+
+`containers.go` ファイルでは、testcontainers-go の `PostgresContainer` struct を拡張した独自の `PostgresContainer` struct を定義し、簡単に接続文字列 (`ConnectionString`) にアクセスできるようにしました。また、`PostgresContainer` をインスタンス化するための `CreatePostgresContainer()` 関数を作成しました。
+
+次に、`customer/repo_suite_test.go` ファイルを作成し、testify suite パッケージを使用して、新しい顧客を作成するテストと、メールアドレスで顧客を取得するテストを以下のように実装しましょう。
+
+```go
+package customer
+
+import (
+	"context"
+	"log"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"github.com/testcontainers/testcontainers-go-demo/testhelpers"
+)
+
+type CustomerRepoTestSuite struct {
+	suite.Suite
+	pgContainer *testhelpers.PostgresContainer
+	repository  *Repository
+	ctx         context.Context
+}
+
+func (suite *CustomerRepoTestSuite) SetupSuite() {
+	suite.ctx = context.Background()
+	pgContainer, err := testhelpers.CreatePostgresContainer(suite.ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	suite.pgContainer = pgContainer
+	repository, err := NewRepository(suite.ctx, suite.pgContainer.ConnectionString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	suite.repository = repository
+}
+
+func (suite *CustomerRepoTestSuite) TearDownSuite() {
+	if err := suite.pgContainer.Terminate(suite.ctx); err != nil {
+		log.Fatalf("error terminating postgres container: %s", err)
+	}
+}
+
+func (suite *CustomerRepoTestSuite) TestCreateCustomer() {
+	t := suite.T()
+
+	customer, err := suite.repository.CreateCustomer(suite.ctx, Customer{
+		Name:  "Henry",
+		Email: "henry@gmail.com",
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, customer.Id)
+}
+
+func (suite *CustomerRepoTestSuite) TestGetCustomerByEmail() {
+	t := suite.T()
+
+	customer, err := suite.repository.GetCustomerByEmail(suite.ctx, "john@gmail.com")
+	assert.NoError(t, err)
+	assert.NotNil(t, customer)
+	assert.Equal(t, "John", customer.Name)
+	assert.Equal(t, "john@gmail.com", customer.Email)
+}
+
+func TestCustomerRepoTestSuite(t *testing.T) {
+	suite.Run(t, new(CustomerRepoTestSuite))
+}
+```
+
+ここでの処理内容を理解しましょう:
+
+- `CustomerRepoTestSuite` の作成
+
+  `suite.Suite` struct を拡張して `CustomerRepoTestSuite` を作成し、このスイート内の複数のテストで使用するフィールドを追加しました。
+
+- `SetupSuite()` 関数
+
+  テストを実行する前に一度だけ実行される関数です。この中で `PostgresContainer` を作成し、`Repository` を初期化しています。
+
+- `TearDownSuite()` 関数
+
+  スイート内のすべてのテストが終了した後に一度だけ実行される関数です。この中でコンテナを終了し、Postgres Docker コンテナを削除します。
+
+- テスト関数の作成
+
+  `TestCreateCustomer()` と `TestGetCustomerByEmail()` をスイートのレシーバ関数として作成しました。これらの関数で顧客の作成と取得をテストしています。
+
+- テストスイートの実行
+
+  `TestCustomerRepoTestSuite(t *testing.T)` 関数を作成し、`go test` コマンドを実行した際にこのテストスイートが実行されるようにしています。
+
+<Callout>
+  このガイドの目的では、データベースのデータをリセットしていません。しかし、テストを実行する前にデータベースを既知の状態にリセットすることは、良い習慣です。
+</Callout>
+
+## テストの実行
+
+すべてのテストは `go test ./...` を使用して実行できます。必要に応じて、詳細な出力を表示するためにオプションフラグ `-v` を追加することもできます。
+
+```bash
+$ go test -v ./...
+
+=== RUN   TestCustomerRepoTestSuite
+...
+...
+2023/06/13 09:27:11 🐳 Creating container for image docker.io/testcontainers/ryuk:0.4.0
+2023/06/13 09:27:11 ✅ Container created: 2881f4e311a2
+2023/06/13 09:27:11 🐳 Starting container: 2881f4e311a2
+2023/06/13 09:27:12 🚧 Waiting for container id 2881f4e311a2 image: docker.io/testcontainers/ryuk:0.4.0
+2023/06/13 09:27:12 ✅ Container started: 2881f4e311a2
+2023/06/13 09:27:12 🐳 Creating container for image postgres:15.3-alpine
+2023/06/13 09:27:12 ✅ Container created: a98029633d02
+2023/06/13 09:27:12 🐳 Starting container: a98029633d02
+2023/06/13 09:27:13 🚧 Waiting for container id a98029633d02 image: postgres:15.3-alpine
+2023/06/13 09:27:14 ✅ Container started: a98029633d02
+=== RUN   TestCustomerRepoTestSuite/TestCreateCustomer
+=== RUN   TestCustomerRepoTestSuite/TestGetCustomerByEmail
+2023/06/13 09:27:14 🐳 Terminating container: a98029633d02
+2023/06/13 09:27:15 🚫 Container terminated: a98029633d02
+--- PASS: TestCustomerRepoTestSuite (3.66s)
+    --- PASS: TestCustomerRepoTestSuite/TestCreateCustomer (0.00s)
+    --- PASS: TestCustomerRepoTestSuite/TestGetCustomerByEmail (0.00s)
+=== RUN   TestCustomerRepository
+2023/06/13 09:27:15 🐳 Creating container for image postgres:15.3-alpine
+2023/06/13 09:27:15 ✅ Container created: fcf4241a61ab
+2023/06/13 09:27:15 🐳 Starting container: fcf4241a61ab
+2023/06/13 09:27:15 🚧 Waiting for container id fcf4241a61ab image: postgres:15.3-alpine
+2023/06/13 09:27:16 ✅ Container started: fcf4241a61ab
+2023/06/13 09:27:16 🐳 Terminating container: fcf4241a61ab
+2023/06/13 09:27:17 🚫 Container terminated: fcf4241a61ab
+--- PASS: TestCustomerRepository (1.94s)
+PASS
+ok  	github.com/testcontainers/testcontainers-go-demo/customer	6.177s
+?   	github.com/testcontainers/testcontainers-go-demo/testhelpers	[no test files]
+```
+
+テストを実行すると、2つの Postgres Docker コンテナが自動的に起動されるのが確認できます：1つはスイートとその2つのテスト用、もう1つは最初に作成した単一のテスト用です。これらすべてのテストは正常にパスするはずです。また、テストの実行後にコンテナが停止し、自動的に削除されることも確認できます。
+
+## まとめ
+
+Testcontainers for Go ライブラリを使用することで、本番環境と同じ種類のデータベース（Postgres）を使用した統合テストを作成できました。モックを使用せず、実際のサービスと対話するため、コードのリファクタリングを自由に行いつつ、アプリケーションが期待通りに動作していることを保証できます。
+
+Testcontainers の詳細については、https://testcontainers.com をご覧ください。
+
+## 参考リンク
+
+- https://golang.testcontainers.org/
+
+- https://golang.testcontainers.org/quickstart/
+
+- https://golang.testcontainers.org/modules/postgres/
+
+- https://testcontainers.com/modules/
+
