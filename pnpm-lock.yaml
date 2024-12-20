@@ -55,8 +55,8 @@ importers:
         specifier: 4.2.3
         version: 4.2.3(next@14.2.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       sitemapper:
-        specifier: 3.2.18
-        version: 3.2.18
+        specifier: 3.2.20
+        version: 3.2.20
       typescript:
         specifier: 5.7.2
         version: 5.7.2
@@ -2059,8 +2059,8 @@ packages:
   simple-swizzle@0.2.2:
     resolution: {integrity: sha512-JA//kQgZtbuY83m+xT+tXJkmJncGMTFT+C+g2h2R9uxkYIrE2yy9sgmcLhCnw57/WSD+Eh3J97FPEDFnbXnDUg==}
 
-  sitemapper@3.2.18:
-    resolution: {integrity: sha512-WgvjKoKzi+I8AsMjUtG65cpOHWnx9JhRxUjy1RIsMaI3ALXUak5504WCDKW3en8QzbIk5yNtZO4A4CzvvY8Qdg==}
+  sitemapper@3.2.20:
+    resolution: {integrity: sha512-jLW/zNoOFTFNdPmxdtq4TsnVz+IH237u5UJbWq6Cd9R5z8ba0Lu8oUCl4Zu4hGXNFqXhV91LX/dQEXAJQGoEvA==}
     engines: {node: '>= 10.0.0'}
 
   slash@5.1.0:
@@ -4868,7 +4868,7 @@ snapshots:
     dependencies:
       is-arrayish: 0.3.2
 
-  sitemapper@3.2.18:
+  sitemapper@3.2.20:
     dependencies:
       fast-xml-parser: 4.5.1
       got: 11.8.6

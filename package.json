@@ -37,7 +37,7 @@
     "lefthook": "1.9.3",
     "linkinator": "6.1.2",
     "next-sitemap": "4.2.3",
-    "sitemapper": "3.2.18",
+    "sitemapper": "3.2.20",
     "typescript": "5.7.2"
   },
   "packageManager": "pnpm@9.15.0"
