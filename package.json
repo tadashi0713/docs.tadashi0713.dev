@@ -34,7 +34,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@types/node": "22.8.2",
-    "lefthook": "1.9.3",
+    "lefthook": "1.10.0",
     "linkinator": "6.1.2",
     "next-sitemap": "4.2.3",
     "sitemapper": "3.2.20",
