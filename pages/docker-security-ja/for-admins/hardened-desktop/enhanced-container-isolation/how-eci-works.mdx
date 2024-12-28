@@ -1,0 +1,56 @@
+---
+title: Enhanced Container Isolation (強化されたコンテナ分離) はどのように動作しますか？
+description: Enhanced Container Isolation (強化されたコンテナ分離) の仕組み
+---
+
+import { Callout } from 'nextra/components'
+
+# Enhanced Container Isolation (強化されたコンテナ分離) はどのように動作しますか？
+
+Docker は [Sysbox コンテナランタイム](https://github.com/nestybox/sysbox) を使用して Enhanced Container Isolation（強化されたコンテナ隔離）を実現しています。Sysbox は標準の OCI runc ランタイムを基に改良されたフォークであり、標準的なコンテナ隔離とワークロードの性能を向上させるために設計されています。詳しくは [仕組みの詳細](#仕組みの詳細) をご覧ください。
+
+[Enhanced Container Isolation が有効化](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation#enhanced-container-isolation-を有効にする方法)されている場合、`docker run` または `docker create` コマンドで作成されたコンテナは、標準の OCI runc ランタイムではなく Sysbox を使用して自動的に起動します。ユーザーが追加の作業を行う必要はなく、通常どおりコンテナを使用できます。例外事項については [FAQs](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/faq) を参照してください。
+
+さらに、従来はセキュリティ上の懸念があった `--privileged` フラグを使用したコンテナも、Enhanced Container Isolation を使用することで安全に実行できるようになります。この仕組みにより、Docker Desktop の仮想マシン（VM）や他のコンテナが侵害されるリスクを軽減します。
+
+<Callout type="warning">
+  Docker Desktop で Enhanced Container Isolation が有効になっている場合、Docker CLI の `--runtime` フラグは無視されます。Docker のデフォルトランタイムは引き続き runc ですが、すべてのユーザーコンテナは暗黙的に Sysbox を使用して起動します。
+</Callout>
+
+Enhanced Container Isolation は、[Docker Engine の userns-remap モードや Rootless Docker](#enhanced-container-isolation-とユーザーネームスペースリマッピングの違い) とは異なる機能です。
+
+### 仕組みの詳細
+
+Sysbox は以下のような技術を用いてコンテナ隔離を強化します：
+
+- すべてのコンテナに Linux のユーザーネームスペースを有効化（コンテナ内の root ユーザーを Linux VM 内の非特権ユーザーにマッピング）。
+
+- コンテナによる VM の重要ディレクトリのマウントを制限。
+
+- コンテナと Linux カーネル間の重要なシステムコールを検査。
+
+- コンテナのユーザーネームスペースと Linux VM 間のファイルシステムのユーザー/グループ ID をマッピング。
+
+- コンテナ内で `/proc` や `/sys` ファイルシステムの一部をエミュレーション。
+
+これらの技術は Linux カーネルの最近の進化によって可能になり、Docker Desktop でもその利点を活用しています。Sysbox はこれらの技術をコンテナに最小限の機能的・性能的影響で適用します。
+
+これらの技術は、Linux ネームスペース、cgroups、制限された Linux Capabilities、Seccomp、AppArmor など、従来の Docker コンテナセキュリティメカニズムを補完するものです。これにより、Docker Desktop VM 内のコンテナと Linux カーネルの間に強力な隔離層を追加します。
+
+詳細については [主要な特徴と利点](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/features-benefits) を参照してください。
+
+### Enhanced Container Isolation とユーザーネームスペースリマッピングの違い
+
+Docker Engine には、すべてのコンテナでユーザーネームスペースを有効化する [userns-remap モード](https://docs.docker.com/engine/security/userns-remap/) という機能があります。しかし、このモードにはいくつかの[制限事項](https://docs.docker.com/engine/security/userns-remap/)があり、Docker Desktop ではサポートされていません。
+
+userns-remap モードは、Enhanced Container Isolation と同様に、Linux のユーザーネームスペースを活用してコンテナ隔離を向上させます。しかし、Enhanced Container Isolation はより高度な機能を備えており、各コンテナごとに専用のユーザーネームスペースマッピングを自動的に割り当てるほか、組織で厳格なセキュリティ要件に対応するための[その他の隔離機能](#仕組みの詳細) を提供します。
+
+### Enhanced Container Isolation と Rootless Docker の違い
+
+[Rootless Docker](https://docs.docker.com/engine/security/rootless/) は、Docker Engine とコンテナを Linux ホスト上でルート権限なしで実行する機能です。これにより、非ルートユーザーが Linux 上で Docker をインストールし、実行できるようになります。
+
+Rootless Docker は Docker Desktop ではサポートされていません。この機能は、Linux 上で Docker をネイティブに実行する場合に有用ですが、Docker Desktop の場合、その価値は限定的です。これは、Docker Desktop が Docker Engine を Linux VM 内で実行し、ホストユーザーを非ルートとして Docker を実行できるようにし、仮想マシンでエンジンをホストから分離しているためです。
+
+Rootless Docker とは異なり、Enhanced Container Isolation は Docker Engine を Linux のユーザーネームスペース内で実行するのではなく、そのエンジンによって生成されたコンテナをユーザーネームスペース内で実行します。これにより、[Rootless Docker の制限](https://docs.docker.com/engine/security/rootless/#known-limitations) を回避し、コンテナと Docker Engine の間に強力な境界を設けることができます。
+
+Enhanced Container Isolation は、Docker Desktop 上で起動されたコンテナが、Docker Desktop Linux VM を簡単に侵害してセキュリティ設定を変更するリスクを防ぐことを目的としています。
