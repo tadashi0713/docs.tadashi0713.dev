@@ -1,0 +1,188 @@
+---
+title: 主な特徴と利点
+description: Enhanced Container Isolation (強化されたコンテナ分離) の利点
+---
+
+import { Callout } from 'nextra/components'
+
+# 主な特徴と利点
+
+## すべてのコンテナでの Linux ユーザーネームスペースの活用
+
+Enhanced Container Isolation を使用すると、すべてのユーザーコンテナが [Linux ユーザーネームスペース](https://man7.org/linux/man-pages/man7/user_namespaces.7.html) を利用して追加の隔離が実現されます。これにより、コンテナ内の root ユーザーが Docker Desktop の Linux VM 内の非特権ユーザーにマッピングされます。
+
+例えば以下のように動作します：
+
+```console
+$ docker run -it --rm --name=first alpine
+/ # cat /proc/self/uid_map
+         0     100000      65536
+```
+
+出力結果 `0 100000 65536` は Linux ユーザーネームスペースの特徴を示しています。コンテナ内の root ユーザー（0）が Docker Desktop の Linux VM 内の非特権ユーザー 100000 にマッピングされ、そのマッピングは 64K の連続したユーザー ID 範囲に及びます。同様のマッピングがグループ ID にも適用されます。
+
+各コンテナには Sysbox によって専用のマッピング範囲が割り当てられます。例えば、2 番目のコンテナを起動すると以下のように異なるマッピング範囲が表示されます：
+
+```console
+$ docker run -it --rm --name=second alpine
+/ # cat /proc/self/uid_map
+         0     165536      65536
+```
+
+一方、Enhanced Container Isolation を使用しない場合、コンテナの root ユーザーはホスト上でも root（"真の root"）であり、これはすべてのコンテナに適用されます：
+
+```console
+$ docker run -it --rm alpine
+/ # cat /proc/self/uid_map
+         0       0     4294967295
+```
+
+Linux ユーザーネームスペースを活用することで、Enhanced Container Isolation はコンテナ内プロセスが Linux VM 内でユーザー ID 0（真の root）として実行されることを防ぎます。さらに、Linux VM 内で有効なユーザー ID を持つことがなく、コンテナ内のリソースのみに制限されるため、コンテナの隔離性が通常のコンテナよりも大幅に向上します。
+
+## 特権コンテナのセキュリティ強化
+
+`docker run --privileged ...` を使用した特権コンテナは、Linux カーネルへの完全なアクセス権を持つため安全ではありません。これは、特権コンテナがすべてのケーパビリティを有効にし、Seccomp や AppArmor の制限を無効化し、すべてのハードウェアデバイスにアクセスできる状態を意味します。
+
+Enhanced Container Isolation を使用すると、特権コンテナは Linux ユーザーネームスペースや Sysbox によるその他のセキュリティ技術によって、割り当てられたリソースのみにアクセス可能となります。このため、特権コンテナが Linux VM の設定を変更したりするリスクが軽減されます。
+
+<Callout type="info">
+  Enhanced Container Isolation は、特権コンテナの起動を防ぐのではなく、それを安全に実行できるようにします。例えば、グローバルなカーネル設定を変更する特権ワークロード（カーネルモジュールの読み込みや Berkeley Packet Filters (BPF) の設定変更など）は、"permission denied"（権限がありません）というエラーを受け取るため適切に動作しません。
+</Callout>
+
+例えば、Enhanced Container Isolation は特権コンテナが Docker Desktop の Linux VM で設定されたネットワーク設定（BPF を使用）にアクセスすることを防ぎます:
+
+```console
+$ docker run --privileged djs55/bpftool map show
+Error: can't get next map: Operation not permitted
+```
+
+対照的に、Enhanced Container Isolation が有効でない場合、特権コンテナは簡単にこれを実行できます:
+
+```console
+$ docker run --privileged djs55/bpftool map show
+17: ringbuf  name blocked_packets  flags 0x0
+        key 0B  value 0B  max_entries 16777216  memlock 0B
+18: hash  name allowed_map  flags 0x0
+        key 4B  value 4B  max_entries 10000  memlock 81920B
+20: lpm_trie  name allowed_trie  flags 0x1
+        key 8B  value 8B  max_entries 1024  memlock 16384B
+```
+
+特定の高度なコンテナワークロード（例: Docker-in-Docker、Kubernetes-in-Docker など）は特権コンテナを必要とすることがあります。Enhanced Container Isolation を使用することで、このようなワークロードも従来より安全に実行できます。
+
+## コンテナは Linux VM とネームスペースを共有できない
+
+Enhanced Container Isolation が有効な場合、コンテナはホストと Linux ネームスペース（例:PID、ネットワーク、uts など）を共有することができません。これにより、隔離が維持されます。
+
+例えば、PID ネームスペースを共有しようとすると以下のように失敗します:
+
+```console
+$ docker run -it --rm --pid=host alpine
+docker: Error response from daemon: failed to create shim task: OCI runtime create failed: error in the container spec: invalid or unsupported container spec: sysbox containers can't share namespaces [pid] with the host (because they use the linux user-namespace for isolation): unknown.
+```
+
+同様に、ネットワークネームスペースを共有しようとしても失敗します:
+
+```console
+$ docker run -it --rm --network=host alpine
+docker: Error response from daemon: failed to create shim task: OCI runtime create failed: error in the container spec: invalid or unsupported container spec: sysbox containers can't share a network namespace with the host (because they use the linux user-namespace for isolation): unknown.
+```
+
+さらに、コンテナ上でユーザーネームスペースを無効化するための `--userns=host` フラグも無視されます:
+
+```console
+$ docker run -it --rm --userns=host alpine
+/ # cat /proc/self/uid_map
+         0     100000      65536
+```
+
+また、Docker ビルドで `--network=host` フラグを使用することや、Docker buildx のエンタイトルメント（`network.host` や `security.insecure`）を使用することも許可されません。そのため、これらが必要なビルドは正しく動作しません。
+
+## バインドマウントの制限
+
+Enhanced Container Isolation が有効な場合でも、Docker Desktop ユーザーは **Settings > Resources > File sharing** で設定されたホストディレクトリをコンテナにバインドマウントすることが引き続き可能です。ただし、Linux VM の任意のディレクトリをコンテナにバインドマウントすることはできなくなります。
+
+これにより、Docker Desktop の Linux VM 内の重要なファイル（例:レジストリアクセス管理、プロキシ設定、Docker Engine 設定などの構成ファイル）をコンテナが変更することを防ぎます。
+
+例えば、Docker Engine の構成ファイル（Linux VM 内の `/etc/docker/daemon.json`9）をコンテナにバインドマウントしようとすると、以下のように制限され失敗します:
+
+```console
+$ docker run -it --rm -v /etc/docker/daemon.json:/mnt/daemon.json alpine
+docker: Error response from daemon: failed to create shim task: OCI runtime create failed: error in the container spec: can't mount /etc/docker/daemon.json because it's configured as a restricted host mount: unknown
+```
+
+対照的に、Enhanced Container Isolation が無効な場合、このマウントは成功し、Docker Engine の構成ファイルにコンテナが完全に読み書きアクセスできるようになります。
+
+ただし、ホストファイルのバインドマウントは通常どおり機能します。例えば、ユーザーが Docker Desktop を設定して自分の `$HOME` ディレクトリを共有可能にした場合、それをコンテナにバインドマウントすることができます：
+
+```console
+$ docker run -it --rm -v $HOME:/mnt alpine
+/ #
+```
+
+<Callout type="info">
+  デフォルトでは、Enhanced Container Isolation により Docker Engine ソケット（`/var/run/docker.sock`）をコンテナにバインドマウントすることは許可されません。これは、ソケットをマウントすることでコンテナが Docker Engine を制御し、隔離を破る可能性があるためです。ただし、一部の正当な使用ケースに対応するため、信頼されたコンテナイメージに対してこの制限を緩和することが可能です。詳細は [Docker ソケットマウントの許可](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/config/#docker-socket-mount-permissions) を参照してください。
+</Callout>
+
+## センシティブなシステムコールの審査
+
+Enhanced Container Isolation のもう一つの特徴は、コンテナ内の特定の高度にセンシティブなシステムコール（例: `mount` および `umount`）をインターセプトして審査することです。これにより、これらのシステムコールを実行する権限を持つプロセスが、それを使用してコンテナを侵害することを防ぎます。
+
+例えば、`CAP_SYS_ADMIN`（`mount` システムコールを実行するために必要な権限）を持つコンテナは、その権限を使用して読み取り専用のバインドマウントを書き込み可能なマウントに変更することはできません:
+
+```console
+$ docker run -it --rm --cap-add SYS_ADMIN -v $HOME:/mnt:ro alpine
+/ # mount -o remount,rw /mnt /mnt
+mount: permission denied (are you root?)
+```
+
+この例では、`$HOME` ディレクトリがコンテナの `/mnt` ディレクトリに読み取り専用でマウントされています。この状態はコンテナ内から変更することはできません。この仕組みにより、コンテナプロセスが `mount` または `umount` を使用してコンテナのルートファイルシステムを侵害することが防止されます。
+
+ただし、前述の例では、コンテナ内でのマウント操作（例: 一時ファイルシステムの作成や読み取り専用/書き込み可能の変更）は引き続き許可されます。これらの操作はコンテナ内で行われるため、コンテナのルートファイルシステムを侵害することはありません:
+
+```text
+/ # mkdir /root/tmpfs
+/ # mount -t tmpfs tmpfs /root/tmpfs
+/ # mount -o remount,ro /root/tmpfs /root/tmpfs
+
+/ # findmnt | grep tmpfs
+├─/root/tmpfs    tmpfs      tmpfs    ro,relatime,uid=100000,gid=100000
+
+/ # mount -o remount,rw /root/tmpfs /root/tmpfs
+/ # findmnt | grep tmpfs
+├─/root/tmpfs    tmpfs      tmpfs    rw,relatime,uid=100000,gid=100000
+```
+
+この機能とユーザーネームスペースを組み合わせることで、コンテナプロセスがすべての Linux ケーパビリティを持っていたとしても、それらを利用してコンテナを侵害することができなくなります。
+
+さらに、Enhanced Container Isolation はシステムコールの審査を、ほとんどのコンテナワークロードにおいてパフォーマンスに影響を与えない形で実施します。具体的には、一般的に使用されるデータパスのシステムコールはインターセプトせず、まれに使用されるコントロールパスのシステムコールのみを対象としています。
+
+## ファイルシステムのユーザー ID マッピング
+
+前述のように、Enhanced Container Isolation はすべてのコンテナに Linux ユーザーネームスペースを有効にします。これにより、コンテナ内のユーザー ID 範囲（0～64K）が Docker Desktop Linux VM 内の「実際の」非特権ユーザー ID 範囲（例: 100000～165535）にマッピングされます。
+
+さらに、各コンテナには Linux VM 内で専用の実際のユーザー ID 範囲が割り当てられます（例: コンテナ 0 は 100000～165535、コンテナ 2 は 165536～231071、コンテナ 3 は 231072～296607 など）。同じことがグループ ID にも適用されます。また、コンテナを停止して再起動した場合、以前と同じマッピングが割り当てられる保証はありません。これは設計上の仕様であり、セキュリティをさらに向上させるためのものです。
+
+ただし、Docker ボリュームをコンテナにマウントする際にこの仕組みが問題となる場合があります。ボリュームに書き込まれたファイルには実際のユーザー/グループ ID が付与されるため、コンテナの起動/停止/再起動間、あるいは複数のコンテナ間でそれらのファイルにアクセスできなくなる可能性があります。
+
+この問題を解決するために、Sysbox は Linux カーネルの ID マッピングマウント機能（2021 年に追加）や代替の `shiftsfs` モジュールを使用して「ファイルシステムのユーザー ID 再マッピング」を実施します。これにより、コンテナの実際のユーザー ID（例: 100000～165535 の範囲）から Linux VM 内の 0～65535 の範囲にアクセスがマッピングされます。この仕組みを使えば、各コンテナが専用のユーザー ID 範囲を使用していても、ボリュームをコンテナ間でマウントしたり共有したりすることが可能になります。ユーザーはコンテナの実際のユーザー ID を気にする必要がなくなります。
+
+ただし、ファイルシステムのユーザー ID 再マッピングにより、コンテナが実際のユーザー ID 0 を使用して Linux VM 内のファイルにアクセスする可能性がありますが、[バインドマウント制限](#バインドマウントの制限) によって重要な Linux VM ファイルをコンテナにマウントすることが防止されます。
+
+## Procfs および sysfs のエミュレーション
+
+Enhanced Container Isolation のもう一つの機能は、各コンテナ内で `/proc` および `/sys` ファイルシステムの一部をエミュレーションすることです。この機能により、コンテナ内でホストに関する機密情報を隠したり、Linux カーネル自体がまだネームスペース化していないホストカーネルリソースをネームスペース化することが可能になります。
+
+例えば、Enhanced Container Isolation が有効な場合、`/proc/uptime` ファイルは Docker Desktop Linux VM の稼働時間ではなく、コンテナ自体の稼働時間を表示します：
+
+```console
+$ docker run -it --rm alpine
+/ # cat /proc/uptime
+5.86 5.86
+```
+
+一方、Enhanced Container Isolation が無効な場合、Docker Desktop Linux VM の稼働時間が表示されます。この例は簡単なものですが、Enhanced Container Isolation が Linux VM の設定や情報をコンテナから隠し、それによって VM の侵害を防ぐことを目指していることを示しています。
+
+さらに、`/proc/sys` 以下の一部のリソースもエミュレーションされています。これらのリソースは Linux カーネルによってネームスペース化されていないため、各コンテナはそれぞれ別々のビューを持ちます。Sysbox は、これらのリソースの値をコンテナ間で調整し、対応する Linux カーネル設定を適切にプログラムします。
+
+これにより、通常であれば完全な特権を必要とするコンテナワークロード（ネームスペース化されていないカーネルリソースにアクセスする必要があるもの）が、Enhanced Container Isolation を有効にした状態で安全に実行できるようになります。これによってセキュリティが大幅に向上します。
