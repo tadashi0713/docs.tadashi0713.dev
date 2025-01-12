@@ -1,0 +1,197 @@
+---
+title: Testcontainers Desktop を使用したシンプルなローカル開発
+description: このガイドでは、Testcontainers Desktop を使用したローカル開発の方法を学び、デバッグや問題解決を容易にするさまざまな機能について説明します。
+---
+
+import { Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa";
+
+# Testcontainers Desktop を使用したシンプルなローカル開発
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-simple-local-development-with-testcontainers-desktop"
+/>
+
+
+このガイドでは、Testcontainers Desktop アプリを使用したローカル開発の方法を学び、デバッグや問題解決を容易にする機能について説明します。
+
+## 前提条件
+
+[Testcontainers Desktop](https://testcontainers.com/desktop/) は、オープンソースの Testcontainers ライブラリ向けの無料の補助アプリであり、実際の依存関係を使用したローカル開発やテストを簡素化します。このアプリは、Testcontainers がサポートするすべての言語で使用可能です。このガイドでは、Java/Spring Boot アプリケーションを使用して Testcontainers Desktop の機能を紹介します。そのため、以下のツールがコンピュータにインストールされている必要があります:
+
+- Java 17 以上
+- お好みの IDE（IntelliJ IDEA、Eclipse、NetBeans、VS Code）
+- Testcontainers がサポートする Docker 環境
+  https://www.testcontainers.org/supported_docker_environment/
+
+## このガイドで達成すること
+
+Testcontainers Desktop アプリのインストール方法と初期設定について学び、次の機能を探索します:
+
+- [コンテナランタイムの切り替え および クラウドへのバースト](https://newsletter.testcontainers.com/announcements/switch-container-runtimes-and-burst-to-the-cloud)
+- [開発サービスを簡単にデバッグできるよう 固定ポートを設定](https://newsletter.testcontainers.com/announcements/set-fixed-ports-to-easily-debug-development-services)
+- [デバッグ中にコンテナがシャットダウンしないように コンテナをフリーズ](https://newsletter.testcontainers.com/announcements/freeze-containers-to-prevent-their-shutdown-while-you-debug)
+- [ワンクリックで 再利用可能なコンテナを有効化](https://newsletter.testcontainers.com/announcements/enable-reusable-containers-with-a-single-click)
+
+## Testcontainers Desktop のインストール
+
+[Testcontainers Desktop ダウンロードページ](https://testcontainers.com/desktop/) にアクセスし、OS に対応したクライアントアプリケーションをダウンロードしてインストールしてください。
+
+MacOS を使用している場合は、**brew install atomicjar/tap/testcontainers-desktop** コマンドを使用して簡単に Testcontainers Desktop アプリをインストールできます。
+
+## コンテナランタイムの切り替え
+
+Testcontainers Desktop アプリを起動すると、ローカルにインストールされている Docker ランタイムを自動的に検出し、使用するように設定されます。以下のようにメニューオプションから、Testcontainers ライブラリで使用する Docker ランタイムを選択できます:
+
+![](/testcontainers-guides-ja/tcd-switch-runtimes.png)
+
+また、無料の [Testcontainers Cloud](https://testcontainers.com/cloud/) アカウント を作成し、コンテナをローカルではなくクラウドで実行することで、ローカルリソースを節約することも可能です。
+
+## 固定ポートを使用して開発サービスをデバッグする
+
+Testcontainers を使用したテストでは、デフォルトでコンテナのポートはホストマシン上の空いているランダムなポートにマッピングされます。これによりポートの競合を防ぎます。
+
+しかし、開発中にはこれらのサービスに接続してデータを確認したり、予期しない挙動をトラブルシュートしたりしたい場合があります。そのたびにホスト上でコンテナに割り当てられたランダムなポートを確認し、接続するのは面倒です。
+
+Testcontainers Desktop アプリを使用すると、コンテナサービスに固定ポートを設定するのが簡単になります。同じ固定ポートを使用してこれらのサービスにいつでも接続できるようになります。
+
+例えば、Spring Boot アプリケーションで PostgreSQL データベースを使用している場合を考えます。IDE から **TestApplication.java** を実行してアプリケーションを起動できます。この場合、Spring Boot の Testcontainers サポートを活用して、必要なサービス（この例では PostgreSQL）を自動的に起動しています。
+
+Testcontainers Desktop の固定ポートサポートを利用することで、Docker コンテナとして実行されている PostgreSQL データベースに接続できます。
+
+**Testcontainers Desktop** を開く→ **Services** を選択 → **Open config location** をクリック
+
+開かれたディレクトリには **postgres.toml.example** ファイルが存在します。このファイルを **postgres.toml** にリネームし、以下の設定を含めます：
+
+```toml
+ports = [
+    {local-port = 5432, container-port = 5432},
+]
+selector.image-names = ["postgres"]
+```
+
+サポートされている Docker イメージ名をすべてリストすることで、イメージセレクターを設定できます。任意の PostgreSQL 互換イメージを設定することが可能です。ここでは、PostgreSQL コンテナのポート 5432 をホストのポート 5432 にマッピングしています。
+
+以下のように PostgreSQL コンテナを定義していると仮定します:
+
+```java
+@Bean
+@ServiceConnection
+PostgreSQLContainer<?> postgresContainer() {
+   return new PostgreSQLContainer<>("postgres:16-alpine");
+}
+```
+
+これで、以下の接続プロパティを使用して任意の SQL クライアントから PostgreSQL データベースに接続できるようになります:
+
+```shell
+$ psql -h localhost -p 5432 -U test -d test
+```
+
+以下は、IntelliJ IDEA Ultimate のデータベースツールを使用してデータベースに接続する例です：
+
+![](/testcontainers-guides-ja/tcd-fixed-port-connection.png)
+
+開発時に固定ポートを使用してこれらのサービスに接続できる機能は非常に便利です。
+
+さらに、サービスに接続するための補助ツールを実行するように設定することも可能です。例えば、Kafka コンテナを実行すると同時に、その Kafka インスタンスに接続するための Control Center を実行することができます。その後、Control Center の Web UI を使用して Kafka インスタンスに接続できます。**Kafka** と **Control Center** の設定は **ContainersConfig.java** に記載されています。
+
+## コンテナをフリーズしてシャットダウンを防ぎデバッグする
+
+テストを実行中に、コンテナが削除される前にデータを確認して問題をデバッグしたい場合があります。このような場合に、コンテナのシャットダウンを防ぐ**Freeze containers shutdown**（コンテナのフリーズ）機能を使用できます。この機能により、コンテナをシャットダウンせずに問題のデバッグが可能になります。
+
+例えば、以下のような Spring Data JPA リポジトリテストがあるとします。
+
+```java
+@DataJpaTest(properties = {
+   "spring.test.database.replace=none",
+})
+@Testcontainers
+class ProductRepositoryTest {
+
+   @Container
+   @ServiceConnection
+   static PostgreSQLContainer<?> postgres =
+                      new  PostgreSQLContainer<>("postgres:16-alpine");
+
+   @Autowired
+   ProductRepository repository;
+
+   @Test
+   void shouldCreateProductIfNotExist() {
+       String code = UUID.randomUUID().toString();
+       Product product = new Product(null, code, "test product", BigDecimal.TEN);
+       repository.upsert(product);
+   }
+}
+```
+
+Testcontainers Desktop アプリを開き、**Freeze containers shutdown** を有効にしましょう。
+
+![](/testcontainers-guides-ja/tcd-freeze-containers.png)
+
+"Freeze containers shutdown" を有効にした後、IDE から **ProductRepositoryTest** を実行すると、アプリがコンテナのシャットダウンを防ぎ、テストが無期限に実行されるようになります。調査が完了したら、"freeze" ボタンのチェックを外すことで、通常のテスト実行（クリーンアップを含む）を再開できます。
+
+固定ポートを使用してデバッグする必要がない場合でも、これらの機能を組み合わせることで、デバッグツールに簡単に接続し、それを使用する時間を確保するのに非常に便利です。コンテナのフリーズ機能は、ローカルランタイムでも Testcontainers Cloud でも動作します。
+
+なお、Freeze containers 機能は現在ベータ版であり、ライフサイクルが管理されたコンテナ（例：**@Container** アノテーション、**try-with-resources** ブロック内など）でのみサポートされています。特に、この機能はまだ長期間実行されるコンテナ（例：[シングルトンパターン](https://java.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers)や[再利用可能なコンテナ](https://java.testcontainers.org/features/reuse/)）をフリーズする設計には対応していませんのでご注意ください。
+
+## 再利用可能なコンテナを有効にして開発を高速化する
+
+開発中は、コードを変更して動作を確認するためにテストを実行したり、アプリケーションをローカルで実行したりすることが頻繁にあります。この際、コード変更ごとにコンテナを再作成すると、フィードバックサイクルが遅くなる可能性があります。テストやローカル開発を高速化するための手法として、[再利用可能なコンテナ（Reusable Containers）](https://java.testcontainers.org/features/reuse/)の実験的機能を活用することができます。
+
+[Testcontainers Desktop](https://testcontainers.com/desktop/) を使用している場合、**testcontainers.reuse.enable** フラグは開発環境で自動的に設定されています。この機能を有効または無効にするには、**Preferences** 内の **Enable reusable containers** オプションをクリックしてください。
+
+![](/testcontainers-guides-ja/tcd-reuse.png)
+
+再利用機能を有効にした場合、Testcontainers API を使用して、どのコンテナを再利用するかを設定する必要があります。Java 用 Testcontainers を使用している場合、以下のように **.withReuse(true)** を使用して設定を行えます：
+
+```java
+PostgreSQLContainer<?> postgresContainer() {
+   return new PostgreSQLContainer<>("postgres:16-alpine")
+           .withReuse(true);
+}
+```
+
+再利用可能なコンテナを起動すると、コンテナの設定に基づいてハッシュが計算されます。同じ設定で別のコンテナをリクエストすると、同じハッシュ値が生成されるため、既存のコンテナが再利用され、新しいコンテナが作成されることはありません。
+
+SQL データベースを使用する場合、Testcontainers はコンテナ設定を簡略化するための特別な JDBC URL サポートを提供しています。再利用を有効にするには、以下のように特別な JDBC URL に **TC_REUSABLE=true** パラメータを追加します：
+
+```java
+@DataJpaTest
+@TestPropertySource(properties = {
+  "spring.test.database.replace=none",
+  "spring.datasource.url=jdbc:tc:postgresql:16-alpine:///db?TC_REUSABLE=true"
+})
+class ProductRepositoryTest {
+
+   @Test
+   void test() {
+      ...
+   }
+}
+```
+
+これでテストを実行し、その後に **docker ps** コマンドを実行すると、Postgres コンテナがまだ実行中であることが確認できます。同じ仕様の Postgres コンテナを使用する同じテストまたは別のテストを実行すると、既存のコンテナが再利用されます。
+
+なお、再利用可能なコンテナ機能は現在実験的な機能であり、Testcontainers ライブラリ間で実装が異なる場合があります。主な制限については[リリースノート](https://newsletter.testcontainers.com/announcements/enable-reusable-containers-with-a-single-click)をご確認ください。
+
+## まとめ
+
+Testcontainers ライブラリは、実際の依存関係を使用してアプリケーションをテストしながら、ローカル開発を高速化し、簡素化するのに役立ちます。Testcontainers Desktop アプリのさまざまな機能を活用することで、IDE から直接アプリケーションの実行やデバッグを大幅に簡略化できます。
+
+[Testcontainers Desktop](https://testcontainers.com/desktop/) をダウンロードして、お気に入りのプログラミング言語用 Testcontainers ライブラリを活用した開発を始めましょう。Testcontainers について詳しくは、https://testcontainers.com をご覧ください。
+
+## 参考資料
+
+- https://testcontainers.com/getting-started/
+
+- https://testcontainers.com/guides/testing-spring-boot-rest-api-using-testcontainers/
+
+- https://testcontainers.com/guides/testcontainers-container-lifecycle/
+
