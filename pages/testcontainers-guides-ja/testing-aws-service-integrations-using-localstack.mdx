@@ -1,0 +1,410 @@
+---
+title: LocalStack を使用した AWS サービス統合のテスト
+description: このガイドでは、LocalStack と Testcontainers を使用して Spring Cloud AWS アプリケーションをテストする方法を説明します。
+---
+
+import { Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa"
+
+# LocalStack を使用した AWS サービス統合のテスト
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-testing-aws-service-integrations-using-localstack"
+/>
+
+このガイドでは、以下の内容を学びます：
+
+- Spring Cloud AWS を統合した Spring Boot アプリケーションの作成
+- AWS の S3 および SQS サービスの利用
+- Testcontainers と LocalStack を使用したアプリケーションのテスト
+
+## 事前準備
+
+- Java 17 以上
+- お好みの IDE（IntelliJ IDEA、Eclipse、NetBeans、VS Code）
+- Testcontainers がサポートする Docker 環境
+  https://www.testcontainers.org/supported_docker_environment/
+
+## このガイドで達成すること
+
+Spring Boot アプリケーションを作成し、[Spring Cloud AWS](https://awspring.io/) を使用して AWS S3 と SQS サービスを利用します。具体的には、SQS キューにメッセージを送信し、そのメッセージを消費するリスナーを実装して、ペイロードデータを S3 バケットに保存します。このアプリケーションを Testcontainers と [LocalStack](https://www.localstack.cloud/) を使用してテストします。
+
+## はじめに
+
+Spring Cloud AWS は、AWS Java SDK V2 の上に高レベルの抽象化を提供し、Spring のプログラミングモデルに従って Spring Boot と緊密に統合されています。
+
+LocalStack は、AWS クラウドやサーバーレスアプリケーションを開発およびテストするための、完全に機能するローカルクラウドエミュレーターです。
+
+[Spring Initializr](https://start.spring.io/) を使用して Spring Boot アプリケーションを作成し、**Testcontainers** 依存関係を選択します。ただし、現在 Spring Cloud AWS スターターは Spring Initializr で利用できないため、必要な依存関係を手動で追加する必要があります。
+
+**spring-cloud-aws-dependencies** の Bill Of Material (BOM) を依存関係管理に追加し、**S3** および **SQS** スターターを依存関係として追加します。また、Testcontainers は [LocalStack モジュール](https://testcontainers.com/modules/localstack/)を提供しており、これを使用して AWS サービス統合をテストします。さらに、SQS を使用した非同期処理をテストするために [Awaitility](http://www.awaitility.org/) を使用します。
+
+ビルドツールとして Gradle を使用している場合、以下のように **build.gradle** ファイルに依存関係を設定する必要があります：
+
+```groovy
+ext {
+    set('testcontainers.version', "1.19.3")
+    set('awspringVersion', "3.0.3")
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3'
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs'
+
+    testImplementation 'org.springframework.boot:spring-boot-devtools'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:localstack'
+    testImplementation 'org.awaitility:awaitility'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "io.awspring.cloud:spring-cloud-aws-dependencies:${awspringVersion}"
+    }
+}
+```
+
+完全なコードについては、GitHub リポジトリ https://github.com/testcontainers/tc-guide-testing-aws-service-integrations-using-localstack を参照してください。
+
+ここでは、SQS キューと S3 バケットを使用します。キュー名とバケット名を設定可能にするために、以下のような設定プロパティクラスを作成します。
+
+```java
+package com.testcontainers.demo;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "app")
+public record ApplicationProperties(String queue, String bucket) {}
+```
+
+その後、メインのアプリケーションクラスに **@ConfigurationPropertiesScan** アノテーションを追加して、**@ConfigurationProperties** が付与されたクラスを自動的にスキャンし、Bean として登録します。
+
+## S3 サービスを操作するための StorageService の実装
+
+Spring Cloud AWS は、ファイルのアップロード/ダウンロードや署名付き URL の生成など、最も一般的なタスクを簡単に実行できる便利なメソッドを備えた高レベルの抽象化として **S3Client** および **S3Template** を提供しています。
+
+以下のように、**S3Template** を使用してファイルをアップロードおよびダウンロードするための **StorageService** クラスを作成しましょう：
+
+```java
+package com.testcontainers.demo;
+
+import io.awspring.cloud.s3.S3Template;
+import java.io.IOException;
+import java.io.InputStream;
+import org.springframework.stereotype.Service;
+
+@Service
+public class StorageService {
+
+  private final S3Template s3Template;
+
+  public StorageService(S3Template s3Template) {
+    this.s3Template = s3Template;
+  }
+
+  public void upload(String bucketName, String key, InputStream stream) {
+    this.s3Template.upload(bucketName, key, stream);
+  }
+
+  public InputStream download(String bucketName, String key)
+    throws IOException {
+    return this.s3Template.download(bucketName, key).getInputStream();
+  }
+
+  public String downloadAsString(String bucketName, String key)
+    throws IOException {
+    try (InputStream is = this.download(bucketName, key)) {
+      return new String(is.readAllBytes());
+    }
+  }
+}
+```
+
+## SQS メッセージセンダーとリスナーの実装
+
+Spring Cloud AWS は、AWS Java SDK の **SqsAsyncClient** の上に **SqsTemplate** という高レベルの抽象化を提供し、SQS キューを操作するための **@SqsListener** アノテーション駆動のリスナーサポートを提供します。
+
+以下のように、SQS キューに送信するメッセージペイロードを表す **Message** レコードを作成しましょう：
+
+```java
+package com.testcontainers.demo;
+
+import java.util.UUID;
+
+public record Message(UUID uuid, String content) {}
+```
+
+以下のように、**SqsTemplate** を内部で使用して SQS キューにメッセージを公開する **MessageSender** クラスを作成します：
+
+```java
+package com.testcontainers.demo;
+
+import io.awspring.cloud.sqs.operations.SqsTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MessageSender {
+
+  private final SqsTemplate sqsTemplate;
+
+  public MessageSender(SqsTemplate sqsTemplate) {
+    this.sqsTemplate = sqsTemplate;
+  }
+
+  public void publish(String queueName, Message message) {
+    sqsTemplate.send(to -> to.queue(queueName).payload(message));
+  }
+}
+```
+
+続いて、**@SqsListener** アノテーションを使用して、どのキューをリッスンするかを指定する SQS キューのメッセージハンドラメソッドを実装した **MessageListener** クラスを作成します。
+
+```java
+package com.testcontainers.demo;
+
+import io.awspring.cloud.sqs.annotation.SqsListener;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MessageListener {
+
+  private final StorageService storageService;
+  private final ApplicationProperties properties;
+
+  public MessageListener(
+    StorageService storageService,
+    ApplicationProperties properties
+  ) {
+    this.storageService = storageService;
+    this.properties = properties;
+  }
+
+  @SqsListener(queueNames = { "${app.queue}" })
+  public void handle(Message message) {
+    String bucketName = this.properties.bucket();
+    String key = message.uuid().toString();
+    ByteArrayInputStream is = new ByteArrayInputStream(
+      message.content().getBytes(StandardCharsets.UTF_8)
+    );
+    this.storageService.upload(bucketName, key, is);
+  }
+}
+```
+
+キュー名を直接ハードコードする代わりに、Spring のプロパティ参照式 `${app.queue}` を使用して、設定済みのプロパティ値を基にキュー名を構成しています。
+
+メッセージが SQS キューに公開されると、Spring がペイロードデータを **Message** オブジェクトにアンマーシャリングします。その後、メッセージのユニークキーを使用してメッセージ内容を S3 バケットにアップロードします。
+
+## LocalStack を使用した統合テストの作成
+
+[LocalStack の Docker イメージ](https://hub.docker.com/r/localstack/localstack)を使用してコンテナを起動し、実際の AWS サービスではなく LocalStack コンテナと通信するように Spring Cloud AWS の以下のプロパティを設定できます。
+
+```properties
+spring.cloud.aws.s3.endpoint=http://localhost:4566
+spring.cloud.aws.sqs.endpoint=http://localhost:4566
+spring.cloud.aws.credentials.access-key=noop
+spring.cloud.aws.credentials.secret-key=noop
+spring.cloud.aws.region.static=us-east-1
+```
+
+ただし、テスト環境では、ランダムな空きポートで起動する一時的なコンテナを使用するほうが望ましいです。これにより、CI 上で複数のビルドを並行して実行してもポート競合の問題を回避できます。Testcontainers はこの目的を簡単に達成できる LocalStack モジュールを提供しています。
+
+以下のように、LocalStack コンテナを起動し、Spring Cloud AWS プロパティを設定する Spring Boot の統合テストを作成できます：
+
+```java
+@SpringBootTest
+@Testcontainers
+class MessageListenerTest {
+
+  @Container
+  static LocalStackContainer localStack = new LocalStackContainer(
+    DockerImageName.parse("localstack/localstack:3.0")
+  );
+
+  static final String BUCKET_NAME = UUID.randomUUID().toString();
+  static final String QUEUE_NAME = UUID.randomUUID().toString();
+
+  @DynamicPropertySource
+  static void overrideProperties(DynamicPropertyRegistry registry) {
+    registry.add("app.bucket", () -> BUCKET_NAME);
+    registry.add("app.queue", () -> QUEUE_NAME);
+    registry.add(
+      "spring.cloud.aws.region.static",
+      () -> localStack.getRegion()
+    );
+    registry.add(
+      "spring.cloud.aws.credentials.access-key",
+      () -> localStack.getAccessKey()
+    );
+    registry.add(
+      "spring.cloud.aws.credentials.secret-key",
+      () -> localStack.getSecretKey()
+    );
+    registry.add(
+      "spring.cloud.aws.s3.endpoint",
+      () -> localStack.getEndpointOverride(S3).toString()
+    );
+    registry.add(
+      "spring.cloud.aws.sqs.endpoint",
+      () -> localStack.getEndpointOverride(SQS).toString()
+    );
+  }
+}
+```
+
+**@Testcontainers** と **@Container** アノテーションを使用して、LocalStackContainer インスタンスを起動しています。その後、コンテナインスタンスから動的な S3 および SQS のエンドポイント URL、リージョン、アクセスキー、シークレットキーを取得し、**DynamicPropertyRegistry** 機構を使用して Spring Cloud AWS の構成プロパティを設定します。
+
+テストを書く前に、SQS キューと S3 バケットを作成する必要があります。これを実現するために、**@BeforeAll** コールバックメソッドを使用して、必要なリソース（S3 バケットや SQS キューなど）を作成します。**localStack.execInContainer()** API を使用して以下のようにリソースを作成します：
+
+```java
+@BeforeAll
+static void beforeAll() throws IOException, InterruptedException {
+  localStack.execInContainer("awslocal", "s3", "mb", "s3://" + BUCKET_NAME);
+  localStack.execInContainer(
+    "awslocal",
+    "sqs",
+    "create-queue",
+    "--queue-name",
+    QUEUE_NAME
+  );
+}
+```
+
+LocalStack の Docker イメージにプリインストールされている **awslocal** CLI ツールを使用して AWS リソースを作成しています。このツールを **localStack.execInContainer()** API を通じてコンテナ内で実行します。
+
+最後に、SQS キューにメッセージを公開し、そのメッセージがリスナーで処理され、メッセージ内容が S3 バケットに保存されることを確認するテストを書きます。
+
+メッセージが指定したキーで S3 バケットに存在するかどうかを確認するために、**Awaitility** を使用して最大 10 秒間待機します。
+
+完全なテストコードは次のようになります:
+
+```java
+package com.testcontainers.demo;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3;
+import static org.testcontainers.containers.localstack.LocalStackContainer.Service.SQS;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.localstack.LocalStackContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+@SpringBootTest
+@Testcontainers
+class MessageListenerTest {
+
+  @Container
+  static LocalStackContainer localStack = new LocalStackContainer(
+    DockerImageName.parse("localstack/localstack:3.0")
+  );
+
+  static final String BUCKET_NAME = UUID.randomUUID().toString();
+  static final String QUEUE_NAME = UUID.randomUUID().toString();
+
+  @DynamicPropertySource
+  static void overrideProperties(DynamicPropertyRegistry registry) {
+    registry.add("app.bucket", () -> BUCKET_NAME);
+    registry.add("app.queue", () -> QUEUE_NAME);
+    registry.add(
+      "spring.cloud.aws.region.static",
+      () -> localStack.getRegion()
+    );
+    registry.add(
+      "spring.cloud.aws.credentials.access-key",
+      () -> localStack.getAccessKey()
+    );
+    registry.add(
+      "spring.cloud.aws.credentials.secret-key",
+      () -> localStack.getSecretKey()
+    );
+    registry.add(
+      "spring.cloud.aws.s3.endpoint",
+      () -> localStack.getEndpointOverride(S3).toString()
+    );
+    registry.add(
+      "spring.cloud.aws.sqs.endpoint",
+      () -> localStack.getEndpointOverride(SQS).toString()
+    );
+  }
+
+  @BeforeAll
+  static void beforeAll() throws IOException, InterruptedException {
+    localStack.execInContainer("awslocal", "s3", "mb", "s3://" + BUCKET_NAME);
+    localStack.execInContainer(
+      "awslocal",
+      "sqs",
+      "create-queue",
+      "--queue-name",
+      QUEUE_NAME
+    );
+  }
+
+  @Autowired
+  StorageService storageService;
+
+  @Autowired
+  MessageSender publisher;
+
+  @Autowired
+  ApplicationProperties properties;
+
+  @Test
+  void shouldHandleMessageSuccessfully() {
+    Message message = new Message(UUID.randomUUID(), "Hello World");
+    publisher.publish(properties.queue(), message);
+
+    await()
+      .pollInterval(Duration.ofSeconds(2))
+      .atMost(Duration.ofSeconds(10))
+      .ignoreExceptions()
+      .untilAsserted(() -> {
+        String msg = storageService.downloadAsString(
+          properties.bucket(),
+          message.uuid().toString()
+        );
+        assertThat(msg).isEqualTo("Hello World");
+      });
+  }
+}
+```
+
+ランダムな UUID をユニーク識別子として持つ Message インスタンスを作成し、そのメッセージを SQS キューに公開しました。リスナーがメッセージを受信すると、その内容がランダムな UUID をキーとして S3 バケットに保存されます。その後、バケット内に期待されるキーでエントリが存在するか、送信した内容と一致しているかを検証します。
+
+## テストの実行
+
+```shell
+# If you are using Maven
+./mvnw test
+
+# If you are using Gradle
+./gradlew test
+```
+
+テストを実行すると、LocalStack Docker コンテナが起動し、テストは正常にパスするはずです。テスト実行後、コンテナは自動的に停止され、削除されることも確認できます。
+
+## まとめ
+
+LocalStack は、AWS サービスベースのアプリケーションをローカルで開発するための環境を提供し、Testcontainers の LocalStack モジュールは、一時的なコンテナを使用して統合テストを簡単に記述できるようにします。
+
+Testcontainers についてさらに詳しく知りたい場合は、https://testcontainers.com をご覧ください。
