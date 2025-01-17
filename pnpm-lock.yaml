@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@next/third-parties':
-        specifier: 15.1.4
-        version: 15.1.4(next@14.2.23(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+        specifier: 15.1.5
+        version: 15.1.5(next@14.2.23(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
       '@vercel/analytics':
         specifier: 1.4.1
         version: 1.4.1(next@14.2.23(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
@@ -452,8 +452,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@next/third-parties@15.1.4':
-    resolution: {integrity: sha512-x3HQ43zDt7HbtRzbbf+Yz61/KHXKIY3xdchKo0XahAUyc4AcBkHuOYxk7PDNkPTGA/vncyzdn0jy+Gi1ziceiA==}
+  '@next/third-parties@15.1.5':
+    resolution: {integrity: sha512-APPZrBerXvZn1IvNwC+TqusqWiTaj6goa1P6/YJe8nr9GTG+j8+vGJ39py49+kUgyiYRYUly2tc6Uxu6g/VEWw==}
     peerDependencies:
       next: ^13.0.0 || ^14.0.0 || ^15.0.0
       react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
@@ -2688,7 +2688,7 @@ snapshots:
   '@next/swc-win32-x64-msvc@14.2.23':
     optional: true
 
-  '@next/third-parties@15.1.4(next@14.2.23(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
+  '@next/third-parties@15.1.5(next@14.2.23(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)':
     dependencies:
       next: 14.2.23(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
