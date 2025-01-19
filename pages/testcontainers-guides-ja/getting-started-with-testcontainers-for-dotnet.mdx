@@ -231,3 +231,39 @@ public sealed class CustomerServiceTest : IAsyncLifetime
 }
 ```
 
+`CustomerServiceTest` クラスのコードを理解していきましょう。
+
+- **PostgreSqlContainer の宣言:** Postgres ビルダーに Docker イメージ名 `postgres:15-alpine` を渡して `PostgreSqlContainer` を宣言します。
+
+- **Postgres コンテナの起動:** Postgres コンテナは、`xUnit.net` の `IAsyncLifetime` インターフェースを使用して起動されます。このインターフェースは、テストクラスが作成された直後に `InitializeAsync` メソッドを実行します。
+
+- **ShouldReturnTwoCustomers() テスト**
+  - `CustomerService` を初期化します。
+  - データベースに 2 件の顧客レコードを挿入します。
+  - 顧客テーブルのすべての行を取得し、顧客数が期待通りであることを検証します。
+
+- **Postgres コンテナの破棄:** テストメソッドの実行後に `DisposeAsync()` メンバーが実行され、Postgres コンテナが破棄されます。
+
+以下のコマンドを使用してテストを実行します:
+
+```shell
+dotnet test
+```
+
+`CustomerService` テストを実行すると、出力に次の動作が表示されます:
+
+- Testcontainers が DockerHub から Postgres Docker イメージを取得（ローカルにイメージがない場合）
+- コンテナの起動
+- テストの実行
+
+これで、Testcontainers を使用した最初のテストが実行されました！
+
+## まとめ
+
+Testcontainers for .NET ライブラリを使用して、Postgres データベースを用いた .NET アプリケーションのテスト方法を学びました。
+
+Testcontainers を使用した統合テストの記述方法は、IDE から実行できる単体テストの記述方法と非常に似ています。また、チームメンバーはプロジェクトをクローンし、自分のコンピュータに Postgres をインストールせずにテストを実行できます。
+
+Postgres 以外にも、Testcontainers は多くの一般的に使用される SQL データベース、NoSQL データベース、メッセージングキューなどの専用モジュールを提供しています。Testcontainers を使用して、テストのためにあらゆるコンテナ化された依存関係を実行できます！
+
+Testcontainers の詳細については、https://testcontainers.com をご覧ください。
