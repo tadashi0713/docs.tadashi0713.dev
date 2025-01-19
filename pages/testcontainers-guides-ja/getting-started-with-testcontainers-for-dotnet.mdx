@@ -1,0 +1,233 @@
+---
+title: .NET で Testcontainers を使い始める
+description: このガイドでは、PostgreSQL を使用したテストを例に挙げて、.NET で Testcontainers を使い始める方法を説明します。
+---
+
+import { Callout, Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa"
+
+# .NET で Testcontainers を使い始める
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-getting-started-with-testcontainers-for-dotnet"
+/>
+
+Testcontainers は、Docker コンテナでラップされた実際のサービスを使用して統合テストを簡単かつ軽量な API で構築できるテストライブラリです。Testcontainers を使用すると、本番環境で使用しているサービスと同じ種類のサービスと対話するテストを、モックやインメモリサービスを使用せずに記述できます。
+
+<Callout type="info">
+  Testcontainers を初めて使用する場合は、[Testcontainers とは何か、なぜ使うべきなのか？](/testcontainers-guides-ja/introducing-testcontainers)を読んで、Testcontainersについて詳しく学んでください。
+</Callout>
+
+Postgres データベースを使用して .NET アプリケーションをテストするために、Testcontainers をどのように活用できるかを見ていきましょう。
+
+## ソリューションファイルを作成し、ソースプロジェクトとテストプロジェクトを準備する
+
+ターミナルまたはお好みの IDE を使用して、.NET のソースプロジェクトとテストプロジェクトを作成します。
+
+```shell
+$ dotnet new sln -o TestcontainersDemo
+$ cd TestcontainersDemo
+$ dotnet new classlib -o CustomerService
+$ dotnet sln add ./CustomerService/CustomerService.csproj
+$ dotnet new xunit -o CustomerService.Tests
+$ dotnet sln add ./CustomerService.Tests/CustomerService.Tests.csproj
+$ dotnet add ./CustomerService.Tests/CustomerService.Tests.csproj reference ./CustomerService/CustomerService.csproj
+```
+
+プロジェクトが作成されたら、ソースプロジェクトに **Npgsql** の依存関係を以下のように追加します：
+
+```shell
+dotnet add ./CustomerService/CustomerService.csproj package Npgsql
+```
+
+これで、ソースプロジェクトとテストプロジェクトには以下の依存関係が含まれているはずです。
+
+ソースプロジェクト
+
+```xml
+<PackageReference Include="Npgsql" Version="7.0.4" />
+```
+
+テストプロジェクト
+
+```xml
+<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
+<PackageReference Include="xunit" Version="2.4.2" />
+<PackageReference Include="xunit.runner.visualstudio" Version="2.4.5"/>
+```
+
+Postgres データベースとやり取りするために、Postgres 用の ADO.NET データプロバイダーである **Npgsql** を追加しました。また、サービスのテストには **xUnit** を使用します。
+
+## ビジネスロジックの実装
+
+顧客情報を管理するための `CustomerService` クラスを作成します。
+
+まず、以下のように `Customer` 型を作成します：
+
+```csharp
+namespace Customers;
+
+public readonly record struct Customer(long Id, string Name);
+```
+
+ADO.NET の接続パラメータ（接続文字列）を保持するための `DbConnectionProvider` クラスを作成し、データベース接続を取得するメソッドを以下のように実装します：
+
+```csharp
+using System.Data.Common;
+using Npgsql;
+
+namespace Customers;
+
+public sealed class DbConnectionProvider
+{
+    private readonly string _connectionString;
+
+    public DbConnectionProvider(string connectionString)
+    {
+        _connectionString = connectionString;
+    }
+
+    public DbConnection GetConnection()
+    {
+        return new NpgsqlConnection(_connectionString);
+    }
+}
+```
+
+`CustomerService` クラスを作成し、以下のコードを追加してください：
+
+```csharp
+namespace Customers;
+
+public sealed class CustomerService
+{
+    private readonly DbConnectionProvider _dbConnectionProvider;
+
+    public CustomerService(DbConnectionProvider dbConnectionProvider)
+    {
+        _dbConnectionProvider = dbConnectionProvider;
+        CreateCustomersTable();
+    }
+
+    public IEnumerable<Customer> GetCustomers()
+    {
+        IList<Customer> customers = new List<Customer>();
+
+        using var connection = _dbConnectionProvider.GetConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT id, name FROM customers";
+        command.Connection?.Open();
+
+        using var dataReader = command.ExecuteReader();
+        while (dataReader.Read())
+        {
+            var id = dataReader.GetInt64(0);
+            var name = dataReader.GetString(1);
+            customers.Add(new Customer(id, name));
+        }
+
+        return customers;
+    }
+
+    public void Create(Customer customer)
+    {
+        using var connection = _dbConnectionProvider.GetConnection();
+        using var command = connection.CreateCommand();
+
+        var id = command.CreateParameter();
+        id.ParameterName = "@id";
+        id.Value = customer.Id;
+
+        var name = command.CreateParameter();
+        name.ParameterName = "@name";
+        name.Value = customer.Name;
+
+        command.CommandText = "INSERT INTO customers (id, name) VALUES(@id, @name)";
+        command.Parameters.Add(id);
+        command.Parameters.Add(name);
+        command.Connection?.Open();
+        command.ExecuteNonQuery();
+    }
+
+    private void CreateCustomersTable()
+    {
+        using var connection = _dbConnectionProvider.GetConnection();
+        using var command = connection.CreateCommand();
+        command.CommandText = "CREATE TABLE IF NOT EXISTS customers (id BIGINT NOT NULL, name VARCHAR NOT NULL, PRIMARY KEY (id))";
+        command.Connection?.Open();
+        command.ExecuteNonQuery();
+    }
+}
+```
+
+`CustomerService` クラスでは、顧客情報を管理するためのいくつかのメソッドが実装されています。それぞれの動作を以下に説明します。
+
+- `_dbConnectionProvider.GetConnection()`: ADO.NET を使用してデータベース接続を取得します。
+
+- `CreateCustomersTable()` メソッド: `customers` テーブルが存在しない場合に作成します。
+
+- `GetCustomers()` メソッド: `customers` テーブルからすべての行を取得し、それを `Customer` オブジェクトに変換してリストとして返します。
+
+- `Create(Customer)` メソッド: 新しい顧客レコードをデータベースに挿入します。
+
+次に、Testcontainers を活用して、`CustomerService` のロジックをどのようにテストできるかを見ていきましょう。
+
+## Testcontainers の依存関係を追加
+
+Testcontainers を使用したテストを書く前に、テストプロジェクトに Testcontainers の PostgreSQL モジュール依存関係を以下のように追加します：
+
+```shell
+dotnet add ./CustomerService.Tests/CustomerService.Tests.csproj package Testcontainers.PostgreSql
+```
+
+これで、テストプロジェクトに **Testcontainers.PostgreSql** の依存関係が以下のように追加されているはずです：
+
+私たちのアプリケーションでは Postgres データベースを使用しているため、テスト依存関係として Testcontainers の [Postgres モジュール](https://www.nuget.org/packages/Testcontainers.PostgreSql)を追加しました。
+
+## Testcontainers を使用したテストの作成
+
+テストプロジェクトに `CustomerServiceTest` クラスを作成し、以下のコードを追加してください：
+
+```csharp
+using Testcontainers.PostgreSql;
+
+namespace Customers.Tests;
+
+public sealed class CustomerServiceTest : IAsyncLifetime
+{
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
+        .WithImage("postgres:15-alpine")
+        .Build();
+
+    public Task InitializeAsync()
+    {
+        return _postgres.StartAsync();
+    }
+
+    public Task DisposeAsync()
+    {
+        return _postgres.DisposeAsync().AsTask();
+    }
+
+    [Fact]
+    public void ShouldReturnTwoCustomers()
+    {
+        // Given
+        var customerService = new CustomerService(new DbConnectionProvider(_postgres.GetConnectionString()));
+
+        // When
+        customerService.Create(new Customer(1, "George"));
+        customerService.Create(new Customer(2, "John"));
+        var customers = customerService.GetCustomers();
+
+        // Then
+        Assert.Equal(2, customers.Count());
+    }
+}
+```
+
