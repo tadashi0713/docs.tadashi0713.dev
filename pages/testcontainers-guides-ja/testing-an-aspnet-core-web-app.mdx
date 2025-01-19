@@ -1,0 +1,168 @@
+---
+title: ASP.NET Core Web アプリケーションのテスト
+description: このガイドは、Microsoft の「ASP.NET Core における統合テスト」を基に作成されており、それに Testcontainers を活用する方法を説明します。
+---
+
+import { Callout, Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa"
+
+# ASP.NET Core Web アプリケーションのテスト
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-testing-aspnet-core"
+/>
+
+このガイドでは、以下の内容を学びます：
+
+- Testcontainers を使用してテスト依存関係を起動する方法
+
+- SQLite を Microsoft SQL Server に置き換える方法
+
+## 前提条件
+
+- Testcontainers は Docker-API 互換のコンテナランタイムを必要とします。
+
+- このガイドは、Microsoft の「[ASP.NET Core における統合テスト](https://learn.microsoft.com/en-us/aspnet/core/test/integration-tests)」を基に作成されています。Microsoft のコードサンプルは[こちら](https://github.com/dotnet/AspNetCore.Docs.Samples/tree/81d3e418e14f4bef38272f5a468446529909f836/test/integration-tests/IntegrationTestsSample)から確認できます。このガイドで学ぶ内容は、参照元のコードを基にした追加的な内容です。
+
+## このガイドで達成すること
+
+以下のセクションでは、SQLite を本番環境で使用されるデータベースプロバイダーに置き換える方法を説明します。これにより、テストへの信頼性を向上させ、実際の環境に近い環境でテストを実行できるようになります。
+
+## はじめる
+
+`tests/RazorPagesProject.Tests` ディレクトリに移動し、以下の NuGet パッケージをインストールします：
+
+- `Microsoft.EntityFrameworkCore.SqlServer`
+- `Testcontainers.MsSql`
+
+```console
+cd AspNetCore.Docs.Samples/test/integration-tests/IntegrationTestsSample/tests/RazorPagesProject.Tests
+dotnet add package Microsoft.EntityFrameworkCore.SqlServer --version 7.0.0
+dotnet add package Testcontainers.MsSql --version 3.0.0
+```
+
+<Callout type="info">
+  Testcontainers for .NET は、ベストプラクティスに基づいた設定を備えたさまざまな[モジュール](https://www.nuget.org/profiles/Testcontainers)を提供しています。
+</Callout>
+
+これで依存関係の設定が完了したので、プロジェクトに新しいテストクラスを追加できます。まず、Microsoft SQL Server の依存コンテナを設定、作成、起動する責任を持つ `MsSqlTests` クラスを作成します。この `MsSqlTests` クラスには、テストを実行するためのネストされた `IndexPageTests` クラスを含めます。この構造により、テストクラス内でプライベートなコンテナフィールドにアクセスできるようになり、テストエクスプローラー内で整理された階層を保つことができます。
+
+```csharp
+public sealed class MsSqlTests : IAsyncLifetime
+{
+    private readonly MsSqlContainer _msSqlContainer = new MsSqlBuilder().Build();
+
+    public Task InitializeAsync()
+    {
+        return _msSqlContainer.StartAsync();
+    }
+
+    public Task DisposeAsync()
+    {
+        return _msSqlContainer.DisposeAsync().AsTask();
+    }
+
+    public sealed class IndexPageTests : IClassFixture<MsSqlTests>, IDisposable
+    {
+        private readonly WebApplicationFactory<Program> _webApplicationFactory;
+
+        private readonly HttpClient _httpClient;
+
+        public IndexPageTests(MsSqlTests fixture)
+        {
+            var clientOptions = new WebApplicationFactoryClientOptions();
+            clientOptions.AllowAutoRedirect = false;
+
+            _webApplicationFactory = new CustomWebApplicationFactory(fixture);
+            _httpClient = _webApplicationFactory.CreateClient(clientOptions);
+        }
+
+        public void Dispose()
+        {
+            _webApplicationFactory.Dispose();
+        }
+
+        private sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
+        {
+            private readonly string _connectionString;
+
+            public CustomWebApplicationFactory(MsSqlTests fixture)
+            {
+                _connectionString = fixture._msSqlContainer.GetConnectionString();
+            }
+
+            protected override void ConfigureWebHost(IWebHostBuilder builder)
+            {
+                builder.ConfigureServices(services =>
+                {
+                    services.Remove(services.SingleOrDefault(service => typeof(DbContextOptions<ApplicationDbContext>) == service.ServiceType));
+                    services.Remove(services.SingleOrDefault(service => typeof(DbConnection) == service.ServiceType));
+                    services.AddDbContext<ApplicationDbContext>((_, option) => option.UseSqlServer(_connectionString));
+                });
+            }
+        }
+    }
+}
+```
+
+<Callout type="info">
+  Microsoft SQL Server の Docker イメージは、Apple Silicon を搭載した Mac などの ARM デバイスでは互換性がありません。その代わりに、[SqlEdge](https://www.nuget.org/packages/Testcontainers.SqlEdge) モジュールや [Testcontainers Cloud](https://testcontainers.com/cloud/) を使用することができます。
+</Callout>
+
+Testcontainers モジュールはあらかじめ設定済みで、多くの開発者に認識されたベストプラクティスに従っています。通常、モジュールの設定を自分で行う必要はありません。次のように新しいコンテナインスタンスを作成するだけです：
+
+```csharp
+new MsSqlBuilder().Build();
+```
+
+しかし、一部のケースでは独自の設定を使用する必要がある場合があります。そのような場合、Testcontainers は汎用ビルダー `ContainerBuilder()` を提供しています。
+
+[xUnit.net](https://xunit.net/) はクラスが作成された直後に `IAsyncLifetime.InitializeAsync` を呼び出します。このメカニズムを使用して、テストの実行前に Microsoft SQL Server インスタンスを起動します。
+
+`IndexPageTests` クラスでは、`WebApplicationFactory<TEntryPoint>` のカスタムインスタンスを作成します。SQLite に依存するデータベースコンテキストを追加する代わりに、Microsoft SQL Server の接続文字列を `UseSqlServer(string)` に渡して新しいデータベースコンテキストを追加します。Testcontainers を使用すれば、この設定全体を Web アプリケーションのエントリポイントクラスに移動し、アプリケーションの起動と同時に依存サービスを開始することも可能です。
+
+これでテストクラスが準備できたので、元のテストをこのクラスに移動できます。例えば、以下のテストを新しい `IndexPageTests` クラスにコピーし、Microsoft SQL Server インスタンスに対してテストを実行します:
+
+```csharp
+[Fact]
+public async Task Post_DeleteAllMessagesHandler_ReturnsRedirectToRoot()
+{
+    // Arrange
+    var defaultPage = await _httpClient.GetAsync("/")
+        .ConfigureAwait(false);
+
+    var document = await HtmlHelpers.GetDocumentAsync(defaultPage)
+        .ConfigureAwait(false);
+
+    // Act
+    var form = (IHtmlFormElement)document.QuerySelector("form[id='messages']");
+    var submitButton = (IHtmlButtonElement)document.QuerySelector("button[id='deleteAllBtn']");
+
+    var response = await _httpClient.SendAsync(form, submitButton)
+        .ConfigureAwait(false);
+
+    // Assert
+    Assert.Equal(HttpStatusCode.OK, defaultPage.StatusCode);
+    Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+    Assert.Equal("/", response.Headers.Location.OriginalString);
+}
+```
+
+<Callout type="info">
+  最初のテスト実行時は、必要なイメージをプルする必要があるため、数秒余分に時間がかかる場合があることに注意してください。
+</Callout>
+
+## まとめ
+
+SQLite を本番環境で使用されるデータベースプロバイダーに置き換えることで、開発者はテストに対する信頼性をさらに高めることができます。`MsSqlTests` クラスは Testcontainers を使用して Microsoft SQL Server コンテナを設定、作成、起動し、`IndexPageTests` クラスで実際のデータベースを用いたテストを実行できるようにします。このアプローチにより、開発者は本番に近い環境でアプリケーションをテストでき、開発サイクルの初期段階で問題を特定するのに役立ちます。
+
+Testcontainers の詳細については、https://testcontainers.com をご覧ください。
+
+## 参考資料
+
+- https://dotnet.testcontainers.org/modules/
