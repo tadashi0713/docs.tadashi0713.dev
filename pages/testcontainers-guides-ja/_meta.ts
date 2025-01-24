@@ -13,6 +13,8 @@ export default {
   'getting-started-with-testcontainers-for-dotnet':
     '.NET で Testcontainers を使い始める',
   'testing-an-aspnet-core-web-app': 'ASP.NET Core Web アプリケーションのテスト',
+  'testing-rest-api-integrations-using-mockserver':
+    'MockServer を使用した REST API 統合テスト',
   'testing-aws-service-integrations-using-localstack':
     'LocalStack を使用した AWS サービス統合のテスト',
   'simple-local-development-with-testcontainers-desktop':

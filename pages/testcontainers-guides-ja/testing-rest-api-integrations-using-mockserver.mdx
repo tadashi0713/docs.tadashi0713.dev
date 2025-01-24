@@ -1,0 +1,368 @@
+---
+title: MockServer を使用した REST API 統合テスト
+description: このガイドでは、Testcontainers の MockServer モジュールを使用して、Spring Boot アプリケーションで REST API 統合をテストする方法を説明します。
+---
+
+import { Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa"
+
+# MockServer を使用した REST API 統合テスト
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-testing-rest-api-integrations-using-mockserver"
+/>
+
+このガイドでは、以下の内容を学びます：
+
+- 外部 REST API と通信する Spring Boot アプリケーションを作成する方法
+- Testcontainers MockServer モジュールを使用して外部 API 統合をテストする方法
+
+## 事前準備
+
+- Java 17 以上
+- お好みの IDE（IntelliJ IDEA、Eclipse、NetBeans、VS Code）
+- Testcontainers がサポートする Docker 環境
+  https://www.testcontainers.org/supported_docker_environment/
+
+## このガイドで達成すること
+
+Spring Framework 6 で導入された[宣言的 HTTP クライアントサポート](https://docs.spring.io/spring-framework/reference/integration/rest-clients.html#rest-http-interface)を使用して、外部 REST API と通信する Spring Boot プロジェクトを作成します。その後、Testcontainers の [MockServer モジュール](https://java.testcontainers.org/modules/mockserver/)を使用して外部 REST API 統合をテストします。
+
+## はじめに
+
+[Spring Initializr](https://start.spring.io/) を使用して新しい Spring Boot プロジェクトを作成します。この際、次のスターターを選択します：
+
+- **Spring Web**
+- **Spring Reactive Web**
+- **Testcontainers**
+
+アプリケーションが生成されたら、以下の **RestAssured** と **MockServer** ライブラリをテスト依存関係として追加してください:
+
+```groovy
+testImplementation 'io.rest-assured:rest-assured'
+testImplementation 'org.testcontainers:mockserver'
+testImplementation 'org.mock-server:mockserver-netty:5.15.0'
+```
+
+ビデオアルバムを管理するアプリケーションを構築すると仮定します。このアプリケーションでは、サードパーティの REST API を使用して画像や動画のアセットを管理します。このガイドでは、アルバム写真を保存するためのサードパーティフォトサービスとして、https://jsonplaceholder.typicode.com/ という公開されている REST API を使用します。
+
+特定の albumId に対するアルバムを取得する REST API エンドポイントを実装します。この API は内部でフォトサービスに接続し、そのアルバムの写真を取得します。
+
+[MockServer](https://www.mock-server.com/) は、HTTP または HTTPS ベースのサービスをモックまたはプロキシするためのライブラリです。Testcontainers は MockServer を Docker コンテナとして実行できる [Mockserver モジュール](https://java.testcontainers.org/modules/mockserver/)を提供しています。
+
+## Album と Photo モデルの作成
+
+まず、Java の record を使用して **Album** と **Photo** モデルを作成します。
+
+```java
+package com.testcontainers.demo;
+
+import java.util.List;
+
+public record Album(Long albumId, List<Photo> photos) {}
+
+record Photo(Long id, String title, String url, String thumbnailUrl) {}
+```
+
+## PhotoServiceClient インターフェースの作成
+
+Spring Framework 6 以前では、**RestTemplate**、**WebClient**、または **FeignClient** を使用して HTTP API を呼び出していましたが、Spring 6 では宣言的 HTTP クライアントのネイティブサポートが導入されました。
+
+以下のように、指定された **albumId** の写真を取得するメソッドを持つインターフェースを作成します：
+
+```java
+package com.testcontainers.demo;
+
+import java.util.List;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.service.annotation.GetExchange;
+
+interface PhotoServiceClient {
+  @GetExchange("/albums/{albumId}/photos")
+  List<Photo> getPhotos(@PathVariable Long albumId);
+}
+```
+
+フォトサービスのベース URL を設定可能なプロパティとして外部化し、それを **PhotoServiceClient** の Bean 登録に使用します。以下のプロパティを **src/main/resources/application.properties** ファイルに追加します：
+
+```properties
+photos.api.base-url=https://jsonplaceholder.typicode.com
+```
+
+## albumId を指定してアルバムを取得する API エンドポイントの実装
+
+以下のように、指定された albumId に対するアルバムを返す REST API エンドポイントを実装します:
+
+```java
+package com.testcontainers.demo;
+
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+@RestController
+@RequestMapping("/api")
+class AlbumController {
+
+  private static final Logger logger = LoggerFactory.getLogger(
+    AlbumController.class
+  );
+
+  private final PhotoServiceClient photoServiceClient;
+
+  AlbumController(PhotoServiceClient photoServiceClient) {
+    this.photoServiceClient = photoServiceClient;
+  }
+
+  @GetMapping("/albums/{albumId}")
+  public ResponseEntity<Album> getAlbumById(@PathVariable Long albumId) {
+    try {
+      List<Photo> photos = photoServiceClient.getPhotos(albumId);
+      return ResponseEntity.ok(new Album(albumId, photos));
+    } catch (WebClientResponseException e) {
+      logger.error("Failed to get photos", e);
+      return new ResponseEntity<>(e.getStatusCode());
+    }
+  }
+}
+```
+
+私たちのアプリケーションは、GET `/api/albums/{albumId}` という REST API エンドポイントを公開しています。このエンドポイントは内部的に `https://jsonplaceholder.typicode.com/albums/{albumId}/photos` に API 呼び出しを行い、指定されたアルバムの写真を取得します。レスポンスは以下のようになります:
+
+```json
+{
+   "albumId": 1,
+   "photos": [
+       {
+           "id": 51,
+           "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+           "url": "https://via.placeholder.com/600/8e973b",
+           "thumbnailUrl": "https://via.placeholder.com/150/8e973b"
+       },
+       {
+           "id": 52,
+           "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+           "url": "https://via.placeholder.com/600/121fa4",
+           "thumbnailUrl": "https://via.placeholder.com/150/121fa4"
+       },
+       ...
+       ...
+   ]
+}
+```
+
+アプリケーションを実行し、以下の URL にアクセスすることで JSON レスポンスを確認できます:
+
+http://localhost:8080/api/albums/1
+
+次に、MockServer を使用して photo-service API 統合をどのようにテストするかを見ていきます。
+
+## photo-service API 統合のテスト作成
+
+外部 API とのやり取りをテストする際、**photoServiceClient.getPhotos(albumId)** メソッドをモックするのではなく、HTTP プロトコルレベルでモックすることをお勧めします。これにより、以下のような問題を検証したり、シミュレーションしたりできます：
+
+- データのマーシャリング/アンマーシャリングエラー
+- ネットワーク遅延の問題
+
+以下に、Testcontainers Mockserver モジュールを使用して MockServer を作成し、**MockServerClient** のインスタンスを生成するコードを示します：
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class AlbumControllerTest {
+   @Container
+   static MockServerContainer mockServerContainer =
+        new MockServerContainer(DockerImageName.parse("mockserver/mockserver:5.15.0"));
+
+   static MockServerClient mockServerClient;
+
+   @DynamicPropertySource
+   static void overrideProperties(DynamicPropertyRegistry registry) {
+       mockServerClient = new MockServerClient(
+           mockServerContainer.getHost(),
+           mockServerContainer.getServerPort()
+       );
+       registry.add("photos.api.base-url", mockServerContainer::getEndpoint);
+   }
+   ...
+   ...
+}
+```
+
+mockServerClient の参照を取得した後、以下のように任意の API 呼び出しに対する期待値を設定できます。
+
+```java
+mockServerClient
+   .when(request()
+       .withMethod("GET")
+       .withPath("/albums/1/photos"))
+   .respond(response()
+       .withStatusCode(200)
+       .withBody("response content here"));
+```
+
+ここでは、GET `/api/albums/{albumId}` エンドポイントに対するテストを記述します：
+
+```java
+package com.testcontainers.demo;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
+import static org.mockserver.model.JsonBody.json;
+
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.model.Header;
+import org.mockserver.verify.VerificationTimes;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.MockServerContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class AlbumControllerTest {
+
+  @LocalServerPort
+  private Integer port;
+
+  @Container
+  static MockServerContainer mockServerContainer = new MockServerContainer(
+    DockerImageName.parse("mockserver/mockserver:5.15.0")
+  );
+
+  static MockServerClient mockServerClient;
+
+  @DynamicPropertySource
+  static void overrideProperties(DynamicPropertyRegistry registry) {
+    mockServerClient =
+    new MockServerClient(
+      mockServerContainer.getHost(),
+      mockServerContainer.getServerPort()
+    );
+    registry.add("photos.api.base-url", mockServerContainer::getEndpoint);
+  }
+
+  @BeforeEach
+  void setUp() {
+    RestAssured.port = port;
+    mockServerClient.reset();
+  }
+
+  @Test
+  void shouldGetAlbumById() {
+    Long albumId = 1L;
+
+    mockServerClient
+      .when(
+        request().withMethod("GET").withPath("/albums/" + albumId + "/photos")
+      )
+      .respond(
+        response()
+          .withStatusCode(200)
+          .withHeaders(
+            new Header("Content-Type", "application/json; charset=utf-8")
+          )
+          .withBody(
+            json(
+              """
+              [
+                   {
+                       "id": 1,
+                       "title": "accusamus beatae ad facilis cum similique qui sunt",
+                       "url": "https://via.placeholder.com/600/92c952",
+                       "thumbnailUrl": "https://via.placeholder.com/150/92c952"
+                   },
+                   {
+                       "id": 2,
+                       "title": "reprehenderit est deserunt velit ipsam",
+                       "url": "https://via.placeholder.com/600/771796",
+                       "thumbnailUrl": "https://via.placeholder.com/150/771796"
+                   }
+               ]
+              """
+            )
+          )
+      );
+
+    given()
+      .contentType(ContentType.JSON)
+      .when()
+      .get("/api/albums/{albumId}", albumId)
+      .then()
+      .statusCode(200)
+      .body("albumId", is(albumId.intValue()))
+      .body("photos", hasSize(2));
+
+    verifyMockServerRequest("GET", "/albums/" + albumId + "/photos", 1);
+  }
+  private void verifyMockServerRequest(String method, String path, int times) {
+    mockServerClient.verify(
+      request().withMethod(method).withPath(path),
+      VerificationTimes.exactly(times)
+    );
+  }
+}
+```
+
+このテストで行われていることを理解しましょう。
+
+- テストクラスに **@SpringBootTest** を付与して、完全な Spring アプリケーションコンテキストを読み込む統合テストを書いています。
+
+- API エンドポイントをテストするために RestAssured ライブラリを使用しています。アプリケーションが起動したランダムなポートを取得し、RestAssured の **baseURI** を初期化しています。
+
+- Testcontainers の JUnit 5 拡張機能である **@Testcontainers** と **@Container** を使用して **MockServerContainer** を起動しています。また、**photos.api.base-url** プロパティを MockServer のエンドポイント URL に設定しています。
+
+- **@BeforeEach** コールバックメソッド
+
+  - 各テストの実行前に **mockServerClient** をリセットすることで、1 つのテストの期待値が別のテストに影響を与えないようにしています。
+
+- **shouldGetAlbumById()** テストの動作
+
+  - `/albums/{albumId}/photos` API 呼び出しに対するモックレスポンスを設定しています。
+
+  - アプリケーションエンドポイント `/api/albums/{albumId}` にリクエストを送り、レスポンスを検証しています。
+
+- `mockServerClient.verify()` を使用して、期待される API 呼び出しが MockServer に対して行われたかどうかを確認しています。
+
+## テストを実行する
+
+```shell
+# Maven を使用している場合
+./mvnw test
+
+# Gradle を使用している場合
+./gradlew test
+```
+
+テストを実行すると、コンソールログに MockServer の Docker インスタンスが起動したことが表示されます。このインスタンスは、photo-service の代わりとして動作し、設定された期待値に基づいてモックレスポンスを提供します。
+
+## まとめ
+
+このガイドでは、以下の内容を学びました:
+
+- Spring Boot アプリケーションで宣言的 HTTP クライアントを使用してサードパーティ HTTP API を統合する方法
+- Testcontainers MockServer モジュールを使用して外部 API 統合をテストする方法
+
+Testcontainers についてさらに詳しく知りたい場合は、https://testcontainers.com をご覧ください。
