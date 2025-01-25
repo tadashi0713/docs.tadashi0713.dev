@@ -3,7 +3,7 @@ title: JSON ファイルを使用した Settings Management の構成
 description: Docker Desktop の Settings Management を JSON ファイルで構成する方法
 ---
 
-import { Callout, Table, Td, Th, Tr } from 'nextra/components'
+import { Callout, Table } from 'nextra/components'
 
 # JSON ファイルを使用した Settings Management の構成
 
@@ -190,62 +190,62 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`configurationFileVersion`</Td>
-      <Td></Td>
-      <Td>設定ファイルフォーマットのバージョンを指定します。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`analyticsEnabled`</Td>
-      <Td></Td>
-      <Td>`value` が `false` に設定されている場合、Docker Desktop は使用状況統計を送信しません。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`disableUpdate`</Td>
-      <Td></Td>
-      <Td>`value` が `true` に設定されている場合、Docker Desktop の更新の確認および通知が無効になります。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`extensionsEnabled`</Td>
-      <Td></Td>
-      <Td>`value` が `false` に設定されている場合、Docker 拡張機能が無効になります。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`blockDockerLoad`</Td>
-      <Td></Td>
-      <Td>`value` が `true` に設定されている場合、ユーザーは [`docker load`](https://docs.docker.com/reference/cli/docker/image/load/) を実行できず、エラーが発生します。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`displayedOnboarding`</Td>
-      <Td></Td>
-      <Td>`value` が `true` に設定されている場合、新規ユーザーへのオンボーディング調査が表示されなくなります。`value` を `false` に設定しても影響はありません。</Td>
-      <Td>Docker Desktop バージョン 4.30 以降</Td>
-    </Tr>
-    <Tr>
-      <Td>`desktopTerminalEnabled`</Td>
-      <Td></Td>
-      <Td>`value` が `false` に設定されている場合、開発者は Docker Desktop を使用してホストマシンに直接アクセスしたり、コマンドを実行することができません。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`exposeDockerAPIOnTCP2375`</Td>
-      <Td>Windows のみ</Td>
-      <Td>Docker API を指定されたポートで公開します。`value` を `true` に設定すると、Docker API がポート 2375 で公開されます。注意: これは認証されていないため、適切なファイアウォールルールで保護されている場合のみ有効にしてください。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`configurationFileVersion`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>設定ファイルフォーマットのバージョンを指定します。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`analyticsEnabled`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` が `false` に設定されている場合、Docker Desktop は使用状況統計を送信しません。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`disableUpdate`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` が `true` に設定されている場合、Docker Desktop の更新の確認および通知が無効になります。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`extensionsEnabled`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` が `false` に設定されている場合、Docker 拡張機能が無効になります。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`blockDockerLoad`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` が `true` に設定されている場合、ユーザーは [`docker load`](https://docs.docker.com/reference/cli/docker/image/load/) を実行できず、エラーが発生します。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`displayedOnboarding`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` が `true` に設定されている場合、新規ユーザーへのオンボーディング調査が表示されなくなります。`value` を `false` に設定しても影響はありません。</Table.Td>
+      <Table.Td>Docker Desktop バージョン 4.30 以降</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`desktopTerminalEnabled`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` が `false` に設定されている場合、開発者は Docker Desktop を使用してホストマシンに直接アクセスしたり、コマンドを実行することができません。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`exposeDockerAPIOnTCP2375`</Table.Td>
+      <Table.Td>Windows のみ</Table.Td>
+      <Table.Td>Docker API を指定されたポートで公開します。`value` を `true` に設定すると、Docker API がポート 2375 で公開されます。注意: これは認証されていないため、適切なファイアウォールルールで保護されている場合のみ有効にしてください。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -255,38 +255,38 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`filesharingAllowedDirectories`</Td>
-      <Td></Td>
-      <Td>開発者がファイル共有を追加できるパスを指定します。`$HOME`、`$TMP`、または `$TEMP` をパス変数として受け入れます。パスが追加されると、そのサブディレクトリも許可されます。`sharedByDefault` を `true` に設定すると、工場出荷時リセット時または Docker Desktop の初回起動時にそのパスが追加されます。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`useVirtualizationFrameworkVirtioFS`</Td>
-      <Td>macOS のみ</Td>
-      <Td>`value` が `true` に設定されている場合、VirtioFS がファイル共有メカニズムとして設定されます。注意: `useVirtualizationFrameworkVirtioFS` と `useGrpcfuse` の両方が `true` に設定されている場合、VirtioFS が優先されます。また、両方が `false` の場合、osxfs がファイル共有メカニズムとして設定されます。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`useGrpcfuse`</Td>
-      <Td>macOS のみ</Td>
-      <Td>`value` が `true` に設定されている場合、gRPC Fuse がファイル共有メカニズムとして設定されます。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`useVirtualizationFrameworkRosetta`</Td>
-      <Td>macOS のみ</Td>
-      <Td>`value` が `true` に設定されている場合、Docker Desktop は Apple Silicon 上で x86_64/amd64 バイナリのエミュレーションを加速するために Rosetta をオンにします。この設定により、仮想化フレームワークの使用も自動的に有効になります。</Td>
-      <Td>Docker Desktop バージョン 4.29 以降</Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`filesharingAllowedDirectories`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>開発者がファイル共有を追加できるパスを指定します。`$HOME`、`$TMP`、または `$TEMP` をパス変数として受け入れます。パスが追加されると、そのサブディレクトリも許可されます。`sharedByDefault` を `true` に設定すると、工場出荷時リセット時または Docker Desktop の初回起動時にそのパスが追加されます。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`useVirtualizationFrameworkVirtioFS`</Table.Td>
+      <Table.Td>macOS のみ</Table.Td>
+      <Table.Td>`value` が `true` に設定されている場合、VirtioFS がファイル共有メカニズムとして設定されます。注意: `useVirtualizationFrameworkVirtioFS` と `useGrpcfuse` の両方が `true` に設定されている場合、VirtioFS が優先されます。また、両方が `false` の場合、osxfs がファイル共有メカニズムとして設定されます。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`useGrpcfuse`</Table.Td>
+      <Table.Td>macOS のみ</Table.Td>
+      <Table.Td>`value` が `true` に設定されている場合、gRPC Fuse がファイル共有メカニズムとして設定されます。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`useVirtualizationFrameworkRosetta`</Table.Td>
+      <Table.Td>macOS のみ</Table.Td>
+      <Table.Td>`value` が `true` に設定されている場合、Docker Desktop は Apple Silicon 上で x86_64/amd64 バイナリのエミュレーションを加速するために Rosetta をオンにします。この設定により、仮想化フレームワークの使用も自動的に有効になります。</Table.Td>
+      <Table.Td>Docker Desktop バージョン 4.29 以降</Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -296,20 +296,20 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`scout`</Td>
-      <Td></Td>
-      <Td>`useBackgroundIndexing` を `false` に設定すると、イメージストアに読み込まれたイメージの自動インデックス作成が無効になります。`sbomIndexing` を `false` に設定すると、Docker Desktop または `docker scout` CLI コマンドを使用してイメージをインデックス作成することができなくなります。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`scout`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`useBackgroundIndexing` を `false` に設定すると、イメージストアに読み込まれたイメージの自動インデックス作成が無効になります。`sbomIndexing` を `false` に設定すると、Docker Desktop または `docker scout` CLI コマンドを使用してイメージをインデックス作成することができなくなります。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -319,32 +319,32 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`proxy`</Td>
-      <Td></Td>
-      <Td>`mode` を `system` に設定すると、Docker Desktop はプロキシ値をシステムから取得し、`http`、`https`、および `exclude` に設定された値を無視します。プロキシサーバーを手動で設定するには、`mode` を `manual` に変更します。プロキシポートがカスタムの場合、`http` または `https` プロパティで指定します（例: `"https": "http://myotherproxy.com:4321"`）。`exclude` プロパティには、プロキシをバイパスするホストおよびドメインのコンマ区切りリストを指定します。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`windowsDockerdPort`</Td>
-      <Td>Windows のみ</Td>
-      <Td>Docker Desktop の内部プロキシを Windows Docker デーモンが接続できるようローカルでこのポートに公開します。値が 0 の場合、ランダムな空きポートが選択されます。値が 0 より大きい場合、その値がポートとして使用されます。デフォルト値は -1 で、これによりこのオプションが無効になります。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`enableKerberosNtlm`</Td>
-      <Td></Td>
-      <Td>`value` が `true` に設定されている場合、Kerberos および NTLM 認証が有効になります。デフォルトは false です。詳細は設定ドキュメントを参照してください。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`proxy`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`mode` を `system` に設定すると、Docker Desktop はプロキシ値をシステムから取得し、`http`、`https`、および `exclude` に設定された値を無視します。プロキシサーバーを手動で設定するには、`mode` を `manual` に変更します。プロキシポートがカスタムの場合、`http` または `https` プロパティで指定します（例: `"https": "http://myotherproxy.com:4321"`）。`exclude` プロパティには、プロキシをバイパスするホストおよびドメインのコンマ区切りリストを指定します。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`windowsDockerdPort`</Table.Td>
+      <Table.Td>Windows のみ</Table.Td>
+      <Table.Td>Docker Desktop の内部プロキシを Windows Docker デーモンが接続できるようローカルでこのポートに公開します。値が 0 の場合、ランダムな空きポートが選択されます。値が 0 より大きい場合、その値がポートとして使用されます。デフォルト値は -1 で、これによりこのオプションが無効になります。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`enableKerberosNtlm`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` が `true` に設定されている場合、Kerberos および NTLM 認証が有効になります。デフォルトは false です。詳細は設定ドキュメントを参照してください。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -354,20 +354,20 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`containersProxy`</Td>
-      <Td></Td>
-      <Td>エアギャップ環境のコンテナを作成します。詳細は[エアギャップコンテナ](/docker-security-ja/for-admins/hardened-desktop/air-gapped-containers)をご覧ください。</Td>
-      <Td>Docker Desktop バージョン 4.29 以降</Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`containersProxy`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>エアギャップ環境のコンテナを作成します。詳細は[エアギャップコンテナ](/docker-security-ja/for-admins/hardened-desktop/air-gapped-containers)をご覧ください。</Table.Td>
+      <Table.Td>Docker Desktop バージョン 4.29 以降</Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -377,38 +377,38 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`linuxVM`</Td>
-      <Td></Td>
-      <Td>Linux VM オプションに関連するパラメーターと設定をグループ化しています。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`wslEngineEnabled`</Td>
-      <Td>Windows のみ</Td>
-      <Td>`value` を `true` に設定すると、Docker Desktop は WSL 2 ベースのエンジンを使用します。これにより、インストール時に `--backend=<backend name>` フラグで設定された内容が上書きされます。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`dockerDaemonOptions`</Td>
-      <Td></Td>
-      <Td>`value` を `true` に設定すると、Docker エンジン構成ファイルのオプションが上書きされます。詳細は [Docker Engine リファレンス](https://docs.docker.com/reference/cli/dockerd/#daemon-configuration-file)をご覧ください。セキュリティ向上のため、一部の構成属性は Enhanced Container Isolation が有効な場合に上書きされる可能性があります。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`vpnkitCIDR`</Td>
-      <Td></Td>
-      <Td>`*.docker.internal` のための vpnkit DHCP/DNS に使用されるネットワーク範囲を上書きします。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`linuxVM`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>Linux VM オプションに関連するパラメーターと設定をグループ化しています。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`wslEngineEnabled`</Table.Td>
+      <Table.Td>Windows のみ</Table.Td>
+      <Table.Td>`value` を `true` に設定すると、Docker Desktop は WSL 2 ベースのエンジンを使用します。これにより、インストール時に `--backend=<backend name>` フラグで設定された内容が上書きされます。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`dockerDaemonOptions`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` を `true` に設定すると、Docker エンジン構成ファイルのオプションが上書きされます。詳細は [Docker Engine リファレンス](https://docs.docker.com/reference/cli/dockerd/#daemon-configuration-file)をご覧ください。セキュリティ向上のため、一部の構成属性は Enhanced Container Isolation が有効な場合に上書きされる可能性があります。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`vpnkitCIDR`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`*.docker.internal` のための vpnkit DHCP/DNS に使用されるネットワーク範囲を上書きします。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -418,26 +418,26 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`windowsContainers`</Td>
-      <Td></Td>
-      <Td>`windowsContainers` オプションに関連するパラメーターと設定をグループ化しています。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`dockerDaemonOptions`</Td>
-      <Td></Td>
-      <Td>Linux デーモン構成ファイルのオプションを上書きします。詳細は [Docker Engine リファレンス](https://docs.docker.com/reference/cli/dockerd/#daemon-configuration-file)をご覧ください。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`windowsContainers`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`windowsContainers` オプションに関連するパラメーターと設定をグループ化しています。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`dockerDaemonOptions`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>Linux デーモン構成ファイルのオプションを上書きします。詳細は [Docker Engine リファレンス](https://docs.docker.com/reference/cli/dockerd/#daemon-configuration-file)をご覧ください。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -451,20 +451,20 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`kubernetes`</Td>
-      <Td></Td>
-      <Td>`enabled` を `true` に設定すると、Docker Desktop 起動時に Kubernetes の単一ノードクラスタが開始されます。`showSystemContainers` を `true` に設定すると、Kubernetes コンテナが Docker Desktop ダッシュボードおよび `docker ps` コマンドで表示されます。`imagesRepository` を使用して、Docker Desktop が Kubernetes イメージをプルするリポジトリを指定できます（例: `"imagesRepository": "registry-1.docker.io/docker"`）。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`kubernetes`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`enabled` を `true` に設定すると、Docker Desktop 起動時に Kubernetes の単一ノードクラスタが開始されます。`showSystemContainers` を `true` に設定すると、Kubernetes コンテナが Docker Desktop ダッシュボードおよび `docker ps` コマンドで表示されます。`imagesRepository` を使用して、Docker Desktop が Kubernetes イメージをプルするリポジトリを指定できます（例: `"imagesRepository": "registry-1.docker.io/docker"`）。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -474,26 +474,26 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`allowExperimentalFeatures`</Td>
-      <Td></Td>
-      <Td>`value` を `false` に設定すると、実験的機能が無効になります。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`allowBetaFeatures`</Td>
-      <Td></Td>
-      <Td>`value` を `false` に設定すると、ベータ機能が無効になります。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`allowExperimentalFeatures`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` を `false` に設定すると、実験的機能が無効になります。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`allowBetaFeatures`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` を `false` に設定すると、ベータ機能が無効になります。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
@@ -503,38 +503,38 @@ macOS や Windows でインストーラーの `--admin-settings` フラグを使
 
 <Table>
   <thead>
-    <Tr>
-      <Th>パラメーター</Th>
-      <Th>OS</Th>
-      <Th>説明</Th>
-      <Th>バージョン</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>パラメーター</Table.Th>
+      <Table.Th>OS</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>バージョン</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`enhancedContainerIsolation`</Td>
-      <Td></Td>
-      <Td>`value` を `true` に設定すると、Docker Desktop はすべてのコンテナを Linux ユーザー名前空間を介して非特権として実行し、Docker Desktop VM 内の重要な構成を変更できないようにし、他の高度な分離技術を使用します。詳細は [Enhanced Container Isolation](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation) をご覧ください。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`dockerSocketMount`</Td>
-      <Td></Td>
-      <Td>デフォルトでは、Enhanced Container Isolation は Docker エンジンソケットのコンテナへのバインドマウント（例: `docker run -v /var/run/docker.sock:/var/run/docker.sock ...`）をブロックします。これにより、制御された方法で緩和することができます。詳細は [ECI 構成](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/config)をご覧ください。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`imageList`</Td>
-      <Td></Td>
-      <Td>Docker エンジンソケットをバインドマウントできるコンテナイメージを指定します。</Td>
-      <Td></Td>
-    </Tr>
-    <Tr>
-      <Td>`commandList`</Td>
-      <Td></Td>
-      <Td>バインドマウントされた Docker エンジンソケットを介してコンテナが実行できるコマンドを制限します。</Td>
-      <Td></Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`enhancedContainerIsolation`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>`value` を `true` に設定すると、Docker Desktop はすべてのコンテナを Linux ユーザー名前空間を介して非特権として実行し、Docker Desktop VM 内の重要な構成を変更できないようにし、他の高度な分離技術を使用します。詳細は [Enhanced Container Isolation](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation) をご覧ください。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`dockerSocketMount`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>デフォルトでは、Enhanced Container Isolation は Docker エンジンソケットのコンテナへのバインドマウント（例: `docker run -v /var/run/docker.sock:/var/run/docker.sock ...`）をブロックします。これにより、制御された方法で緩和することができます。詳細は [ECI 構成](/docker-security-ja/for-admins/hardened-desktop/enhanced-container-isolation/config)をご覧ください。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`imageList`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>Docker エンジンソケットをバインドマウントできるコンテナイメージを指定します。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`commandList`</Table.Td>
+      <Table.Td></Table.Td>
+      <Table.Td>バインドマウントされた Docker エンジンソケットを介してコンテナが実行できるコマンドを制限します。</Table.Td>
+      <Table.Td></Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
