@@ -3,8 +3,6 @@ import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
 
-export const { viewport } = Head
-
 export const metadata = {
   metadataBase: new URL('https://docs.tadashi0713.dev'),
   title: {
