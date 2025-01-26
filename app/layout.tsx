@@ -1,27 +1,28 @@
 import { Footer, Layout, Navbar } from 'nextra-theme-docs'
-import { Banner, Head } from 'nextra/components'
+import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
 import 'nextra-theme-docs/style.css'
 
 export const { viewport } = Head
 
 export const metadata = {
-  metadataBase: new URL('https://nextra.site'),
+  metadataBase: new URL('https://docs.tadashi0713.dev'),
   title: {
     template: '%s - Nextra',
   },
-  description: 'Nextra: the Next.js site builder',
+  description:
+    'Collections of documents created by Tadashi Nemoto(tadashi0713)',
   applicationName: 'Nextra',
   generator: 'Next.js',
   appleWebApp: {
-    title: 'Nextra',
+    title: 'tadashi0713 Docs',
   },
   other: {
     'msapplication-TileImage': '/ms-icon-144x144.png',
     'msapplication-TileColor': '#fff',
   },
   twitter: {
-    site: 'https://nextra.site',
+    site: 'https://docs.tadashi0713.dev',
   },
 }
 
@@ -30,25 +31,20 @@ export default async function RootLayout({ children }) {
     <Navbar
       logo={
         <>
-          <span className="_font-extrabold">Nextra</span>
-          <span className="_ms-2 max-md:_hidden _font-normal _text-gray-600">
-            The Next Docs Builder
-          </span>
+          <span style={{ fontWeight: 800 }}>📚 tadashi0713 Docs</span>
         </>
       }
-      // Next.js discord server
-      chatLink="https://discord.gg/hEM84NMkRv"
     />
   )
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
-      <Head faviconGlyph="✦" />
+    <html lang="ja" dir="ltr" suppressHydrationWarning>
+      <Head faviconGlyph="📚" />
       <body>
         <Layout
           navbar={navbar}
           footer={<Footer />}
           editLink="Edit this page on GitHub"
-          docsRepositoryBase="https://github.com/shuding/nextra/blob/core/examples/docs"
+          docsRepositoryBase="https://github.com/tadashi0713/doc/tree/main"
           sidebar={{ defaultMenuCollapseLevel: 1 }}
           pageMap={await getPageMap()}
         >
