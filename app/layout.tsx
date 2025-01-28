@@ -15,12 +15,20 @@ export const metadata = {
   appleWebApp: {
     title: 'tadashi0713 Docs',
   },
+  openGraph: {
+    url: './',
+    siteName: 'tadashi0713 Docs',
+    locale: 'ja_JP',
+    type: 'website',
+  },
   other: {
-    'msapplication-TileImage': '/ms-icon-144x144.png',
     'msapplication-TileColor': '#fff',
   },
   twitter: {
     site: 'https://docs.tadashi0713.dev',
+  },
+  alternates: {
+    canonical: './',
   },
 }
 
