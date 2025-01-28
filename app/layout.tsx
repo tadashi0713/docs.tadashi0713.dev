@@ -6,11 +6,11 @@ import 'nextra-theme-docs/style.css'
 export const metadata = {
   metadataBase: new URL('https://docs.tadashi0713.dev'),
   title: {
-    template: '%s - Nextra',
+    template: '%s - tadashi0713 Docs',
   },
   description:
     'Collections of documents created by Tadashi Nemoto(tadashi0713)',
-  applicationName: 'Nextra',
+  applicationName: 'tadashi0713 Docs',
   generator: 'Next.js',
   appleWebApp: {
     title: 'tadashi0713 Docs',
@@ -24,23 +24,26 @@ export const metadata = {
   },
 }
 
+const navbar = (
+  <Navbar
+    logo={
+      <>
+        <span style={{ fontWeight: 800 }}>📚 tadashi0713 Docs</span>
+      </>
+    }
+  />
+)
+
+const footer = <Footer>{new Date().getFullYear()} Tadashi Nemoto</Footer>
+
 export default async function RootLayout({ children }) {
-  const navbar = (
-    <Navbar
-      logo={
-        <>
-          <span style={{ fontWeight: 800 }}>📚 tadashi0713 Docs</span>
-        </>
-      }
-    />
-  )
   return (
     <html lang="ja" dir="ltr" suppressHydrationWarning>
       <Head faviconGlyph="📚" />
       <body>
         <Layout
           navbar={navbar}
-          footer={<Footer />}
+          footer={footer}
           editLink="Edit this page on GitHub"
           docsRepositoryBase="https://github.com/tadashi0713/doc/tree/main"
           sidebar={{ defaultMenuCollapseLevel: 1 }}

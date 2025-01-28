@@ -1,5 +1,10 @@
 export default {
-  'index': 'Home',
+  'index': {
+    'display': 'hidden',
+    'theme': {
+      'pagination': false,
+    },
+  },
   'docker-workshop-ja': 'Docker ワークショップ',
   'docker-security-ja': 'Docker セキュリティ(WIP)',
   'scout-ja': 'Docker Scout ドキュメント',
