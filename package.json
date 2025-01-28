@@ -23,7 +23,7 @@
     "@next/third-parties": "15.1.6",
     "@vercel/analytics": "1.4.1",
     "@vercel/og": "0.6.5",
-    "next": "14.2.23",
+    "next": "15.1.6",
     "nextra": "3.3.1",
     "nextra-theme-docs": "3.3.1",
     "react": "19.0.0",
