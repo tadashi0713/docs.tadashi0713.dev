@@ -31,6 +31,7 @@ const navbar = (
         <span style={{ fontWeight: 800 }}>📚 tadashi0713 Docs</span>
       </>
     }
+    projectLink="https://github.com/tadashi0713/docs.tadashi0713.dev"
   />
 )
 
