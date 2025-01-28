@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "description": "Nextra docs template",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "lint": "biome check --write .",
     "build": "next build",
     "postbuild": "next-sitemap && pagefind --site .next/server/app --output-path public/_pagefind",
@@ -23,7 +23,7 @@
     "@next/third-parties": "15.1.6",
     "@vercel/analytics": "1.4.1",
     "@vercel/og": "0.6.5",
-    "next": "14.2.23",
+    "next": "15.1.6",
     "nextra": "4.1.1",
     "nextra-theme-docs": "4.1.1",
     "react": "19.0.0",
