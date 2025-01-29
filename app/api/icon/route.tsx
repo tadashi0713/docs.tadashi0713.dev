@@ -1,9 +1,5 @@
 import { ImageResponse } from 'next/og'
 
-export const config = {
-  runtime: 'edge',
-}
-
 // Image metadata
 export const size = {
   width: 32,
@@ -12,7 +8,7 @@ export const size = {
 export const contentType = 'image/png'
 
 // Image generation
-export default function Icon() {
+export async function GET() {
   return new ImageResponse(
     // ImageResponse JSX element
     <div
