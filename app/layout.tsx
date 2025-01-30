@@ -1,3 +1,5 @@
+import { GoogleAnalytics, GoogleTagManager } from '@next/third-parties/google'
+import { Analytics } from '@vercel/analytics/react'
 import { Footer, Layout, Navbar } from 'nextra-theme-docs'
 import { Head } from 'nextra/components'
 import { getPageMap } from 'nextra/page-map'
@@ -60,6 +62,9 @@ export default async function RootLayout({ children }) {
         >
           {children}
         </Layout>
+        <Analytics />
+        <GoogleAnalytics gaId="G-SZP0XJE85W" />
+        <GoogleTagManager gtmId="G-SZP0XJE85W" />
       </body>
     </html>
   )
