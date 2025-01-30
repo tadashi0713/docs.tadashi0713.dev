@@ -4,7 +4,7 @@ description: Docker Scout コマンドの一部では、分析対象のイメー
 keywords: scout, 脆弱性, 分析, CLI, パッケージ, sbom, cve, セキュリティ, ローカル, ソース, コード, サプライチェーン
 ---
 
-import { Table, Td, Th, Tr } from 'nextra/components'
+import { Table } from 'nextra/components'
 
 # Scout を使用して異なるアーティファクトタイプを分析する
 
@@ -28,36 +28,36 @@ $ docker scout cves registry://<image>
 
 <Table>
   <thead>
-    <Tr>
-      <Th>プレフィックス</Th>
-      <Th>説明</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>プレフィックス</Table.Th>
+      <Table.Th>説明</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`image://` (デフォルト)</Td>
-      <Td>ローカルイメージを使用し、ローカルに存在しない場合はレジストリから取得</Td>
-    </Tr>
-    <Tr>
-      <Td>`local://`</Td>
-      <Td>ローカルイメージストアからイメージを使用（レジストリからは取得しない）</Td>
-    </Tr>
-    <Tr>
-      <Td>`registry://`</Td>
-      <Td>レジストリからイメージを使用（ローカルイメージは使用しない）</Td>
-    </Tr>
-    <Tr>
-      <Td>`oci-dir://`</Td>
-      <Td>OCI レイアウトディレクトリを使用</Td>
-    </Tr>
-    <Tr>
-      <Td>`archive://`</Td>
-      <Td>`docker save` で作成された tarball アーカイブを使用</Td>
-    </Tr>
-    <Tr>
-      <Td>`fs://`</Td>
-      <Td>ローカルディレクトリやファイルを使用</Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`image://` (デフォルト)</Table.Td>
+      <Table.Td>ローカルイメージを使用し、ローカルに存在しない場合はレジストリから取得</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`local://`</Table.Td>
+      <Table.Td>ローカルイメージストアからイメージを使用（レジストリからは取得しない）</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`registry://`</Table.Td>
+      <Table.Td>レジストリからイメージを使用（ローカルイメージは使用しない）</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`oci-dir://`</Table.Td>
+      <Table.Td>OCI レイアウトディレクトリを使用</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`archive://`</Table.Td>
+      <Table.Td>`docker save` で作成された tarball アーカイブを使用</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`fs://`</Table.Td>
+      <Table.Td>ローカルディレクトリやファイルを使用</Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 

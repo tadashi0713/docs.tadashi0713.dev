@@ -4,7 +4,7 @@ description: Prometheus を使用して Docker Scout からデータをスクレ
 keywords: scout, エクスポーター, prometheus, grafana, メトリクス, ダッシュボード, api, compose
 ---
 
-import { Table, Td, Th, Tr, Callout } from 'nextra/components'
+import { Table, Callout } from 'nextra/components'
 
 # Docker Scout メトリクスエクスポーター
 
@@ -18,32 +18,32 @@ Docker Scout は、Prometheus または Datadog を使用して脆弱性やポ�
 
 <Table>
   <thead>
-    <Tr>
-      <Th>メトリクス</Th>
-      <Th>説明</Th>
-      <Th>ラベル</Th>
-      <Th>タイプ</Th>
-    </Tr>
+    <Table.Tr>
+      <Table.Th>メトリクス</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>ラベル</Table.Th>
+      <Table.Th>タイプ</Table.Th>
+    </Table.Tr>
   </thead>
   <tbody>
-    <Tr>
-      <Td>`scout_stream_vulnerabilities`</Td>
-      <Td>ストリーム内の脆弱性数</Td>
-      <Td>`streamName`, `severity`</Td>
-      <Td>Gauge</Td>
-    </Tr>
-    <Tr>
-      <Td>`scout_policy_compliant_images`</Td>
-      <Td>ストリーム内でポリシーに準拠しているイメージ数</Td>
-      <Td>`id`, `displayName`, `streamName`</Td>
-      <Td>Gauge</Td>
-    </Tr>
-    <Tr>
-      <Td>`scout_policy_evaluated_images`</Td>
-      <Td>ストリーム内でポリシー評価を行ったイメージ数</Td>
-      <Td>`id`, `displayName`, `streamName`</Td>
-      <Td>Gauge</Td>
-    </Tr>
+    <Table.Tr>
+      <Table.Td>`scout_stream_vulnerabilities`</Table.Td>
+      <Table.Td>ストリーム内の脆弱性数</Table.Td>
+      <Table.Td>`streamName`, `severity`</Table.Td>
+      <Table.Td>Gauge</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`scout_policy_compliant_images`</Table.Td>
+      <Table.Td>ストリーム内でポリシーに準拠しているイメージ数</Table.Td>
+      <Table.Td>`id`, `displayName`, `streamName`</Table.Td>
+      <Table.Td>Gauge</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>`scout_policy_evaluated_images`</Table.Td>
+      <Table.Td>ストリーム内でポリシー評価を行ったイメージ数</Table.Td>
+      <Table.Td>`id`, `displayName`, `streamName`</Table.Td>
+      <Table.Td>Gauge</Table.Td>
+    </Table.Tr>
   </tbody>
 </Table>
 
