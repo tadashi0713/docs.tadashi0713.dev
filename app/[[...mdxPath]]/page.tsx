@@ -10,6 +10,7 @@ export async function generateMetadata(props) {
   const description = metadata.description
   const images = `https://docs.tadashi0713.dev/api/og?title=${encodeURIComponent(title)}`
   return {
+    metadataBase: new URL('https://docs.tadashi0713.dev'),
     title,
     description,
     openGraph: {
