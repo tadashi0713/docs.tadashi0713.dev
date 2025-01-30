@@ -6,11 +6,9 @@ export const generateStaticParams = generateStaticParamsFor('mdxPath')
 export async function generateMetadata(props) {
   const { mdxPath } = await props.params
   const { metadata } = await importPage(mdxPath)
-  const title = metadata.title || 'tadashi0713 Docs'
-  const description =
-    metadata.description ||
-    'Collections of documents created by Tadashi Nemoto(tadashi0713)'
-  const images = `/api/og?title=${encodeURIComponent(title)}`
+  const title = metadata.title
+  const description = metadata.description
+  const images = `https://docs.tadashi0713.dev/api/og?title=${encodeURIComponent(title)}`
   return {
     title,
     description,
