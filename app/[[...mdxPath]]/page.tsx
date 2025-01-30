@@ -19,6 +19,7 @@ export async function generateMetadata(props) {
       locale: 'ja_JP',
       type: 'article',
       images: `/api/og?title=${encodeURIComponent(title)}`,
+      url: './',
     },
   }
 }
