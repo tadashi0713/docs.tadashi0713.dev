@@ -10,17 +10,17 @@ export async function generateMetadata(props) {
   const description =
     metadata.description ||
     'Collections of documents created by Tadashi Nemoto(tadashi0713)'
-  const image = `https://docs.tadashi0713.dev/api/og?title=${encodeURIComponent(title)}`
+  const images = `/api/og?title=${encodeURIComponent(title)}`
   return {
-    title: title,
-    description: description,
+    title,
+    description,
     openGraph: {
-      title: title,
-      description: description,
+      title,
+      description,
       siteName: 'tadashi0713 Docs',
       locale: 'ja_JP',
       type: 'article',
-      image: image,
+      images,
     },
   }
 }
