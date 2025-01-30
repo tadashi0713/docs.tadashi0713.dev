@@ -8,7 +8,6 @@ export async function generateMetadata(props) {
   const { metadata } = await importPage(mdxPath)
   const title = metadata.title
   const description = metadata.description
-  const images = `https://docs.tadashi0713.dev/api/og?title=${encodeURIComponent(title)}`
   return {
     metadataBase: new URL('https://docs.tadashi0713.dev'),
     title,
@@ -19,7 +18,7 @@ export async function generateMetadata(props) {
       siteName: 'tadashi0713 Docs',
       locale: 'ja_JP',
       type: 'article',
-      images,
+      images: `/api/og?title=${encodeURIComponent(title)}`,
     },
   }
 }
