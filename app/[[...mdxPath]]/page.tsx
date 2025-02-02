@@ -21,6 +21,9 @@ export async function generateMetadata(props) {
       images: `/api/og?title=${encodeURIComponent(title)}`,
       url: './',
     },
+    twitter: {
+      card: 'summary_large_image',
+    },
   }
 }
 
