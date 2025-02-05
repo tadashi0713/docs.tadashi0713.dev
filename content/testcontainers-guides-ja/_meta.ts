@@ -15,6 +15,8 @@ export default {
   'testing-an-aspnet-core-web-app': 'ASP.NET Core Web アプリケーションのテスト',
   'testing-rest-api-integrations-using-mockserver':
     'MockServer を使用した REST API 統合テスト',
+  'testing-rest-api-integrations-using-wiremock':
+    'WireMock を使用した REST API 統合のテスト',
   'testing-aws-service-integrations-using-localstack':
     'LocalStack を使用した AWS サービス統合のテスト',
   'simple-local-development-with-testcontainers-desktop':

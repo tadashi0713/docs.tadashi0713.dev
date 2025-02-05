@@ -1,0 +1,535 @@
+---
+title: WireMock を使用した REST API 統合のテスト
+description: このガイドでは、Testcontainers の WireMock モジュールを使用して、Spring Boot アプリケーションの REST API 統合をテストする方法を説明します。
+---
+
+import { Callout, Cards } from 'nextra/components'
+import { FaGithub } from "react-icons/fa"
+
+# WireMock を使用した REST API 統合のテスト
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaGithub />}
+  title="コードを入手する"
+  href="https://github.com/testcontainers/tc-guide-testing-rest-api-integrations-using-wiremock"
+/>
+
+このガイドでは、以下の内容を学びます。
+
+- 外部の REST API と連携する Spring Boot アプリケーションを作成する方法
+- Testcontainers の WireMock モジュールを使用して外部 API との統合をテストする方法
+
+## 事前準備
+
+- Java 17 以上
+- お好みの IDE（IntelliJ IDEA、Eclipse、NetBeans、VS Code）
+- Testcontainers がサポートする Docker 環境
+  https://www.testcontainers.org/supported_docker_environment/
+
+## このガイドで達成すること
+
+Spring Boot プロジェクトを作成し、外部の REST API と連携させます。その後、[Testcontainers の WireMock モジュールを](https://testcontainers.com/modules/wiremock/)使用して、外部 REST API との統合をテストします。
+
+## はじめに
+
+[Spring Initializr](https://start.spring.io/) を使用して、新しい Spring Boot プロジェクトを作成できます。その際に **Spring Web** と **Testcontainers** のスターターを選択してください。
+
+アプリケーションを生成したら、**RestAssured** と **WireMock** のライブラリをテスト依存関係として追加します
+
+
+```groovy
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('wiremockTestcontainersVersion', "1.0-alpha-13")
+}
+
+dependencies {
+    testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'org.wiremock:wiremock-standalone:3.6.0'
+    testImplementation "org.wiremock.integrations.testcontainers:wiremock-testcontainers-module:${wiremockTestcontainersVersion}"
+}
+```
+
+今回はビデオアルバムを管理するアプリケーションを作成し、画像や動画のアセットを管理するためにサードパーティの REST API を使用します。このガイドでは、公開されている REST API https://jsonplaceholder.typicode.com/ を **photo-service** として使用し、アルバムの写真を保存する想定で進めます。
+
+このアプリケーションでは、指定された **albumId** に対応するアルバムを取得する REST API エンドポイントを実装します。この API は内部的に **photo-service** にリクエストを送り、そのアルバムに含まれる写真を取得します。
+
+外部サービスとの通信をテストするために、[WireMock](https://wiremock.org/) を使用します。WireMock は モック API を構築するためのツール であり、外部サービスの挙動を模倣できます。
+
+また、[Testcontainers の WireMock モジュール](https://testcontainers.com/modules/wiremock/) を使用することで、WireMock を Docker コンテナ として実行できるため、より柔軟で一貫性のあるテスト環境を構築できます。
+
+## Album と Photo のモデルを作成する
+
+まず、Java の record を使用して、**Album** と **Photo** のモデルを作成します。
+
+```java
+package com.testcontainers.demo;
+
+import java.util.List;
+
+public record Album(Long albumId, List<Photo> photos) {}
+
+record Photo(Long id, String title, String url, String thumbnailUrl) {}
+```
+
+## PhotoServiceClient の作成
+
+次に、**RestTemplate** を使用して指定された **albumId** に対応する写真を取得する **PhotoServiceClient** を作成します。
+
+```java
+package com.testcontainers.demo;
+
+import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+@Service
+class PhotoServiceClient {
+
+  private final String baseUrl;
+  private final RestTemplate restTemplate;
+
+  PhotoServiceClient(
+    @Value("${photos.api.base-url}") String baseUrl,
+    RestTemplateBuilder builder
+  ) {
+    this.baseUrl = baseUrl;
+    this.restTemplate = builder.build();
+  }
+
+  List<Photo> getPhotos(Long albumId) {
+    String url = baseUrl + "/albums/{albumId}/photos";
+    ResponseEntity<List<Photo>> response = restTemplate.exchange(
+      url,
+      HttpMethod.GET,
+      null,
+      new ParameterizedTypeReference<>() {},
+      albumId
+    );
+    return response.getBody();
+  }
+}
+```
+
+外部 API（フォトサービス）のベース URL を 設定ファイルで管理 するために、以下のプロパティを **src/main/resources/application.properties** に追加します。
+
+```properties
+photos.api.base-url=https://jsonplaceholder.typicode.com
+```
+
+## albumId に基づいてアルバムを取得する API エンドポイントの実装
+
+次に、指定された albumId に対応するアルバムを取得する REST API エンドポイントを実装します。
+
+```java
+package com.testcontainers.demo;
+
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientResponseException;
+
+@RestController
+@RequestMapping("/api")
+class AlbumController {
+
+  private static final Logger logger = LoggerFactory.getLogger(
+    AlbumController.class
+  );
+
+  private final PhotoServiceClient photoServiceClient;
+
+  AlbumController(PhotoServiceClient photoServiceClient) {
+    this.photoServiceClient = photoServiceClient;
+  }
+
+  @GetMapping("/albums/{albumId}")
+  public ResponseEntity<Album> getAlbumById(@PathVariable Long albumId) {
+    try {
+      List<Photo> photos = photoServiceClient.getPhotos(albumId);
+      return ResponseEntity.ok(new Album(albumId, photos));
+    } catch (RestClientResponseException e) {
+      logger.error("Failed to get photos", e);
+      return new ResponseEntity<>(e.getStatusCode());
+    }
+  }
+}
+```
+
+私たちのアプリケーションは、GET `/api/albums/{albumId}` REST API エンドポイントを公開しています。
+
+このエンドポイントは、指定された albumId に対応するアルバム情報を取得し、外部 API `https://jsonplaceholder.typicode.com/albums/{albumId}/photos` にリクエストを送り、そのアルバムの写真を取得します。
+
+```json
+{
+   "albumId": 1,
+   "photos": [
+       {
+           "id": 51,
+           "title": "non sunt voluptatem placeat consequuntur rem incidunt",
+           "url": "https://via.placeholder.com/600/8e973b",
+           "thumbnailUrl": "https://via.placeholder.com/150/8e973b"
+       },
+       {
+           "id": 52,
+           "title": "eveniet pariatur quia nobis reiciendis laboriosam ea",
+           "url": "https://via.placeholder.com/600/121fa4",
+           "thumbnailUrl": "https://via.placeholder.com/150/121fa4"
+       },
+       ...
+       ...
+   ]
+}
+```
+
+アプリケーションを起動し、http://localhost:8080/api/albums/1 にアクセスすることで、JSON レスポンスを確認できます。
+
+次に、WireMock を使用して photo-service との統合をテストする方法を説明します。
+
+## photo-service API 統合テストの作成
+
+外部 API とのやり取りを **photoServiceClient.getPhotos(albumId)** メソッドのモックではなく HTTP プロトコルレベルでモック する方が望ましいです。その理由として、以下の点が挙げられます。
+
+- シリアライズ / デシリアライズ（Marshaling / Unmarshalling）エラーの検証が可能
+
+- ネットワーク遅延（Latency）などのシミュレーションが可能
+
+- 実際の HTTP リクエストとレスポンスのやり取りを検証できる
+
+**WireMockExtension** を使用して WireMock サーバーのインスタンス を作成し、API 呼び出しに対する期待値を設定することができます。次のように実装します。
+
+```java
+@RegisterExtension
+static WireMockExtension wireMock = WireMockExtension.newInstance()
+        .options(wireMockConfig().dynamicPort())
+        .build();
+
+wireMock.stubFor(
+   WireMock.get(urlMatching("/albums/*/photos"))
+    .willReturn(
+      aResponse()
+        .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+        .withBody(
+        """
+        [
+           {
+               "id": 1,
+               "title": "accusamus beatae ad facilis cum similique qui sunt",
+               "url": "https://via.placeholder.com/600/92c952",
+               "thumbnailUrl": "https://via.placeholder.com/150/92c952"
+           }
+        ]
+        """))
+);
+```
+
+では、`GET /api/albums/{albumId}` API エンドポイントのテストを次のように作成しましょう。
+
+```java
+package com.testcontainers.demo;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
+
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+
+@SpringBootTest(webEnvironment = RANDOM_PORT)
+class AlbumControllerTest {
+
+  @LocalServerPort
+  private Integer port;
+
+  @RegisterExtension
+  static WireMockExtension wireMock = WireMockExtension
+    .newInstance()
+    .options(wireMockConfig().dynamicPort())
+    .build();
+
+  @DynamicPropertySource
+  static void configureProperties(DynamicPropertyRegistry registry) {
+    registry.add("photos.api.base-url", wireMock::baseUrl);
+  }
+
+  @BeforeEach
+  void setUp() {
+    RestAssured.port = port;
+  }
+
+  @Test
+  void shouldGetAlbumById() {
+    Long albumId = 1L;
+
+    wireMock.stubFor(
+      WireMock
+        .get(urlMatching("/albums/" + albumId + "/photos"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+            .withBody(
+              """
+              [
+                   {
+                       "id": 1,
+                       "title": "accusamus beatae ad facilis cum similique qui sunt",
+                       "url": "https://via.placeholder.com/600/92c952",
+                       "thumbnailUrl": "https://via.placeholder.com/150/92c952"
+                   },
+                   {
+                       "id": 2,
+                       "title": "reprehenderit est deserunt velit ipsam",
+                       "url": "https://via.placeholder.com/600/771796",
+                       "thumbnailUrl": "https://via.placeholder.com/150/771796"
+                   }
+               ]
+              """
+            )
+        )
+    );
+
+    given()
+      .contentType(ContentType.JSON)
+      .when()
+      .get("/api/albums/{albumId}", albumId)
+      .then()
+      .statusCode(200)
+      .body("albumId", is(albumId.intValue()))
+      .body("photos", hasSize(2));
+  }
+
+  @Test
+  void shouldReturnServerErrorWhenPhotoServiceCallFailed() {
+    Long albumId = 2L;
+    wireMock.stubFor(
+      WireMock
+        .get(urlMatching("/albums/" + albumId + "/photos"))
+        .willReturn(aResponse().withStatus(500))
+    );
+
+    given()
+      .contentType(ContentType.JSON)
+      .when()
+      .get("/api/albums/{albumId}", albumId)
+      .then()
+      .statusCode(500);
+  }
+}
+```
+
+このテストの内容を理解しましょう
+
+- このテストクラスには **@SpringBootTest** アノテーションを付与しており、Spring アプリケーションのコンテキスト全体をロードする統合テスト になっています。
+
+- RestAssured ライブラリを使用して API エンドポイントのテストを行います。アプリケーションが起動した際のランダムなポートを取得し、それを RestAssured のポートとして設定しています。
+
+- **photos.api.base-url** プロパティを WireMock のエンドポイント URL に登録します
+
+- **shouldGetAlbumById()** テストでは、`/albums/{albumId}/photos` API 呼び出しの期待されるモックレスポンスを設定し、アプリケーションの `/api/albums/{albumId}` エンドポイントにリクエストを送信し、レスポンスを検証しています。
+
+- **shouldReturnServerErrorWhenPhotoServiceCallFailed()** テストでは、`/albums/{albumId}/photos` API 呼び出しの期待されるモックレスポンスを 500 Internal Server Error ステータスコードを返すように設定し、アプリケーションの `/api/albums/{albumId}` エンドポイントにリクエストを送信し、レスポンスを検証しています。
+
+## JSON マッピングファイルを使用したスタブの設定
+
+前回のテストでは、**wireMock.stubFor(…​)** を使用して API をスタブする方法を確認しました。WireMock の Java API を使用する代わりに、JSON マッピングを使用した設定 を行うこともできます。
+
+次のように、**src/test/resources/wiremock/mappings/get-album-photos.json** ファイルを作成します。
+
+```json
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "/albums/([0-9]+)/photos"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "id": 1,
+            "title": "accusamus beatae ad facilis cum similique qui sunt",
+            "url": "https://via.placeholder.com/600/92c952",
+            "thumbnailUrl": "https://via.placeholder.com/150/92c952"
+          },
+          {
+            ...
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+次のようにして、マッピングファイルからスタブマッピングを読み込むことで WireMock を初期化できます。
+
+```java
+@RegisterExtension
+static WireMockExtension wireMock = WireMockExtension.newInstance()
+     .options(
+         wireMockConfig()
+            .dynamicPort()
+            .usingFilesUnderClasspath("wiremock")
+    )
+    .build();
+```
+
+マッピングファイルを使用したスタブ設定を行った状態で、次のようにテストを記述できます。
+
+```java
+  @Test
+  void shouldGetAlbumById() {
+    Long albumId = 1L;
+
+    given()
+      .contentType(ContentType.JSON)
+      .when()
+      .get("/api/albums/{albumId}", albumId)
+      .then()
+      .statusCode(200)
+      .body("albumId", is(albumId.intValue()))
+      .body("photos", hasSize(2));
+  }
+```
+
+## Testcontainers WireMock モジュールの使用
+
+[Testcontainers の WireMock モジュール](https://testcontainers.com/modules/wiremock/)を使用すると、WireMock サーバーを [Docker ベース](https://github.com/wiremock/wiremock-docker)のスタンドアロンコンテナとしてテスト内でプロビジョニング できます。
+
+次のように **AlbumControllerTestcontainersTests** を作成し、**WireMockContainer** を使用して WireMock サーバーを初期化し、スタブを設定します。
+
+```java
+@SpringBootTest(webEnvironment = RANDOM_PORT)
+@Testcontainers
+class AlbumControllerTestcontainersTests {
+
+    @LocalServerPort
+    private Integer port;
+
+    @Container
+    static WireMockContainer wiremockServer = new WireMockContainer("wiremock/wiremock:3.6.0")
+            .withMapping("photos-by-album",
+                        AlbumControllerTestcontainersTests.class,
+                        "mocks-config.json");
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        registry.add("photos.api.base-url", wiremockServer::getBaseUrl);
+    }
+
+    @BeforeEach
+    void setUp() {
+        RestAssured.port = port;
+    }
+
+    @Test
+    void shouldGetAlbumById() {
+        Long albumId = 1L;
+
+        given().contentType(ContentType.JSON)
+                .when()
+                .get("/api/albums/{albumId}", albumId)
+                .then()
+                .statusCode(200)
+                .body("albumId", is(albumId.intValue()))
+                .body("photos", hasSize(1));
+    }
+}
+```
+
+- **@Testcontainers** および **@Container** アノテーションを使用
+
+  - Testcontainers の JUnit 5 拡張機能を利用し、**WireMockContainer** を初期化しています。
+
+- **mocks-config.json** ファイルからスタブマッピングを読み込むように設定
+
+次のように、**src/test/resources/com/testcontainers/demo/AlbumControllerTestcontainersTests/mocks-config.json** ファイルを作成します。
+
+```json
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "GET",
+        "urlPattern": "/albums/([0-9]+)/photos"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": [
+          {
+            "id": 1,
+            "title": "accusamus beatae ad facilis cum similique qui sunt",
+            "url": "https://via.placeholder.com/600/92c952",
+            "thumbnailUrl": "https://via.placeholder.com/150/92c952"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+これでテストを実行すると、photo-service API への呼び出しは、**mocks-config.json** ファイルで定義された WireMock のスタブを使用してレスポンスを受け取るようになります。
+
+## テストの実行
+
+```shell
+# Maven を使用している場合
+./mvnw test
+
+# Gradle を使用している場合
+./gradlew test
+```
+
+これでテストを実行すると、コンソールログに WireMock の Docker インスタンスが起動したことが表示されます。このインスタンスは photo-service の代わりとして動作し、設定された期待値に従ってモックレスポンスを提供 します。
+
+テストは正常に実行され、成功するはずです。
+
+## まとめ
+
+Spring Boot アプリケーションでサードパーティの HTTP API を統合し、Testcontainers WireMock モジュールを使用してテストする方法を学びました。
+
+<Callout>
+  Testcontainers WireMock モジュールは **Go** や **Python** の言語向けにも提供されています。
+</Callout>
+
+Testcontainers WireMock モジュールの詳細な使用方法については、公式ドキュメント https://wiremock.org/docs/solutions/testcontainers/ を参照してください。
+
+Testcontainers についてさらに詳しく知りたい場合は、https://testcontainers.com をご覧ください。
