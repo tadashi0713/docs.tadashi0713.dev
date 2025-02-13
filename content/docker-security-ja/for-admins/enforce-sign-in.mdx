@@ -1,0 +1,77 @@
+---
+title: Docker Desktop のサインインを強制する
+description: Docker Desktop でユーザーにサインインを強制した場合に何が起こるかを理解する
+---
+
+import { Table } from 'nextra/components'
+
+# Docker Desktop のサインインを強制する
+
+デフォルトでは、Organization のメンバーはサインインせずに Docker Desktop を使用できます。ユーザーが Organization のメンバーとしてサインインしない場合、[Organization のサブスクリプションの特典](https://docs.docker.com/subscription/details/)を受けられず、[Docker のセキュリティ機能](https://docs.docker.com/security/for-admins/hardened-desktop/)を回避できてしまいます。
+
+サインインの強制方法は、企業の環境や設定によって異なります。以下の方法があります：
+
+- レジストリキーを使用する方法 (Windows のみ)
+- 設定プロファイルを使用する方法 (Mac のみ)
+- `.plist` を使用する方法 (Mac のみ)
+- `registry.json` を使用する方法 (すべての環境に対応)
+
+## サインインの強制とは？
+
+Docker Desktop の起動時にレジストリキー、.plist ファイル、または registry.json ファイルが検出されると、以下の動作が発生します：
+
+- **「Sign in required!」** というプロンプトが表示され、Docker Desktop を使用するには Organization のメンバーとしてサインインする必要があります。
+
+  ![サインイン強制のプロンプト](/docker-security-ja/enforce-sign-in.png)
+
+- Organization のメンバーでないアカウントでサインインした場合、自動的にサインアウトされ、Docker Desktop を使用できません。ユーザーは **「Sign in」** を選択して再試行できます。
+
+- Organization のメンバーのアカウントでサインインすると、Docker Desktop を使用できます。
+
+- サインアウトすると **「Sign in required!」** のプロンプトが再度表示され、Docker Desktop を使用できなくなります。
+
+> [!NOTE]
+> 
+> Docker Desktop のサインインを強制しても、Docker CLI へのアクセスには影響しません。CLI へのアクセスが影響を受けるのは、Organization がシングルサインオン (SSO) を強制している場合のみです。
+
+## サインインの強制とシングルサインオン (SSO) の強制の違い
+
+[SSO の強制]()とサインインの強制は異なる機能です。以下の表では、それぞれの機能の説明とメリットを示しています。
+
+<Table>
+  <thead>
+    <Table.Tr>
+      <Table.Th>強制の種類</Table.Th>
+      <Table.Th>説明</Table.Th>
+      <Table.Th>メリット</Table.Th>
+    </Table.Tr>
+  </thead>
+  <tbody>
+    <Table.Tr>
+      <Table.Td>サインインのみを強制</Table.Td>
+      <Table.Td>Docker Desktop を使用する前にサインインが必要</Table.Td>
+      <Table.Td>サブスクリプションの特典を適用し、セキュリティ機能を確実に適用。ユーザーのアクティビティを把握可能。</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>SSO のみを強制</Table.Td>
+      <Table.Td>サインインする場合は SSO を使用しなければならない</Table.Td>
+      <Table.Td>認証を一元管理し、ID プロバイダーによる統一ポリシーを適用できる。</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>両方を強制</Table.Td>
+      <Table.Td>Docker Desktop を使用する前に SSO でサインインが必要</Table.Td>
+      <Table.Td>サインインの強制のメリットに加え、認証の一元管理と統一ポリシーの適用が可能。</Table.Td>
+    </Table.Tr>
+    <Table.Tr>
+      <Table.Td>どちらも強制しない</Table.Td>
+      <Table.Td>サインインする場合、SSO または Docker 認証情報を使用可能</Table.Td>
+      <Table.Td>ユーザーの利便性が高いが、セキュリティやアクティビティの可視性が低下する。</Table.Td>
+    </Table.Tr>
+  </tbody>
+</Table>
+
+## 次のステップ
+
+- サインインを強制する方法については、[方法の詳細](/docker-security-ja/for-admins/enforce-sign-in/methods) を参照してください。
+
+- SSO を強制する方法については、[SSO の強制](/docker-security-ja/for-admins/single-sign-on/connect) の手順を参照してください。
