@@ -1,0 +1,353 @@
+---
+title: Docker Desktop のサインインを強制する方法
+description: 開発者に Docker Desktop へのサインインを強制するさまざまな方法について学ぶ
+---
+
+import { Tabs, Table } from 'nextra/components'
+
+# Docker Desktop のサインインを強制する方法
+
+このページでは、Docker Desktop のサインインを強制するためのさまざまな方法について説明します。
+
+## レジストリキーを使用する方法 (Windows のみ)
+
+> [!NOTE]
+>
+> レジストリキーの方法は、Docker Desktop バージョン 4.32 以降で利用可能です。
+
+Windows で Docker Desktop のサインインを強制するには、Organization の許可されたユーザーを指定するレジストリキーを設定できます。以下の手順で、このポリシーを強制するためのレジストリキーを作成および展開できます：
+
+1. レジストリキーを作成します。新しいキーは次のようになります：
+
+    ```console
+    $ HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Docker\Docker Desktop
+    ```
+
+2. マルチ文字列値 `allowedOrgs` を作成します。
+
+    > [!IMPORTANT]
+    > 
+    > Docker Desktop バージョン 4.36 以降では、複数の Organization を追加できます。バージョン 4.35 以前では、複数の Organization を追加するとサインイン強制が正常に動作しません。
+
+3. 文字列データとして Organization の名前をすべて小文字で入力します。複数の Organization を追加する場合は、各 Organization 名の間にスペースを入れてください。
+
+4. Docker Desktop を再起動します。
+
+5. Docker Desktop の再起動後、**「Sign in required!」** のプロンプトが表示されることを確認します。
+
+場合によっては、サインインの強制を有効にするためにシステムの再起動が必要になることがあります。
+
+> [!NOTE]
+> 
+> registry.json ファイルとレジストリキーの両方が存在する場合は、レジストリキーが優先されます。
+
+### グループポリシーを使用した展開例
+
+以下の手順は、グループポリシーを使用して Docker Desktop のサインインを強制するためのレジストリキーを展開する方法の例です。展開方法は、Organization のインフラストラクチャ、セキュリティポリシー、および管理ツールによって異なります。
+
+1. レジストリスクリプトを作成します。スクリプトには `HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Docker\Docker Desktop` キーを作成し、`allowedOrgs` のマルチ文字列値を追加し、Organization 名を設定する内容を記述します。
+
+2. グループポリシーオブジェクト (GPO) を作成または編集し、適用対象のコンピュータまたはユーザーを指定します。
+
+3. GPO 内の **Computer Configuration** に移動し、**Preferences** を選択します。
+
+4. **Windows Settings** を選択し、**Registry** を開きます。
+
+5. **Registry** ノードを右クリックし、**New** → **Registry Item** を選択します。
+
+6. 先ほど作成したレジストリスクリプトと一致するように新しいレジストリ項目を設定し、アクションを **Update** に指定します。適切なパス、値の名前 (`allowedOrgs`)、値データ (Organization 名) を入力してください。
+
+7. GPO を対象のマシンが含まれる組織単位 (OU) にリンクします。
+
+8. 少数のマシンでテストを行い、期待通りに動作することを確認します。テストマシンで `gpupdate /force` コマンドを実行してポリシーを手動で更新し、レジストリの設定が適用されたか確認してください。
+
+9. 確認後、全体に展開を行い、設定が Organization 内のコンピュータに適切に適用されているか監視します。
+
+## 設定プロファイルを使用する方法 (Mac のみ)
+
+設定プロファイルは macOS の機能であり、管理対象の Mac に構成情報を配布できます。これは macOS でサインインを強制する最も安全な方法です。なぜなら、インストールされた設定プロファイルは Apple の System Integrity Protection (SIP) によって保護されており、ユーザーが変更することができないためです。
+
+1. 次の XML ファイルを `.mobileconfig` という拡張子で保存します (例: `docker.mobileconfig`):
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+      <dict>
+        <key>PayloadContent</key>
+        <array>
+          <dict>
+            <key>PayloadType</key>
+            <string>com.docker.config</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.docker.config</string>
+            <key>PayloadUUID</key>
+            <string>eed295b0-a650-40b0-9dda-90efb12be3c7</string>
+            <key>PayloadDisplayName</key>
+            <string>Docker Desktop Configuration</string>
+            <key>PayloadDescription</key>
+            <string>Configuration profile to manage Docker Desktop settings.</string>
+            <key>PayloadOrganization</key>
+            <string>Your Company Name</string>
+            <key>allowedOrgs</key>
+            <string>first_org;second_org</string>
+          </dict>
+        </array>
+        <key>PayloadType</key>
+        <string>Configuration</string>
+        <key>PayloadVersion</key>
+        <integer>1</integer>
+        <key>PayloadIdentifier</key>
+        <string>com.yourcompany.docker.config</string>
+        <key>PayloadUUID</key>
+        <string>0deedb64-7dc9-46e5-b6bf-69d64a9561ce</string>
+        <key>PayloadDisplayName</key>
+        <string>Docker Desktop Config Profile</string>
+        <key>PayloadDescription</key>
+        <string>Config profile to enforce Docker Desktop settings for allowed organizations.</string>
+        <key>PayloadOrganization</key>
+        <string>Your Company Name</string>
+      </dict>
+    </plist>
+    ```
+
+2. `com.yourcompany.docker.config` や `Your Company Name` を実際の Organization の名前に変更してください。
+
+3. `allowedOrgs` プロパティに Organization 名を設定します。複数の Organization を追加する場合は、セミコロンで区切ります。
+
+4. 修正した `.mobileconfig` ファイルを MDM ソリューションを使用して macOS クライアントに配布します。
+
+## plist を使用する方法 (Mac のみ)
+
+> [!NOTE]
+> 
+> `plist` の方法は、Docker Desktop バージョン 4.32 以降で利用可能です。
+
+macOS で Docker Desktop のサインインを強制するには、必要な設定を定義する `plist` ファイルを使用できます。以下の手順で、このポリシーを強制するための `plist` ファイルを作成および展開できます：
+
+1. `/Library/Application Support/com.docker.docker/desktop.plist` というファイルを作成します。
+
+2. `desktop.plist` をテキストエディタで開き、以下の内容を追加します。`myorg` の部分を Organization の名前 (すべて小文字) に置き換えてください：
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+      <dict>
+          <key>allowedOrgs</key>
+          <array>
+              <string>myorg1</string>
+              <string>myorg2</string>
+          </array>
+      </dict>
+    </plist>
+    ```
+
+    > [!IMPORTANT]
+    >
+    > Docker Desktop バージョン 4.36 以降では、複数の Organization を追加できます。バージョン 4.35 以前では、複数の Organization を追加するとサインイン強制が正常に動作しません。
+
+3. ファイルの権限を変更し、管理者以外のユーザーが編集できないようにします。
+
+4. Docker Desktop を再起動します。
+
+5. Docker Desktop の再起動後、**「Sign in required!」** のプロンプトが表示されることを確認します。
+
+> [!NOTE]
+> 
+> `plist` ファイルと `registry.json` ファイルの両方が存在する場合は、`plist` ファイルが優先されます。
+
+### 展開の例
+
+以下の手順では、`plist` ファイルを作成し、Docker Desktop のサインインを強制するために展開する方法を説明します。展開方法は、Organization のインフラストラクチャ、セキュリティポリシー、および管理ツールによって異なります。
+
+<Tabs items={['MDM', 'Shell script']}>
+  <Tabs.Tab>
+    1. 前述の手順に従って `desktop.plist` ファイルを作成します。
+
+    2. Jamf や Fleet などの MDM ツールを使用して、`desktop.plist` ファイルを `/Library/Application Support/com.docker.docker/` に配布します。
+
+    3. MDM ツールを使用して、ファイルの権限を管理者のみが編集可能な状態に設定します。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. `.plist` ファイルが正しいディレクトリに存在するかを確認し、必要に応じて作成・変更する Bash スクリプトを作成します。スクリプトには、以下のような処理を含めます：
+
+        - `/Library/Application Support/com.docker.docker/` ディレクトリが存在するか確認し、存在しない場合は作成する。
+
+        - `defaults` コマンドを使用して `desktop.plist` ファイルに必要なキーと値を書き込む：
+
+          ```console
+          $ defaults write /Library/Application\ Support/com.docker.docker/desktop.plist allowedOrgs -array "myorg1" "myorg2"
+          ```
+        
+        - `chmod` や `chown` を使用して、`plist` ファイルを管理者以外が編集できないようにする。
+
+    2. ローカルの macOS マシンでスクリプトをテストし、期待通りに動作するか確認します。
+
+    3. macOS デバイスでリモートでスクリプトを実行できる環境を確保します。SSH アクセスやリモート管理ツールを利用するとよいでしょう。
+
+    4. 組織の環境に適した方法でスクリプトを展開し、適用状況を監視します。
+  </Tabs.Tab>
+</Tabs>
+
+## registry.json を使用する方法 (すべての環境に対応)
+
+以下の手順では、`registry.json` ファイルを作成し、Docker Desktop のサインインを強制する方法を説明します。`registry.json` の展開方法は、`.plist` ファイルの展開手法を参考にできます。どの方法を選択するかは、Organization のインフラストラクチャ、セキュリティポリシー、管理者権限に依存します。
+
+### オプション 1: registry.json ファイルを作成してサインインを強制する
+
+1. Docker の Organization メンバーであることを確認します。詳細については、[メンバー管理](https://docs.docker.com/admin/organization/members/) を参照してください。
+
+2. registry.json ファイルを作成します。
+
+    使用している OS に応じて、次の場所に `registry.json` ファイルを作成し、ユーザーが編集できないようにします：
+
+    <Table>
+      <thead>
+        <Table.Tr>
+          <Table.Th>プラットフォーム</Table.Th>
+          <Table.Th>保存場所</Table.Th>
+        </Table.Tr>
+      </thead>
+      <tbody>
+        <Table.Tr>
+          <Table.Td>Windows</Table.Td>
+          <Table.Td>`/ProgramData/DockerDesktop/registry.json`</Table.Td>
+        </Table.Tr>
+        <Table.Tr>
+          <Table.Td>Mac</Table.Td>
+          <Table.Td>`/Library/Application Support/com.docker.docker/registry.json`</Table.Td>
+        </Table.Tr>
+        <Table.Tr>
+          <Table.Td>Linux</Table.Td>
+          <Table.Td>`/usr/share/docker-desktop/registry/registry.json`</Table.Td>
+        </Table.Tr>
+      </tbody>
+    </Table>
+
+3. `registry.json` ファイルに Organization を指定します。
+
+    `registry.json` ファイルをテキストエディタで開き、以下の内容を追加します。`myorg1`、`myorg2` の部分を Organization 名に置き換えてください。Organization 名はすべて小文字で指定してください：
+
+    ```json
+    {
+      "allowedOrgs": ["myorg1", "myorg2"]
+    }
+    ```
+
+    > [!IMPORTANT]
+    > 
+    > Docker Desktop バージョン 4.36 以降では、複数の Organization を追加できます。バージョン 4.35 以前では、複数の Organization を追加するとサインイン強制が正常に動作しません。
+
+4. サインインが強制されていることを確認します。
+
+    `registry.json` ファイルを有効にするには、ユーザーのマシンで Docker Desktop を再起動します。再起動後、**「Sign in required!」** のプロンプトが表示されることを確認してください。
+
+    場合によっては、システムの再起動が必要になることがあります。
+
+    > [!TIP]
+    > 
+    > サインインの強制を有効にした後、Docker Desktop の起動に問題が発生した場合は、最新バージョンに更新してください。
+
+## オプション 2: Docker Desktop のインストール時に registry.json ファイルを作成する
+
+Docker Desktop のインストール時に registry.json ファイルを自動作成するには、使用する OS に応じて以下の手順を実行します。
+
+<Tabs items={['Windows', 'Mac']}>
+  <Tabs.Tab>
+    Docker Desktop のインストール時に `registry.json` ファイルを自動的に作成するには、`Docker Desktop Installer.exe` をダウンロードし、以下のいずれかのコマンドを、`Docker Desktop Installer.exe` があるディレクトリで実行します。`myorg` を Organization の名前に置き換えてください。Organization 名はすべて小文字で指定する必要があります。
+
+    PowerShell を使用する場合：
+
+    ```powershell
+    PS> Start-Process '.\Docker Desktop Installer.exe' -Wait 'install --allowed-org=myorg'
+    ```
+
+    Windows コマンドプロンプトを使用する場合：
+
+    ```console
+    C:\Users\Admin> "Docker Desktop Installer.exe" install --allowed-org=myorg
+    ```
+
+    > [!IMPORTANT]
+    >
+    > Docker Desktop バージョン 4.36 以降では、1 つの registry.json ファイルに複数の Organization を追加できます。バージョン 4.35 以前では、複数の Organization を追加するとサインイン強制が正常に動作しません。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    Docker Desktop のインストール時に `registry.json` ファイルを自動的に作成するには、`Docker.dmg` をダウンロードし、以下のコマンドをターミナルで実行します。`myorg` を Organization の名前に置き換えてください。Organization 名はすべて小文字で指定する必要があります。
+
+    ```console
+    $ sudo hdiutil attach Docker.dmg
+    $ sudo /Volumes/Docker/Docker.app/Contents/MacOS/install --allowed-org=myorg
+    $ sudo hdiutil detach /Volumes/Docker
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+## オプション 3: コマンドラインを使用して registry.json ファイルを作成する
+
+`registry.json` をコマンドラインで作成する方法を、OS ごとに紹介します。
+
+<Tabs items={['Windows', 'Mac']}>
+  <Tabs.Tab>
+    PowerShell を管理者権限で実行し、以下のコマンドを実行します。`myorg` を Organization の名前に置き換えてください。Organization 名はすべて小文字で指定する必要があります。
+
+    ```powershell
+    PS> Set-Content /ProgramData/DockerDesktop/registry.json '{"allowedOrgs":["myorg"]}'
+    ```
+
+    これにより、`C:\ProgramData\DockerDesktop\registry.json` ファイルが作成され、指定された Organization の情報が含まれます。
+
+    作成したファイルが適切なアクセス権限を持っていることを確認し、一般ユーザーが編集できないように設定します。管理者のみが編集できる状態にする必要があります。以下のコマンドでファイルのアクセス権限を確認できます：
+
+    ```console
+    PS C:\ProgramData\DockerDesktop> Get-Acl .\registry.json
+
+
+        Directory: C:\ProgramData\DockerDesktop
+
+
+    Path          Owner                  Access
+    ----          -----                  ------
+    registry.json BUILTIN\Administrators NT AUTHORITY\SYSTEM Allow  FullControl...
+    ```
+
+    > [!IMPORTANT]
+    > 
+    > Docker Desktop バージョン 4.36 以降では、1 つの `registry.json` ファイルに複数の Organization を追加できます。バージョン 4.35 以前では、複数の Organization を追加するとサインイン強制が正常に動作しません。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    macOS のターミナルで以下のコマンドを実行します。`myorg` を Organization の名前に置き換えてください。Organization 名はすべて小文字で指定する必要があります。
+
+    ```console
+    $ sudo mkdir -p "/Library/Application Support/com.docker.docker"
+    $ echo '{"allowedOrgs":["myorg"]}' | sudo tee "/Library/Application Support/com.docker.docker/registry.json"
+    ```
+
+    このコマンドを実行すると、`/Library/Application Support/com.docker.docker/registry.json` に `registry.json` ファイルが作成され、指定した Organization の情報が含まれます。
+
+    作成したファイルの内容を確認するには、以下のコマンドを実行してください：
+
+    ```console
+    $ sudo cat "/Library/Application Support/com.docker.docker/registry.json"
+    {"allowedOrgs":["myorg"]}
+    ```
+
+    また、適切なアクセス権限が設定されていることを確認してください：
+
+    ```console
+    $ sudo ls -l "/Library/Application Support/com.docker.docker/registry.json"
+    -rw-r--r--  1 root  admin  26 Jul 27 22:01 /Library/Application Support/com.docker.docker/registry.json
+    ```
+
+    > [!IMPORTANT]
+    > 
+    > Docker Desktop バージョン 4.36 以降では、1 つの `registry.json` ファイルに複数の Organization を追加できます。バージョン 4.35 以前では、複数の Organization を追加するとサインイン強制が正常に動作しません。
+  </Tabs.Tab>
+</Tabs>
+
+## その他のリソース
+
+- [Video: Enforce sign-in with a registry.json](https://www.youtube.com/watch?v=CIOQ6wDnJnM)
