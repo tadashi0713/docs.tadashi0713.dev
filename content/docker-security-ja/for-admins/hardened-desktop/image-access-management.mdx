@@ -1,0 +1,77 @@
+---
+title: Image Access Management
+description: Image Access Management を使用して Docker Hub のイメージアクセスを管理し、開発者を信頼できるイメージに制限することでセキュリティを強化する
+---
+
+import { Tabs } from 'nextra/components'
+
+# Image Access Management
+
+Image Access Management を使用すると、Docker Official Images、Docker Verified Publisher Images、コミュニティイメージなど、開発者が Docker Hub からプルできるイメージの種類を制御できます。
+
+例えば、Organization の一員である開発者が新しいコンテナ化アプリケーションを構築する際、誤って信頼できないコミュニティイメージをコンポーネントとして使用してしまう可能性があります。そのイメージが悪意のあるものであれば、企業のセキュリティリスクとなる可能性があります。
+
+Image Access Management を利用することで、Organization のオーナーは開発者が Docker Official Images、Docker Verified Publisher Images、または Organization 自身のイメージのみにアクセスできるように制限し、このようなリスクを防ぐことができます。
+
+## 前提条件
+
+まず、[サインインの強制](/docker-security-ja/for-admins/enforce-sign-in) を有効にし、すべての Docker Desktop 開発者が Organization に認証されるようにする必要があります。
+
+Image Access Management を利用するには Docker Business サブスクリプションが必要なため、サインインの強制を有効にすることで、認証されたユーザーのみがアクセスできることを保証し、この機能がすべてのユーザーに一貫して適用されるようになります。なお、サインインの強制なしでも機能する場合がありますが、確実に適用するためにはサインインの強制を推奨します。
+
+## 設定
+
+<Tabs items={['Docker Hub', 'Admin Console']}>
+  <Tabs.Tab>
+    1. [Docker Hub](https://hub.docker.com) にサインインします。
+
+    2. **Organizations** を選択し、自分の Organization を選択後、**Settings** を開き、**Image Access** を選択します。
+
+    3. Image Access Management を有効にし、管理可能な以下のイメージカテゴリに対する権限を設定します：
+
+    - **Organization Images**: Organization 内のメンバーによって作成されたパブリックまたはプライベートのイメージです。これらのイメージはデフォルトで常に許可されます。
+
+    - **Docker Official Images**: Hub 上でホストされている厳選された Docker リポジトリです。OS リポジトリ、Dockerfile のベストプラクティス、すぐに使用できるソリューションを提供し、タイムリーなセキュリティアップデートが適用されます。
+
+    - **Docker Verified Publisher Images**: Docker の Verified Publisher プログラムに参加するパートナーによって公開されたイメージで、開発者向けのセキュアなサプライチェーンに含まれる資格を持つものです。
+
+    - **Community Images**: Image Access Management を有効にすると、このカテゴリのイメージはデフォルトで無効になります。これらのイメージは多様なユーザーによって提供されるため、セキュリティリスクを伴う可能性があります。このカテゴリには Docker-Sponsored Open Source のイメージも含まれます。
+
+    > [!NOTE]
+    >
+    > Image Access Management はデフォルトでは無効になっています。ただし、Organization のオーナーは設定に関係なくすべてのイメージにアクセスできます。
+
+    4. **Allowed** を選択して、イメージのカテゴリごとに制限を設定してください。制限が適用されると、メンバーは Organization の権限ページを 読み取り専用 の形式で表示できるようになります。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. [Admin Console](https://admin.docker.com) にサインインします。
+
+    2. 左側のナビゲーションのドロップダウンメニューから自分の Organization を選択し、**Image access** を選択します。
+
+    3. Image Access Management を有効にし、管理可能な以下のイメージカテゴリに対する権限を設定します。
+ 
+    - **Organization Images**: Organization 内のメンバーによって作成されたパブリックまたはプライベートのイメージです。これらのイメージはデフォルトで常に許可されます。
+
+    - **Docker Official Images**: Hub 上でホストされている厳選された Docker リポジトリです。OS リポジトリ、Dockerfile のベストプラクティス、すぐに使用できるソリューションを提供し、タイムリーなセキュリティアップデートが適用されます。
+
+    - **Docker Verified Publisher Images**: Docker の Verified Publisher プログラムに参加するパートナーによって公開されたイメージで、開発者向けのセキュアなサプライチェーンに含まれる資格を持つものです。
+
+    - **Community Images**: Image Access Management を有効にすると、このカテゴリのイメージはデフォルトで無効になります。これらのイメージは多様なユーザーによって提供されるため、セキュリティリスクを伴う可能性があります。このカテゴリには Docker-Sponsored Open Source のイメージも含まれます。
+
+    > [!NOTE]
+    >
+    > Image Access Management はデフォルトでは無効になっています。ただし、Organization のオーナーは設定に関係なくすべてのイメージにアクセスできます。
+
+    4. **Allowed** を選択して、イメージのカテゴリごとに制限を設定してください。制限が適用されると、メンバーは Organization の権限ページを 読み取り専用 の形式で表示できるようになります。
+  </Tabs.Tab>
+</Tabs>
+
+## 制限の確認
+
+新しい Image Access Management ポリシーは、開発者が Organization の認証情報を使用して Docker Desktop に正常にサインインした後に適用されます。
+
+開発者が許可されていない種類のイメージを Docker でプルしようとすると、エラーメッセージが表示されます。
+
+## その他のリソース
+
+- [Video: Hardened Desktop Image Access Management](https://www.youtube.com/watch?v=r3QRKHA1A5U)

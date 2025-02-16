@@ -6,7 +6,7 @@ asIndexPage: true
 
 import { Callout, Cards } from 'nextra/components'
 import { GoShieldLock } from "react-icons/go"
-import { MdSecurity } from "react-icons/md"
+import { MdSecurity, MdPhotoLibrary } from "react-icons/md"
 import { RiArchiveStackFill } from "react-icons/ri"
 
 # Hardened Docker Desktop
@@ -71,3 +71,14 @@ Enhanced Container Isolation (強化されたコンテナ分離)がどのよう�
 />
 
 Docker Desktop 使用時に、開発者がアクセスできるレジストリを制御する。
+
+<br />
+
+<Cards.Card
+  icon={<MdPhotoLibrary />}
+  title="Image Access Management"
+  href="/docker-security-ja/for-admins/hardened-desktop/image-access-management"
+  arrow
+/>
+
+開発者が Docker Hub からプルできるイメージを制御する。
