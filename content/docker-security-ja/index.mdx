@@ -5,7 +5,7 @@ asIndexPage: true
 ---
 
 import { Cards } from 'nextra/components'
-import { GoShieldLock } from "react-icons/go"
+import { GoShieldLock, GoPasskeyFill } from "react-icons/go"
 import { MdSecurity } from "react-icons/md"
 
 # Docker セキュリティ
@@ -41,6 +41,17 @@ Settings Management を活用して、開発者のワークフローをどのよ
 />
 
 Enhanced Container Isolation (強化されたコンテナ分離)がどのようにコンテナ攻撃を防ぐのかを理解しましょう。
+
+<br />
+
+<Cards.Card
+  icon={<GoPasskeyFill />}
+  title="サインインの強制"
+  href="/docker-security-ja/for-admins/enforce-sign-in"
+  arrow
+/>
+
+チームや Organization のメンバーのサインインを設定しましょう。
 
 ## 開発者向け
 
