@@ -1,0 +1,129 @@
+---
+title: Registry Access Management
+description: Registry Access Management を使用して承認されたレジストリへのアクセスを制御し、安全な Docker Desktop の利用を実現する
+---
+
+import { Tabs } from 'nextra/components'
+
+# Registry Access Management
+
+Registry Access Management (RAM) を使用すると、管理者は Docker Desktop を使用する開発者が許可されたレジストリにのみアクセスできるように制御できます。この管理は、Docker Hub の Registry Access Management ダッシュボードまたは Docker Admin Console を通じて行われます。
+
+Registry Access Management は、クラウドおよびオンプレミスの両方のレジストリをサポートしています。この機能は DNS レベルで動作するため、すべてのレジストリと互換性があります。許可するレジストリのリストには、任意のホスト名やドメイン名を追加できます。ただし、レジストリが s3.amazon.com のような別のドメインにリダイレクトする場合は、それらのドメインもリストに追加する必要があります。
+
+管理者が許可できるレジストリの例：
+
+- Docker Hub（デフォルトで有効）
+- Amazon ECR
+- GitHub Container Registry
+- Google Container Registry
+- GitLab Container Registry
+- Nexus
+- Artifactory
+
+## 前提条件
+
+[サインインの強制](/docker-security-ja/for-admins/enforce-sign-in) を有効にする必要があります。
+
+Registry Access Management を適用するには、Docker Desktop ユーザーが Organization に認証する必要があります。サインインを強制しなくてもこの機能は有効になりますが、サインインを強制することで、Docker Desktop の開発者が常に Organization に認証される状態を保証できます。
+
+## Registry Access Management の権限を設定する
+
+<Tabs items={['Docker Hub', 'Admin Console']}>
+  <Tabs.Tab>
+    Registry Access Management の権限を設定するには、以下の手順を実行してください：
+
+    1. [Docker Hub](https://hub.docker.com) にサインインします。
+
+    2. **Organizations** を選択し、自分の Organization を選択後、**Settings** を開き、**Registry Access** を選択します。
+
+    3. Registry Access Management を有効にし、レジストリの権限を設定します。
+
+    > [!NOTE]
+    >
+    > 有効にすると、Docker Hub のレジストリがデフォルトで設定されますが、開発者向けにこのレジストリを制限することも可能です。
+
+    4. **Add registry** を選択し、該当するフィールドにレジストリの詳細を入力した後、**Create** を選択してリストに追加します。追加できるレジストリの数に制限はありません。
+
+    5. レジストリがリストに表示されていることを確認し、**Save changes** を選択します。
+
+    レジストリを追加すると、開発者のマシンに変更が適用されるまで最大 24 時間かかる場合があります。
+
+    変更をすぐに適用したい場合は、開発者のマシンで Docker から強制的にサインアウトさせ、再認証を行う必要があります。制限事項について詳しくは、以下の [制約事項](#制約事項) セクションを参照してください。
+
+    > [!IMPORTANT]
+    >
+    > Docker Desktop バージョン 4.36 以降では、複数の Organization に対してサインインを強制できます。
+    > 開発者が異なる RAM ポリシーを持つ複数の Organization に所属している場合、`registry.json` ファイル、`.plist` ファイル、またはレジストリキーに記載された最初の Organization の RAM ポリシーのみが適用されます。
+
+    > [!TIP]
+    >
+    > RAM はコンテンツの取得元に関するポリシーを設定するため、Dockerfile の [ADD](https://docs.docker.com/reference/dockerfile/#add) 命令に URL を指定した場合、その URL もレジストリの制限の対象となります。そのため、Organization の Registry Access Management 設定で、ADD 命令の URL パラメータに含まれるドメインを許可されたレジストリのリストに追加することを推奨します。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    Registry Access Management の権限を設定するには、以下の手順を実行してください：
+
+    1. [Admin Console](https://admin.docker.com) にサインインします。
+
+    2. 左側のナビゲーションのドロップダウンメニューから自分の Organization を選択し、**Registry access** を選択します。
+
+    3. Registry Access Management を有効にし、レジストリの権限を設定します。
+
+    > [!NOTE]
+    >
+    > 有効にすると、Docker Hub のレジストリがデフォルトで設定されますが、開発者向けにこのレジストリを制限することも可能です。
+
+    4. **Add registry** を選択し、該当するフィールドにレジストリの詳細を入力した後、**Create** を選択してリストに追加します。追加できるレジストリの数に制限はありません。
+
+    5. レジストリがリストに表示されていることを確認し、**Save changes** を選択します。
+
+    レジストリを追加すると、開発者のマシンに変更が適用されるまで最大 24 時間かかる場合があります。
+
+    変更をすぐに適用したい場合は、開発者のマシンで Docker から強制的にサインアウトさせ、再認証を行う必要があります。制限事項について詳しくは、以下の [制約事項](#制約事項) セクションを参照してください。
+
+    > [!IMPORTANT]
+    >
+    > Docker Desktop バージョン 4.36 以降では、複数の Organization に対してサインインを強制できます。
+    > 開発者が異なる RAM ポリシーを持つ複数の Organization に所属している場合、`registry.json` ファイル、`.plist` ファイル、またはレジストリキーに記載された最初の Organization の RAM ポリシーのみが適用されます。
+
+    > [!TIP]
+    >
+    > RAM はコンテンツの取得元に関するポリシーを設定するため、Dockerfile の [ADD](https://docs.docker.com/reference/dockerfile/#add) 命令に URL を指定した場合、その URL もレジストリの制限の対象となります。そのため、Organization の Registry Access Management 設定で、ADD 命令の URL パラメータに含まれるドメインを許可されたレジストリのリストに追加することを推奨します。
+  </Tabs.Tab>
+</Tabs>
+
+## 制限が適用されているか確認する
+
+開発者が Organization の認証情報を使用して Docker Desktop に正常にサインインすると、新しい Registry Access Management ポリシーが適用されます。
+
+開発者が Docker CLI を使用して許可されていないレジストリからイメージをプルしようとすると、そのレジストリが Organization によって禁止されていることを示すエラーメッセージが表示されます。
+
+## 制約事項
+
+Registry Access Management を使用する際の制限事項は以下の通りです:
+
+- Windows のイメージプルやビルドはデフォルトでは制限されません。Registry Access Management を Windows コンテナモードで適用するには、[Windows Docker デーモンのプロキシを使用する](https://docs.docker.com/desktop/settings-and-maintenance/settings/#proxies) 設定を有効にする必要があります。
+
+- Kubernetes ドライバーを使用した `docker buildx` のビルドは制限されません。
+
+- カスタム docker-container ドライバーを使用した `docker buildx` のビルドは制限されません。
+
+- ブロックは DNS ベースで行われるため、レジストリのアクセス制御機構を使用して「プッシュ」と「プル」を区別する必要があります。
+
+- WSL 2 では、Linux カーネル 5.4 以上が必要です。（5.4 より前のカーネルには適用されません。）
+
+- WSL 2 のネットワークでは、すべての Linux ディストリビューションのトラフィックが制限されます。（この問題は、カーネル 5.15 シリーズで解決予定です。）
+
+- Docker Debug や Kubernetes が有効になっている場合、Docker Desktop によって取得されるイメージは、たとえ Docker Hub が Registry Access Management によってブロックされていても制限されません。
+
+また、Registry Access Management はホストレベルで動作し、IP アドレスベースではありません。そのため、開発者は次の方法でこの制限を回避する可能性があります:
+
+- ローカルプロキシを使用して Docker に接続する
+
+- オペレーティングシステムの hosts ファイルを編集する
+
+これらの方法による回避を防ぐことは、Docker Desktop の範囲外となります。
+
+## その他のリソース
+
+- [Video: Hardened Desktop Registry Access Management](https://www.youtube.com/watch?v=l9Z6WJdJC9A)
