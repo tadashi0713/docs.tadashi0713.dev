@@ -1,5 +1,4 @@
 export default {
-  'index': 'Docker ワークショップの概要',
   '02_our_app': 'パート1: アプリケーションをコンテナ化する',
   '03_updating_app': 'パート2: アプリケーションの更新',
   '04_sharing_app': 'パート3: アプリケーションを共有する',
