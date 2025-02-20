@@ -1,0 +1,57 @@
+---
+title: シングルサインオン（SSO）概要
+description: シングルサインオンの仕組み、設定方法、および必要な SSO 属性について学びます。
+asIndexPage: true
+---
+
+# シングルサインオン（SSO）概要
+
+シングルサインオン（SSO）を使用すると、ユーザーはアイデンティティプロバイダー（IdP）を介して認証し、Docker にアクセスできます。SSO は、企業全体およびその企業に関連するすべての Organization、または Docker Business サブスクリプションを契約している個別の Organization 向けに提供されます。既存のアカウントを Docker Business サブスクリプションにアップグレードするには、[サブスクリプションのアップグレード](https://docs.docker.com/subscription/upgrade/)を参照してください。
+
+## SSO の仕組み
+
+SSO を有効にすると、Docker は IdP を起点としない SSO フローをサポートします。ユーザーは Docker のユーザー名とパスワードで認証するのではなく、IdP の認証ページにリダイレクトされ、サインインを行います。SSO 認証プロセスを開始するには、ユーザーが Docker Hub または Docker Desktop にサインインする必要があります。
+
+以下の図は、Docker Hub および Docker Desktop における SSO の仕組みと管理方法を示しています。また、IdP との認証方法に関する情報も提供しています。
+
+![SSO アーキテクチャー](/docker-security-ja/SSO.png)
+
+## 設定方法
+
+SSO は以下の手順で設定します：
+
+1. Docker でドメインを作成し、[SSO を設定](/docker-security-ja/for-admins/single-sign-on/configure) する
+
+2. Docker と IdP の両方で [SSO 接続を作成](/docker-security-ja/for-admins/single-sign-on/connect) する
+
+3. Docker と IdP をクロス接続する
+
+4. 接続をテストする
+
+5. ユーザーをプロビジョニングする
+
+6. (オプション) [サインインを強制](/docker-security-ja/for-admins/enforce-sign-in) する
+
+7. [SSO 設定を管理](/docker-security-ja/for-admins/single-sign-on/manage) する
+
+SSO 設定が完了すると、新規ユーザーは企業のドメインのメールアドレスを使用して Docker Hub または Docker Desktop にサインインできます。サインイン後、ユーザーは Company に追加され、Organization に割り当てられ、必要に応じてチームにも割り当てられます。
+
+## 前提条件
+
+SSO を設定する前に、以下の要件を満たしていることを確認してください：
+
+- 会社全体に新しい SSO サインイン手順を通知する。
+
+- すべてのユーザーが Docker Desktop バージョン 4.4.2 以降 をインストールしていることを確認する。
+
+- 組織が [SSO の強制適用]() を計画している場合、Docker CLI を使用するメンバーは、[パーソナルアクセストークン（PAT）](/docker-security-ja/for-developers/access-tokens) を作成する必要がある。PAT はユーザー名とパスワードの代わりに使用される。Docker は、CLI でのパスワードによるサインインを将来的に廃止する予定であり、認証の問題を防ぐために PAT の使用が推奨される。詳細は [セキュリティアナウンス](https://docs.docker.com/security/security-announcements/#deprecation-of-password-logins-on-cli-when-sso-enforced) を参照。
+
+- すべての Docker ユーザーが、IdP 上で有効なユーザーとして登録されており、Unique Primary Identifier（UPN）として同じメールアドレスを持っていることを確認する。
+
+- すべての CI/CD パイプラインが、パスワードの代わりに PAT を使用するように変更されていることを確認する。
+
+- サービスアカウント用に追加のドメインを追加するか、IdP で有効化する。
+
+## 次に何をすべきか？
+
+- Docker での [SSO 設定を開始](/docker-security-ja/for-admins/single-sign-on/configure)
