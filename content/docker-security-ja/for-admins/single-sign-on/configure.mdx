@@ -1,0 +1,72 @@
+---
+title: シングルサインオンの設定
+description: Organization または Company 向けにシングルサインオンを設定する方法を学びます。
+---
+
+import { Tabs } from 'nextra/components'
+
+# シングルサインオンの設定
+
+Organization または Company 向けにシングルサインオン（SSO）接続の作成を開始しましょう。このガイドでは、メンバーが Docker にサインインする際に使用するドメインを追加し、検証する手順を説明します。
+
+## ステップ 1: ドメインを追加する
+
+<Tabs items={['Admin Console', 'Docker Hub']}>
+  <Tabs.Tab>
+    1. [Admin Console](https://admin.docker.com) にサインインします。
+
+    2. **Choose profile** ページで、Organization または Company を選択します。Organization が Company の一部である場合は、Company を選択し、Company レベルで Organization のドメインを設定する必要があります。
+
+    3. **Security and access** の下にある **Domain management** を選択します。
+
+    4. **Add a domain** を選択します。
+
+    5. テキストボックスにドメインを入力し、**Add domain** を選択します。
+
+    6. ポップアップモーダルで、ドメインの検証手順が表示されます。**TXT Record Value** をコピーしてください。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. [Docker Hub](https://hub.docker.com/) にサインインします。
+
+    2. **Organizations** を選択し、リストから自分の Organization を選択します。
+
+    3. Organization ページで **Settings** を選択し、次に **Security** を選択します。
+
+    4. **Add a domain** を選択します。
+
+    5. テキストボックスにドメインを入力し、**Add domain** を選択します。
+
+    6. ポップアップモーダルで、ドメインの検証手順が表示されます。**TXT Record Value** をコピーしてください。
+  </Tabs.Tab>
+</Tabs>
+
+## ステップ 2: ドメインを検証する
+
+ドメインの検証を行うことで、Docker はそのドメインがあなたのものであることを認識できます。ドメインの検証は、Docker の TXT Record Value をドメインホストに追加することで行います。TXT Record Value は所有権を証明し、ドメインネームシステム（DNS）にこのレコードを追加するよう通知します。DNS に変更が反映されるまで最大 72 時間かかることがあります。変更が DNS に反映されると、Docker は自動的にレコードを確認し、所有権を検証します。
+
+<Tabs items={['Admin Console', 'Docker Hub']}>
+  <Tabs.Tab>
+    1. ドメインホストに移動し、新しい TXT レコードを作成し、Docker からコピーした **TXT Record Value** を貼り付けます。
+
+    2. TXT レコードの検証には最大 72 時間かかります。検証が完了したら、Admin Console の **Domain management** ページに戻り、ドメイン名の横にある **Verify** を選択します。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. ドメインホストに移動し、新しい TXT レコードを作成し、Docker からコピーした **TXT Record Value** を貼り付けます。
+
+    2. TXT レコードの検証には最大 72 時間かかります。検証が完了したら、Docker Hub の **Security** ページに戻り、ドメイン名の横にある **Verify** を選択します。
+  </Tabs.Tab>
+</Tabs>
+
+ドメインの追加と検証が完了すると、Docker とアイデンティティプロバイダー（IdP）の間で SSO 接続を作成する準備が整います。
+
+## その他のリソース
+
+以下の動画では、Docker における SSO 接続のためのドメイン検証手順を紹介しています。
+
+- [Video: Verify your domain for SSO with Okta](https://youtu.be/c56YECO4YP4?feature=shared&t=529)
+
+- [Video: Verify your domain for SSO with Azure AD (OIDC)](https://youtu.be/bGquA8qR9jU?feature=shared&t=496)
+
+## 次に何をすべきか？
+
+[Docker と IdP を接続する](/docker-security-ja/for-admins/single-sign-on/configure/connect)
