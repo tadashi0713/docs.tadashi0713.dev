@@ -1,0 +1,290 @@
+---
+title: シングルサインオン（SSO）接続の作成
+description: シングルサインオン（SSO）接続の完了方法と、SSO を有効にするための次のステップについて学びます。
+---
+
+import { Tabs } from 'nextra/components'
+
+# シングルサインオン（SSO）接続の作成
+
+シングルサインオン（SSO）接続を作成するには、まず Docker 側で接続を設定し、その後アイデンティティプロバイダー（IdP）側で設定を行う必要があります。このガイドでは、Docker と IdP で SSO 接続を設定する手順を説明します。
+
+> [!TIP]
+> 
+> このガイドでは、Docker と IdP の両方で値をコピー＆ペーストする必要があります。スムーズに接続を完了させるために、すべての手順を 1 回のセッションで実施 し、Docker と IdP のブラウザを 別々に開いておく ことを推奨します。
+
+## 前提条件
+
+開始する前に、以下の要件を満たしていることを確認してください：
+
+- ドメインの検証が完了している
+
+- IdP のアカウントが設定されている
+
+- [シングルサインオンの設定](/docker-security-ja/for-admins/single-sign-on/configure) の手順を完了している
+
+## ステップ 1: Docker で SSO 接続を作成する
+
+> [!NOTE]
+> 
+> Docker で SSO 接続を作成する前に、少なくとも 1 つのドメインを検証する必要があります。
+
+<Tabs items={['Admin Console', 'Docker Hub']}>
+  <Tabs.Tab>
+    1. [Admin Console](https://admin.docker.com) にサインインします。
+
+    2. **Choose profile** ページで、Organization または Company を選択します。Organization が Company の一部である場合は、Company を選択し、Company レベルで Organization のドメインを設定する必要があります。
+
+    3. **Security and access** の **SSO and SCIM** を選択します。
+
+    4. **Create Connection** を選択し、接続名を入力します。
+
+    5. 認証方法として **SAML** または **Azure AD（OIDC）** を選択します。
+
+    6. IdP に追加するために、以下の値をコピーします：
+        - Okta SAML: **Entity ID**, **ACS URL**
+        - Azure OIDC: **Redirect URL**
+    
+    7. このウィンドウは閉じずに、後で IdP からの接続情報を貼り付けるために開いたままにしてください。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. [Docker Hub](https://hub.docker.com/) にサインインします。
+
+    2. **Organizations** を選択し、リストから自分の Organization を選択します。
+
+    3. Organization ページで **Settings** を選択し、次に **Security** を選択します。
+
+    4. **SSO connection** テーブルで **Create Connection** を選択し、接続名を入力します。
+
+    5. 認証方法として **SAML** または **Azure AD（OIDC）** を選択します。
+
+    6. IdP に追加するために、以下の値をコピーします：
+        - Okta SAML: **Entity ID**, **ACS URL**
+        - Azure OIDC: **Redirect URL**
+
+    7. このウィンドウは閉じずに、後で IdP からの接続情報を貼り付けるために開いたままにしてください。
+  </Tabs.Tab>
+</Tabs>
+
+## ステップ 2: IdP で SSO 接続を作成する
+
+使用する IdP によって手順が異なります。以下のガイドを参考にしてください。
+
+<Tabs items={['Okta SAML', 'Entra ID SAML 2.0', 'Azure Connect (OIDC)']}>
+  <Tabs.Tab>
+    1. Okta アカウントにサインインします。
+    
+    2. **Admin** を選択し、Okta 管理ポータルを開きます。
+
+    3. 左側のナビゲーションメニューから **Administration** を選択します。
+
+    4. **Administration** を選択し、**Create App Integration** をクリックします。
+
+    5. **SAML 2.0** を選択し、**Next** をクリックします。
+
+    6. **App Name** に「Docker Hub」と入力します。
+
+    7. (オプション)ロゴをアップロードします。
+
+    8. **Next** をクリックします。
+
+    9. 以下の Docker の値を Okta の対応するフィールドに入力します：
+        - Docker ACS URL: **Single Sign On URL**
+        - Docker Entity ID: **Audience URI（SP Entity ID）**
+
+    10. Okta の設定を以下のように構成します：
+        - Name ID format: `EmailAddress`
+        - Application username: `Email`
+        - Update application on: `Create and update`
+
+    11. **Next** をクリックします。
+
+    12. **This is an internal app that we have created** にチェックを入れます。
+
+    13. **Finish** をクリックします。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. Azure AD 管理ポータルにサインインします。
+
+    2. **Default Directory** を選択し、**Add** をクリックします。
+
+    3. **Enterprise Application** を選択し、**Create your own application** をクリックします。
+
+    4. アプリケーション名に「Docker」と入力し、**non-gallery** オプションを選択します。
+
+    5. アプリケーションが作成されたら、**Single Sign-On** に移動し、**SAML** を選択します。
+
+    6. **Basic SAML configuration** セクションで **Edit** をクリックします。
+
+    7. 以下の Docker の値を Azure の対応するフィールドに入力します：
+        - Docker Entity ID: **Identifier**
+        - Docker ACS URL: **Reply URL**
+
+    8. 設定を保存します。
+
+    9. **SAML Signing Certificate** セクションから **Certificate (Base64) **をダウンロードします。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    Azure Connect（OIDC）接続を作成するには、アプリ登録、クライアントシークレットの作成、および API 権限の設定を行う必要があります。
+
+    ### アプリ登録の作成
+
+    1. Azure AD 管理ポータルにサインインします。
+
+    2. **App Registration** を選択し、**New Registration** をクリックします。
+
+    3. アプリケーション名として「Docker Hub SSO」または類似の名前を入力します。
+
+    4. **Supported account types** で、このアプリケーションを使用できるユーザーの範囲を指定します。
+
+    5. **Redirect URI** セクションで、ドロップダウンから **Web** を選択し、Docker コンソールの **Redirect URI** をこのフィールドに貼り付けます。
+
+    6. **Register** をクリックし、アプリを登録します。
+
+    7. アプリの概要ページで **Client ID** をコピーします。この情報は、Docker での SSO 設定を続行するために必要です。
+
+    ### クライアントシークレットの作成
+
+    1. Azure AD のアプリを開き、**Certificates & secrets** を選択します。
+
+    2. **+ New client secret** を選択します。
+
+    3. シークレットの説明を指定し、キーの有効期限を設定します。
+
+    4. **Add** をクリックします。
+
+    5. シークレットの **Value** フィールドをコピーします。この情報は、Docker での SSO 設定を続行するために必要です。
+
+    ### API 権限の設定
+
+    1. Azure AD のアプリを開き、アプリの設定に移動します。
+
+    2. **API permission** を選択し、**Grant admin consent for [your tenant name]** をクリックします。
+
+    3. **Yes** を選択し、確認します。
+
+    4. 確認後、**Add a permission** をクリックし、**Delegated permissions** を選択します。
+
+    5. `User.Read` を検索し、このオプションを選択します。
+
+    6. **Add permissions** をクリックし、確定します。
+
+    7. **Status** 列で、各権限に管理者の同意が付与されていることを確認します。
+  </Tabs.Tab>
+</Tabs>
+
+## ステップ 3: Docker と IdP を接続する
+
+Docker と IdP で接続の設定を完了した後、それらを相互に接続して SSO 接続を完了します。
+
+<Tabs items={['Okta SAML', 'Entra ID SAML 2.0', 'Azure Connect (OIDC)']}>
+  <Tabs.Tab>
+    1. Okta で作成したアプリを開き、**View SAML setup instructions** を選択します。
+
+    2. Okta の SAML 設定ページから以下の値をコピーします：
+        - **SAML Sign-in URL**
+        - **x509 Certificate**
+
+    3. Docker Hub または Admin Console を開きます（このガイドのステップ 1 で開いた SSO 設定ページはそのまま開いておいてください）。
+
+    4. **Next** を選択し、**Update single-sign on connection** ページを開きます。
+
+    5. Docker に Okta の **SAML Sign-in URL** と **x509 Certificate** の値を貼り付けます。
+
+    6. **Next** を選択します。
+
+    7. （オプション）デフォルトのチームを選択し、**Next** を選択します。
+
+    8. SSO 接続の詳細を確認し、**Create Connection** を選択します。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. Azure AD で作成したアプリを開きます。
+
+    2. ダウンロードした Certificate (Base64) ファイルをテキストエディタで開きます。
+
+    3. 以下の値をコピーします：
+        - Azure AD の **Login URL**
+        - テキストエディタで開いた **Certificate (Base64)** の内容
+
+    4. Docker Hub または Admin Console を開きます（このガイドのステップ 1 で開いた SSO 設定ページはそのまま開いておいてください）。
+
+    5. Docker に **Login URL** と **Certificate (Base64)** の値を貼り付けます。
+
+    6. **Next** を選択します。
+
+    7. （オプション）デフォルトのチームを選択し、**Next** を選択します。
+
+    8. SSO 接続の詳細を確認し、**Create Connection** を選択します。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. Docker Hub または Admin Console を開きます（このガイドのステップ 1 で開いた SSO 設定ページはそのまま開いておいてください）。
+
+    2. Azure AD から以下の値を Docker に貼り付けます：
+        - **Client ID**
+        - **Client Secret**
+        - **Azure AD Domain**
+    
+    3. **Next** を選択します。
+    
+    4. （オプション）デフォルトのチームを選択し、**Next** を選択します。
+
+    5. SSO 接続の詳細を確認し、**Create Connection** を選択します。
+  </Tabs.Tab>
+</Tabs>
+
+## ステップ 4: 接続をテストする
+
+Docker で SSO 接続を完了したら、テストを行うことを推奨します。
+
+1. シークレットモード（Incognito）のブラウザを開きます。
+
+2. **ドメインのメールアドレス** を使用して Admin Console にサインインします。
+
+3. ブラウザが IdP のログインページにリダイレクトされるので、認証を行います。
+4. Docker ID ではなく、ドメインのメールアドレスで認証できることを確認します。
+
+また、コマンドラインインターフェース（CLI）を使用して SSO 接続をテストすることもできます。CLI でテストを行う場合、ユーザーは パーソナルアクセストークン（PAT） を使用する必要があります。
+
+## （オプション）SSO の強制適用
+
+> [!IMPORTANT]
+> 
+> SSO を強制しない場合、ユーザーは Docker のユーザー名とパスワード、または SSO のどちらでもサインインできます。
+
+SSO を強制適用すると、すべてのユーザーが SSO を使用して Docker にサインインする必要があります。これにより、認証が一元化され、IdP に設定されたポリシーが適用されます。
+
+1. [Admin Console](https://admin.docker.com/) にサインインします。
+
+2. **Choose profile** ページで Organization または企業を選択します。Organization が企業の一部である場合は、企業を選択し、企業レベルで Organization のドメインを設定する必要があります。
+
+3. **Security and access** の **SSO and SCIM** を選択します。
+
+4. **SSO connections** テーブルで **Action** アイコンをクリックし、**Enable enforcement** を選択します。
+    - SSO が強制適用されると、ユーザーはメールアドレスやパスワードの変更、ユーザーアカウントの Organization への変換、Docker Hub での 2FA の設定ができなくなります。
+    - 2FA を使用する場合は、IdP 側で 2FA を有効化する必要があります。
+
+5. 画面の指示に従い、すべてのタスクを完了したことを確認します。
+
+6. **Turn on enforcement** を選択し、完了します。
+
+これにより、すべてのユーザーが Docker へのサインイン時に SSO を使用するようになります。
+
+> [!NOTE]
+> 
+> SSO が強制適用されると、[ユーザーはパスワードを使用して Docker CLI にサインインできなくなります](https://docs.docker.com/security/security-announcements/#deprecation-of-password-logins-on-cli-when-sso-enforced)。CLI で認証を行うには、[パーソナルアクセストークン（PAT）](/docker-security-ja/for-admins/access-tokens) を使用する必要があります。
+
+## 追加リソース
+
+以下の動画では、SSO の強制適用方法を解説しています。
+
+- [Video: Enforce SSO with Okta SAML](https://youtu.be/c56YECO4YP4?feature=shared&t=1072)
+
+- [Video: Enforce SSO with Azure AD (OIDC)](https://youtu.be/bGquA8qR9jU?feature=shared&t=1087)
+
+## 次に何をすべきか？
+
+- [ユーザーをプロビジョニングする](/docker-security-ja/for-admins/provisioning)
+
+- [サインインを強制する](/docker-security-ja/for-admins/enforce-sign-in)
+
+- [アクセストークンを作成する](/docker-security-ja/for-admins/access-tokens)
