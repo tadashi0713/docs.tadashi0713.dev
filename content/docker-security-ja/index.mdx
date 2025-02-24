@@ -6,7 +6,7 @@ asIndexPage: true
 
 import { Cards } from 'nextra/components'
 import { GoShieldLock, GoPasskeyFill } from "react-icons/go"
-import { MdSecurity, MdPhotoLibrary } from "react-icons/md"
+import { MdSecurity, MdPhotoLibrary, MdKey } from "react-icons/md"
 import { RiArchiveStackFill } from "react-icons/ri"
 
 # Docker セキュリティ
@@ -75,6 +75,17 @@ Docker Desktop 使用時に、開発者がアクセスできるレジストリ�
 />
 
 チームや Organization のメンバーのサインインを設定しましょう。
+
+<br />
+
+<Cards.Card
+  icon={<MdKey />}
+  title="SSO"
+  href="/docker-security-ja/for-admins/single-sign-on"
+  arrow
+/>
+
+Company または Organization 向けに SSO を設定する方法を学びます。
 
 ## 開発者向け
 

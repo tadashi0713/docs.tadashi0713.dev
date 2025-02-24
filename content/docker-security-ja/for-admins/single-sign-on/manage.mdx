@@ -1,0 +1,201 @@
+---
+title: シングルサインオン（SSO）の管理
+description: Organization または Company 向けにシングルサインオン（SSO）を管理する方法を学びます。
+---
+
+import { Tabs } from 'nextra/components'
+
+# シングルサインオン（SSO）の管理
+
+## Organization の管理
+
+> [!NOTE]
+> 
+> 複数の Organization を管理するには、[Company アカウント](https://docs.docker.com/admin/company/) が必要です。
+
+### Organization を接続する
+
+1. [Admin Console](https://admin.docker.com) にサインインします。
+
+2. **Choose profile** ページで、Company を選択し、**SSO and SCIM** を選択します。
+
+3. **SSO connections** テーブルで **Action** アイコンを選択し、**Edit connection** をクリックします。
+
+4. **Next** を選択し、接続されている Organization の一覧が表示されるセクションへ移動します。
+
+5. **Organizations** のドロップダウンから、接続に追加する Organization を選択します。
+
+6. **Next** を選択し、デフォルトの Organization およびチームのプロビジョニングを確認または変更します。
+
+7. **Connection Summary** を確認し、**Update connection** を選択します。
+
+### Organization を削除する
+
+1. [Admin Console](https://admin.docker.com) にサインインします。
+
+2. **Choose profile** ページで、Company を選択し、**SSO and SCIM** を選択します。
+
+3. **SSO connections** テーブルで **Action** アイコンを選択し、**Edit connection** をクリックします。
+
+4. **Next** を選択し、接続されている Organization の一覧が表示されるセクションへ移動します。
+
+5. **Organizations** のドロップダウンで **Remove** を選択し、接続を解除します。
+
+6. **Next** を選択し、デフォルトの Organization およびチームのプロビジョニングを確認または変更します。
+
+7. **Connection Summary** を確認し、**Update connection** を選択します。
+
+## ドメインの管理
+
+<Tabs items={['Admin Console', 'Docker Hub']}>
+  <Tabs.Tab>
+    1. [Admin Console](https://admin.docker.com) にサインインします。
+
+    2. **Choose profile** ページで Organization または Company を選択し、**SSO and SCIM** を選択します。
+
+    3. **SSO connections** テーブルで **Action** アイコンを選択し、**Edit connection** をクリックします。
+
+    4. **Next** を選択し、接続されているドメインの一覧が表示されるセクションへ移動します。
+
+    5. **Domain** のドロップダウンで、削除したいドメインの横にある **x** アイコンを選択します。
+
+    6. **Next** を選択し、接続されている Organization を確認または変更します。
+
+    7. **Next** を選択し、デフォルトの Organization およびチームのプロビジョニング設定を確認または変更します。
+
+    8. **Connection Summary** を確認し、**Update connection** を選択します。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    1. [Docker Hub](https://hub.docker.com/) にサインインします。
+
+    2. Organization の SSO 設定ページに移動します。**Organizations** を選択し、自分の Organization を選択した後、**Settings** を選択し、**Security** を開きます。
+
+    3. **SSO connections** テーブルで **Action** アイコンを選択し、**Edit connection** をクリックします。
+
+    4. **Next** を選択し、接続されているドメインの一覧が表示されるセクションへ移動します。
+
+    5. **Domain** のドロップダウンで、削除したいドメインの横にある **x** アイコンを選択します。
+
+    6. **Next** を選択し、接続されている Organization を確認または変更します。
+
+    7. **Next** を選択し、デフォルトの Organization およびチームのプロビジョニング設定を確認または変更します。
+
+    8. **Connection Summary** を確認し、**Update connection** を選択します。
+  </Tabs.Tab>
+</Tabs>
+
+> [!NOTE]
+>
+> ドメインを再追加する場合、新しい TXT レコード値 が割り当てられます。その後、新しい TXT レコード値を使用して、検証手順を完了する必要があります。
+
+## SSO 接続の管理
+
+<Tabs items={['Admin Console', 'Docker Hub']}>
+  <Tabs.Tab>
+    ### 接続を編集する
+
+    1. [Admin Console](https://admin.docker.com) にサインインします。
+
+    2. **Choose profile** ページで Organization または Company を選択し、**SSO and SCIM** を選択します。
+        - Organization が Company の一部である場合、Company を選択し、その Company レベルで SSO を設定する必要があります。
+        - 各 Organization は独自の SSO 設定とドメインを持つことができますが、設定は Company レベルで行う必要があります。
+
+    3. **SSO connections** テーブルで **Action** アイコンを選択します。
+
+    4. **Edit connection** を選択します。
+
+    5. 画面の指示に従い、接続を編集します。
+
+    ### 接続を削除する
+
+    1. [Admin Console](https://admin.docker.com) にサインインします。
+
+    2. **Choose profile** ページで Organization または Company を選択し、**SSO and SCIM** を選択します。
+        - Organization が Company の一部である場合、Company を選択し、その Company レベルで SSO を設定する必要があります。
+        - 各 Organization は独自の SSO 設定とドメインを持つことができますが、設定は Company レベルで行う必要があります。
+
+    3. **SSO connections** テーブルで **Action** アイコンを選択します。
+
+    4. **Edit connection** を選択します。
+
+    5. 画面の指示に従い、接続を削除します。
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ### 接続を編集する
+
+    1. [Docker Hub](https://hub.docker.com/) にサインインします。
+    
+    2. Organization の SSO 設定ページに移動します。**Organizations** を選択し、自分の Organization を選択した後、**Settings** を選択し、**Security** を開きます。
+
+    3. **SSO connections** テーブルで **Action** アイコンを選択します。
+
+    4. **Edit connection** を選択します。
+
+    5. 画面の指示に従い、接続を編集します。
+
+    ### 接続を削除する
+
+    1. [Docker Hub](https://hub.docker.com/) にサインインします。
+    
+    2. Organization の SSO 設定ページに移動します。**Organizations** を選択し、自分の Organization を選択した後、**Settings** を選択し、**Security** を開きます。
+
+    3. **SSO connections** テーブルで **Action** アイコンを選択します。
+
+    4. **Delete connection** を選択します。
+
+    5. 画面の指示に従い、接続を削除します。
+  </Tabs.Tab>
+</Tabs>
+
+### SSO の削除
+
+SSO を無効にすると、接続を削除して設定と追加されたドメインを削除できます。この接続を削除すると、元に戻すことはできません。
+
+SSO 接続が削除されると、Docker ユーザーは Docker ID とパスワード を使用して認証する必要があります。
+
+## ユーザーの管理
+
+> [!IMPORTANT]
+> 
+> SSO では、[無効にしていない限り]()、Just-In-Time（JIT）プロビジョニングがデフォルトで有効になっています。これにより、ユーザーは自動的に Organization にプロビジョニングされます。
+>
+> アプリごとにこの設定を変更できます。自動プロビジョニングを防ぐには、IdP でセキュリティグループを作成し、そのグループ内のユーザーのみが認証・認可されるように SSO アプリを設定してください。詳細な手順については、各 IdP のドキュメントを参照してください：
+>
+> - [Okta](https://help.okta.com/en-us/Content/Topics/Security/policies/configure-app-signon-policies.htm)
+> - [Entra ID (旧 Azure AD)](https://learn.microsoft.com/en-us/azure/active-directory/develop/howto-restrict-your-app-to-a-set-of-users)
+>
+> または、[プロビジョニング概要](/docker-security-ja/for-admins/provisioning) ガイドを参照してください。
+
+### SSO 有効時にゲストユーザーを追加する
+
+IdP を介して検証されていないゲストを追加するには：
+
+1. [Admin Console](https://admin.docker.com) にサインインします。
+
+2. **Choose profile** ページで Organization または Company を選択し、**Members** を選択します。
+
+3. **Invite** を選択します。
+
+4. 画面の指示に従ってユーザーを招待します。
+
+### SSO Company からユーザーを削除する
+
+ユーザーを削除するには：
+
+1. [Admin Console](https://admin.docker.com) にサインインします。
+
+2. **Choose profile** ページで Organization または Company を選択し、**Members** を選択します。
+
+3. ユーザー名の横にあるアクションアイコンを選択し、Organization の場合は **Remove member**、Company の場合は **Remove user** を選択します。
+
+4. 画面の指示に従ってユーザーを削除します。
+
+## プロビジョニングの管理
+
+ユーザーはデフォルトで Just-in-Time（JIT）プロビジョニングによって追加されます。SCIM を有効にすると、JIT を無効にできます。詳細については、[プロビジョニング概要](/docker-security-ja/for-admins/provisioning) ガイドを参照してください。
+
+## 次に何をすべきか？
+
+- [SCIM を設定する](/docker-security-ja/for-admins/provisioning/scim)
+
+- [グループマッピングを有効にする](/docker-security-ja/for-admins/provisioning/group-mapping)
