@@ -16,7 +16,7 @@ export default {
     href: 'https://tadashi0713.dev/contact',
   },
   'docker-workshop-ja': 'Docker ワークショップ',
-  'docker-security-ja': 'Docker セキュリティ(WIP)',
+  'docker-security-ja': 'Docker セキュリティ',
   'scout-ja': 'Docker Scout ドキュメント',
   'build-cloud-ja': 'Docker Build Cloud ドキュメント',
   'testcontainers-cloud-ja': 'Testcontainers Cloud ドキュメント',
