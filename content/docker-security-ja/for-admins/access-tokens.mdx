@@ -1,0 +1,114 @@
+---
+title: Organization access tokens
+description: Organization access tokens を作成および管理し、イメージを安全にプログラムで Push および Pull する方法を学びます。
+---
+
+# Organization access tokens
+
+> [!WARNING]
+>
+> Organization access tokens（OAT）は Docker Desktop での使用を意図しておらず、互換性がありません。
+>
+> また、OAT は以下のサービスとも互換性がありません：
+> - Docker Scout
+>
+> Docker Desktop またはこれらのサービスを使用する場合は、代わりに personal access token を使用する必要があります。
+
+Organization access token（OAT）は、[personal access token（PAT）](/docker-security-ja/for-developers/access-tokens) に似ていますが、OAT は特定のユーザーアカウントではなく Organization に関連付けられるものです。
+
+OAT を使用すると、トークンを特定のユーザーに結びつけることなく、ビジネス上重要なタスクが Docker Hub リポジトリへアクセスできます。
+
+OAT を使用するには、[Docker Team または Business サブスクリプション](https://docs.docker.com/subscription/core-subscription/details/) が必要です。
+
+OAT には以下のメリットがあります:
+
+- OAT の最終使用日時を確認でき、不審なアクティビティがあれば無効化や削除が可能です。
+
+- 各 OAT のアクセス権限を制限でき、万が一 OAT が漏洩しても影響を最小限に抑えられます。
+
+- Company または Organization のオーナー全員が OAT を管理可能。オーナーの一人が組織を離れても、他のオーナーが OAT を管理できます。
+
+- OAT には 個人アカウントとは別の Docker Hub 使用制限 が適用され、個人のリミットに影響を与えません。
+
+Docker では、既存の サービスアカウント を OAT に置き換えることを推奨しています。
+
+OAT は[サービスアカウント](https://docs.docker.com/docker-hub/service-accounts/)と比較して以下の利点があります：
+
+- OAT には直接アクセス権を割り当てられますが、サービスアカウントはチームを介してアクセス管理を行う必要があります。
+
+- OAT は Admin Console で一元管理 できるのに対し、サービスアカウントはそのアカウントにログインしないと管理できません。
+  また、シングルサインオン（SSO）を強制していてサービスアカウントが IdP に存在しない場合、管理のためにログインできない可能性があります。
+
+- サービスアカウントを管理するユーザーが組織を離れた場合、そのアカウントへのアクセスが失われる可能性がありますが、OAT は Company または Organization のオーナーが管理できるため安心 です。
+
+## Organization access token の作成
+
+> [!IMPORTANT]
+> 
+> アクセストークンはパスワードと同様に扱い、安全に保管してください。
+> 例えば、クレデンシャルマネージャーに保存することを推奨します。
+
+Company または Organization のオーナー は、以下の制限内で OAT を作成できます：
+
+- Team サブスクリプション：最大 10 個
+- Business サブスクリプション：最大 100 個
+
+※ 期限切れのトークンもカウントされます。
+
+### OAT 作成手順
+
+1. [Admin Console](https://app.docker.com/admin) にサインインします。
+
+2. OAT を作成する Organization を選択します。
+
+3. **Security and access** の **Access tokens** を開きます。
+
+4. **Generate access token** を選択します。
+
+5. ラベル（トークンの用途を識別できる名称）と オプションの説明 を入力します。
+
+6. トークンの 有効期限 を設定します。
+
+7. トークンの リポジトリアクセス権限 を設定します。
+    
+    アクセス権限は、リポジトリに対する制限を設定するスコープです。
+    例えば、「読み取りおよび書き込み」権限を設定すると、オートメーションパイプラインがイメージをビルドし、リポジトリにプッシュすることはできますが、リポジトリを削除することはできません。
+    以下のオプションから選択できます：
+
+   - **Public repositories (読み取り専用)**
+   - **All repositories**: 読み取り専用 or 読み書き可能
+   - **Select repositories**: 最大 50 個のリポジトリを選択し、それぞれ読み取り専用 or 読み書き可能を設定
+
+8. **Generate token** を選択し、表示されたトークンを 必ずコピーして保存 してください。画面を閉じるとトークンの再取得はできません。
+
+## Organization access token の使用
+
+OAT は Docker CLI にサインインする際に使用できます。
+
+以下のコマンドで Docker CLI にサインインします（`YOUR_ORG` は Organization 名に置き換えてください）:
+
+```console
+$ docker login --username <YOUR_ORG>
+```
+
+パスワードの入力を求められたら、パスワードの代わりに Organization access token を入力してください。
+
+## 既存の OAT の管理 （編集・無効化・削除）
+
+OAT の ラベル変更・説明更新・リポジトリアクセス変更・無効化・削除 が可能です。
+
+### OAT 管理手順
+
+1. [Admin Console](https://app.docker.com/admin) にサインインします。
+
+2. OAT を作成する Organization を選択します。
+
+3. **Security and access** の **Access tokens** を開きます。
+
+4. トークンの行の右端にある アクションメニュー から、以下のいずれかを選択します。
+  
+    - **Deactivate**（無効化）
+    - **Edit**（編集）
+    - **Delete**（削除）（※ 無効化済みのトークンは削除のみ可能）
+
+5. 編集する場合 は、変更を入力後に **Save** を選択します。
