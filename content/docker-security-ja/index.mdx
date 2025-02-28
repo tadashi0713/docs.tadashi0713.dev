@@ -6,7 +6,7 @@ asIndexPage: true
 
 import { Cards } from 'nextra/components'
 import { GoShieldLock, GoPasskeyFill } from "react-icons/go"
-import { MdSecurity, MdPhotoLibrary, MdKey } from "react-icons/md"
+import { MdSecurity, MdPhotoLibrary, MdKey, MdPassword } from "react-icons/md"
 import { RiArchiveStackFill } from "react-icons/ri"
 
 # Docker セキュリティ
@@ -95,6 +95,17 @@ Company または Organization 向けに SSO を設定する方法を学びま�
 ## 開発者向け
 
 ローカル環境、インフラストラクチャ、ネットワークを保護しつつ、生産性を損なわない方法を確認しましょう。
+
+<br />
+
+<Cards.Card
+  icon={<MdPassword />}
+  title="アクセストークンの管理"
+  href="/docker-security-ja/for-developers/access-tokens"
+  arrow
+/>
+
+パスワードの代替としてパーソナルアクセストークンを作成する。
 
 ## 追加リソース
 
