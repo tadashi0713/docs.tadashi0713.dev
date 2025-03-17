@@ -40,5 +40,5 @@
     "sitemapper": "3.2.20",
     "typescript": "5.8.2"
   },
-  "packageManager": "pnpm@10.6.1"
+  "packageManager": "pnpm@10.6.4"
 }
