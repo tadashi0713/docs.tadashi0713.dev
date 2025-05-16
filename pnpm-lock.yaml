@@ -55,8 +55,8 @@ importers:
         specifier: 1.3.0
         version: 1.3.0
       sitemapper:
-        specifier: 3.2.20
-        version: 3.2.20
+        specifier: 3.2.24
+        version: 3.2.24
       typescript:
         specifier: 5.8.3
         version: 5.8.3
@@ -1995,8 +1995,8 @@ packages:
   simple-swizzle@0.2.2:
     resolution: {integrity: sha512-JA//kQgZtbuY83m+xT+tXJkmJncGMTFT+C+g2h2R9uxkYIrE2yy9sgmcLhCnw57/WSD+Eh3J97FPEDFnbXnDUg==}
 
-  sitemapper@3.2.20:
-    resolution: {integrity: sha512-jLW/zNoOFTFNdPmxdtq4TsnVz+IH237u5UJbWq6Cd9R5z8ba0Lu8oUCl4Zu4hGXNFqXhV91LX/dQEXAJQGoEvA==}
+  sitemapper@3.2.24:
+    resolution: {integrity: sha512-AWOmGaRyShZAoAPr4StgX0bgk15+J04J165qP6z9CpZ+8EUvmOpV0F0Gol28WbQW2prNALWFRf3X04q6lUr4mA==}
     engines: {node: '>= 10.0.0'}
 
   slash@5.1.0:
@@ -4736,7 +4736,7 @@ snapshots:
     dependencies:
       is-arrayish: 0.3.2
 
-  sitemapper@3.2.20:
+  sitemapper@3.2.24:
     dependencies:
       fast-xml-parser: 4.5.1
       got: 11.8.6
