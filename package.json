@@ -31,7 +31,7 @@
     "sharp": "0.34.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "@biomejs/biome": "2.1.1",
     "@types/node": "22.16.2",
     "lefthook": "1.12.0",
     "linkinator": "6.1.4",
