@@ -40,7 +40,7 @@
     "sitemapper": "4.0.2",
     "typescript": "5.8.3"
   },
-  "packageManager": "pnpm@10.12.4",
+  "packageManager": "pnpm@10.13.1",
   "pnpm": {
     "overrides": {
       "estree-util-value-to-estree@<3.3.3": ">=3.3.3",
