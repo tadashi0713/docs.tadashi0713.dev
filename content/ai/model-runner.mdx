@@ -1,0 +1,421 @@
+---
+title: Docker Model Runner
+description: Docker Model Runner の使い方を学び、AI モデルを管理・実行しましょう
+---
+
+import { Tabs } from 'nextra/components'
+
+# Docker Model Runner
+
+Docker Model Runner は、Docker を使って AI モデルを簡単に管理・実行・デプロイできるようにする機能です。開発者向けに設計されており、大規模言語モデル（LLM）やその他の AI モデルを Docker Hub や OCI 準拠のレジストリから直接 Pull・実行・提供するプロセスを効率化します。
+
+Docker Desktop や Docker Engine とシームレスに統合されており、OpenAI 互換 API を通じてモデルを提供したり、GGUF ファイルを OCI アーティファクトとしてパッケージ化して公開したり、CLI や GUI からモデルを操作できます。
+
+生成 AI アプリの開発、機械学習ワークフローの実験、開発ライフサイクルへの AI 統合など、Docker Model Runner を使えば、AI モデルをローカルで一貫性・安全性・効率性をもって利用できます。
+
+## 主な特徴
+
+- [Docker Hub からモデルを Pull・Push](https://hub.docker.com/u/ai)
+- OpenAI 互換 API でモデルを提供し、既存アプリに統合可能
+- GGUF ファイルを OCI アーティファクトとしてパッケージ・あらゆるコンテナレジストリに公開
+- CLI や Docker Desktop GUI からモデルを実行・対話
+- ローカルモデルの管理とログ表示
+
+## 対応環境
+
+Docker Model Runner は以下のプラットフォームに対応しています:
+
+<Tabs items={['Windows', 'MacOS', 'Linux']}>
+  <Tabs.Tab>
+    Windows(amd64):
+    -  NVIDIA GPU 
+    -  NVIDIA ドライバー 576.57以降
+
+    Windows(arm64):
+    - OpenCL for Adreno
+    - Qualcomm Adreno GPU (6xx シリーズ以降)
+
+    > [!NOTE]
+    >
+    > llama.cpp の一部機能は 6xx シリーズで完全にサポートされない場合があります。
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+    - Apple Silicon
+  </Tabs.Tab>
+  <Tabs.Tab>
+    Docker Engine のみ対応:
+    - Linux CPU & Linux NVIDIA
+    - NVIDIA ドライバー 575.57.08 以降
+  </Tabs.Tab>
+</Tabs>
+
+## 動作の仕組み
+
+モデルは初回使用時に Docker Hub から Pull され、ローカルに保存されます。リクエストがあったときにのみメモリへ読み込まれ、使用されていないときはリソースを最適化するためにアンロードされます。モデルは大容量になることがあるため、初回の Pull には時間がかかる場合がありますが、一度キャッシュされれば以降は高速にアクセスできます。[OpenAI 互換 API]() を使ってモデルと対話できます。
+
+> [!TIP]
+>
+> Testcontainers や Docker Compose を使っていますか？
+> [Java 向け Testcontainers](https://java.testcontainers.org/modules/docker_model_runner/)、[Go 向け Testcontainers](https://golang.testcontainers.org/modules/dockermodelrunner/)、[Docker Compose](/ai/compose/models-and-compose) が Docker Model Runner に対応しました。
+
+## Docker Model Runner を有効にする
+
+### Docker Desktop で DMR を有効にする
+
+1. Docker Desktop の設定画面を開き、**Beta features** タブに移動します。
+
+2. **Enable Docker Model Runner** の設定にチェックを入れます。
+
+3. 対応する NVIDIA GPU を搭載した Windows 環境では、**Enable GPU-backed inference** のオプションも表示され、チェックできるようになります。
+
+4. （任意）TCP サポートを有効にしたい場合は、**Enable host-side TCP support** を選択します。
+
+    1. **Port** フィールドに任意のポート番号を入力します。
+    2. Model Runner をローカルのフロントエンド Web アプリから利用する場合は、**CORS Allows Origins** にそのアプリの URL（例：`http://localhost:3131`）を指定します。
+
+これで `docker model` コマンドを CLI で使用できるようになり、Docker Desktop の **Models** タブからローカルモデルを表示・操作できます。
+
+> [!IMPORTANT]
+>
+> Docker Desktop バージョン 4.41 以前では、この設定は **Features in development** ページ内の **Experimental features** タブにありました。
+
+### Docker Engine で DMR を有効にする
+
+1. [Docker Engine](https://docs.docker.com/engine/install/) がインストールされていることを確認してください。
+
+2. DMR はパッケージとして提供されています。以下のコマンドでインストールできます：
+
+<Tabs items={['Ubuntu/Debian', 'RPM-base distributions']}>
+  <Tabs.Tab>
+    ```bash
+    $ sudo apt-get update
+    $ sudo apt-get install docker-model-plugin
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    $ sudo dnf update
+    $ sudo dnf install docker-model-plugin
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+3. インストールをテストします:
+
+    ```bash
+    $ docker model version
+    $ docker model run ai/smollm2
+    ```
+
+4. （任意）TCP サポートを有効にするには、`DMR_RUNNER_PORT` 環境変数で使用するポート番号を指定します。
+
+5. （任意）TCP サポートを有効にした場合は、`DMR_ORIGINS` 環境変数で CORS の許可オリジンを設定できます。指定可能な値は以下のとおりです：
+
+    - `*`: すべてのオリジンを許可
+
+    - カンマ区切りで複数のオリジンを指定
+
+    - 未設定の場合は、すべてのオリジンが拒否されます。
+
+## モデルの Pull
+
+モデルはローカルにキャッシュされます。
+
+> [!NOTE]
+>
+> Docker CLI を使う場合、[HuggingFace](https://huggingface.co/) から直接モデルを Pull することも可能です。
+
+<Tabs items={['Docker Desktop から', 'Docker CLI から']}>
+  <Tabs.Tab>
+    1. **Models** タブを開き、**Docker Hub** タブを選択します。
+    2. 使用したいモデルを探して、**Pull** をクリックします。
+
+    ![Docker Model Runner カタログ](/ai/dmr-catalog.png)
+  </Tabs.Tab>
+  <Tabs.Tab>
+   [`docker model pull`](https://docs.docker.com/reference/cli/docker/model/pull/) コマンドを使用します。例：
+
+   ```bash
+   # Docker Hub から Pull
+   docker model pull ai/smollm2:360M-Q4_K_M
+   ```
+
+   ```bash
+   # Hugging Face から Pull
+   docker model pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF
+   ```
+  </Tabs.Tab>
+</Tabs>
+
+## モデルの実行（Run）
+
+<Tabs items={['Docker Desktop から', 'Docker CLI から']}>
+  <Tabs.Tab>
+    1. **Models** タブを開き、**Local** タブを選択します。
+    2. 実行したいモデルの再生ボタン（▶）をクリックします。インタラクティブなチャット画面が表示されます。
+
+    ![Docker Model Runner 実行](/ai/dmr-run.png)
+  </Tabs.Tab>
+  <Tabs.Tab>
+    [`docker model run`](https://docs.docker.com/reference/cli/docker/model/run/) コマンドを使用します。
+  </Tabs.Tab>
+</Tabs>
+
+## トラブルシューティング
+
+問題が発生した場合は、ログを表示して原因を確認できます：
+
+<Tabs items={['Docker Desktop から', 'Docker CLI から']}>
+  <Tabs.Tab>
+    **Models** タブを開き、**Logs** タブを選択します。
+
+    ![Docker Model Runner ログ](/ai/dmr-logs.png)
+  </Tabs.Tab>
+  <Tabs.Tab>
+    [`docker model logs`](https://docs.docker.com/reference/cli/docker/model/logs/) コマンドを使用します。
+  </Tabs.Tab>
+</Tabs>
+
+## モデルの公開（Publish）
+
+> [!NOTE]
+>
+> この機能は Docker Hub に限らず、OCI アーティファクトをサポートするすべてのコンテナレジストリで利用可能です。
+
+既存のモデルに新しい名前を付けて、別の namespace やリポジトリで公開できます：
+
+```bash
+# Pull 済みのモデルに新しい名前をタグ付け
+$ docker model tag ai/smollm2 myorg/smollm2
+
+# Docker Hub に Push
+$ docker model push myorg/smollm2
+```
+
+詳細は [`docker model tag`](https://docs.docker.com/reference/cli/docker/model/tag/) および [`docker model push`](https://docs.docker.com/reference/cli/docker/model/push/) のコマンドリファレンスを参照してください。
+
+GGUF 形式のモデルファイルを直接 OCI アーティファクトとしてパッケージ化し、Docker Hub に公開することもできます：
+
+```bash
+# 例：HuggingFace から GGUF 形式のモデルファイルをダウンロード
+$ curl -L -o model.gguf https://huggingface.co/TheBloke/Mistral-7B-v0.1-GGUF/resolve/main/mistral-7b-v0.1.Q4_K_M.gguf
+
+# OCI アーティファクトとしてパッケージ化し、Docker Hub に Push
+$ docker model package --gguf "$(pwd)/model.gguf" --push myorg/mistral-7b-v0.1:Q4_K_M
+```
+
+詳細は [`docker model package`](https://docs.docker.com/reference/cli/docker/model/package/) のコマンドリファレンスをご覧ください。
+
+## 例：Docker Model Runner をソフトウェア開発ライフサイクルに統合する
+
+Docker Model Runner を活用して、生成 AI アプリケーションの開発をすぐに始められます。
+
+すでに用意された GenAI アプリケーションを試したい場合は、以下の手順に従ってください。
+
+1. サンプルアプリをセットアップします。以下のリポジトリをクローンして実行します：
+
+    ```bash
+    $ git clone https://github.com/docker/hello-genai.git
+    ```
+
+2. ターミナルで `hello-genai` ディレクトリに移動します。
+
+3. `run.sh` を実行すると、選択されたモデルが Pull され、アプリケーションが起動します：
+
+4. ブラウザでアプリを開き、リポジトリの [README](https://github.com/docker/hello-genai) に記載されたアドレスにアクセスします。
+
+ブラウザには GenAI アプリのインターフェースが表示され、プロンプトを入力して試すことができます。
+
+ローカルモデルを使って動作する、自分だけの GenAI アプリと対話してみましょう。高速なレスポンスに注目してください — すべてが Docker 上でローカルに実行されています。
+
+## よくある質問（FAQs）
+
+### 利用可能なモデルは？
+
+すべての利用可能なモデルは、[Docker Hub の `ai` public namespace](https://hub.docker.com/u/ai) にホストされています。
+
+### 使用できる CLI コマンドは？
+
+[CLI リファレンスドキュメント](https://docs.docker.com/reference/cli/docker/model/)をご覧ください。
+
+### 利用できる API エンドポイントは？
+
+機能を有効にすると、以下のベース URL に新しい API エンドポイントが提供されます。
+
+<Tabs items={['Docker Desktop', 'Docker Engine']}>
+  <Tabs.Tab>
+    - コンテナからのアクセス：`http://model-runner.docker.internal/`
+    - ホストプロセスからのアクセス：`http://localhost:12434/`（デフォルトポート 12434 で TCP アクセスが有効な場合）
+  </Tabs.Tab>
+  <Tabs.Tab>
+    - コンテナからのアクセス：`http://172.17.0.1:12434/`（172.17.0.1 はホストのゲートウェイアドレス）
+    - ホストプロセスからのアクセス：`http://localhost:12434/`
+
+    > [!NOTE]
+    >
+    > Compose プロジェクト内のコンテナでは 172.17.0.1 インターフェースがデフォルトで利用できない場合があります。
+    >
+    > その場合は、Compose のサービス定義に以下を追加してください：
+    > ```yaml
+    > extra_hosts:
+    >   - "model-runner.docker.internal:host-gateway"
+    > ```
+    > これで `http://model-runner.docker.internal:12434/` から API にアクセスできるようになります。
+  </Tabs.Tab>
+</Tabs>
+
+Docker Model 管理用エンドポイント:
+
+```text
+POST /models/create
+GET /models
+GET /models/{namespace}/{name}
+DELETE /models/{namespace}/{name}
+```
+
+OpenAI 互換エンドポイント:
+
+```text
+GET /engines/llama.cpp/v1/models
+GET /engines/llama.cpp/v1/models/{namespace}/{name}
+POST /engines/llama.cpp/v1/chat/completions
+POST /engines/llama.cpp/v1/completions
+POST /engines/llama.cpp/v1/embeddings
+```
+
+これらのエンドポイントを Unix ソケット（`/var/run/docker.sock`）経由で呼び出す場合は、パスの前に `/exp/vDD4.40` を付けてください。
+
+> [!NOTE]
+>
+> llama.cpp はパスから省略可能です。例：`POST /engines/v1/chat/completions`
+
+### OpenAI API を通じた対話方法
+
+#### コンテナ内からのアクセス
+
+別のコンテナ内から `chat/completions` の OpenAI エンドポイントを `curl` を使って呼び出すには、以下のようにします：
+
+```bash
+#!/bin/sh
+
+curl http://model-runner.docker.internal/engines/llama.cpp/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+        "model": "ai/smollm2",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": "Please write 500 words about the fall of Rome."
+            }
+        ]
+    }'
+```
+
+このリクエストでは、`ai/smollm2` モデルを指定し、プロンプトとして「ローマ帝国の滅亡について 500 語で説明してください」と尋ねています。`model-runner.docker.internal` は Docker Desktop 環境でコンテナからホストにリクエストを送るための内部 DNS 名です。
+
+#### ホスト（TCP）からのアクセス
+
+ホストマシンから TCP を使って `chat/completions` の OpenAI エンドポイントを呼び出すには：
+
+1. Docker Desktop の GUI または [Docker Desktop CLI](https://docs.docker.com/desktop/reference/cli/) を使って、ホスト側の TCP サポートを有効にします。
+
+    例：
+
+    ```bash
+    $ docker desktop enable model-runner --tcp <port>
+    ```
+
+    Windows で使用している場合は、**GPU-backed inference** も有効にしてください。手順については[こちら](#docker-desktop-で-dmr-を有効にする)を参照。
+
+2. 正しいポート番号と `localhost` を使用して、以下のようにリクエストを送信します。
+
+```bash
+#!/bin/sh
+
+curl http://localhost:12434/engines/llama.cpp/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+        "model": "ai/smollm2",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": "Please write 500 words about the fall of Rome."
+            }
+        ]
+    }'
+```
+
+#### ホスト（Unix ソケット）からのアクセス
+
+Docker ソケットを経由して `chat/completions` エンドポイントにアクセスするには、以下のように `curl` を使用します：
+
+```bash
+#!/bin/sh
+
+curl --unix-socket $HOME/.docker/run/docker.sock \
+    localhost/exp/vDD4.40/engines/llama.cpp/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+        "model": "ai/smollm2",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": "Please write 500 words about the fall of Rome."
+            }
+        ]
+    }'
+```
+
+この方法では TCP ポートを使用せず、Docker の Unix ソケットを通じて直接リクエストが送られます。`/exp/vDD4.40` は Unix ソケット向けにエンドポイントを拡張するパスプレフィックスです。
+
+## 既知の問題
+
+### `docker model` が認識されない
+
+Docker Model Runner のコマンドを実行した際に、以下のようなエラーが表示される場合：
+
+```bash
+docker: 'model' is not a docker command
+```
+
+これは、Docker がプラグインを検出できないことを意味します。CLI プラグインの所定のディレクトリに存在しないことが原因です。
+
+対処方法： シンボリックリンクを作成して、Docker がプラグインを認識できるようにします：
+
+```bash
+$ ln -s /Applications/Docker.app/Contents/Resources/cli-plugins/docker-model ~/.docker/cli-plugins/docker-model
+```
+
+リンクを作成したら、再度コマンドを実行してください。
+
+### 過剰なサイズのモデル実行に対する保護機能がない
+
+現時点では、Docker Model Runner において、ホストマシンのリソース（メモリや GPU メモリなど）を超えるモデルの実行を防ぐ保護機能はありません。
+そのため、過剰なサイズのモデルを起動しようとすると、システムの著しい遅延や一時的なフリーズが発生する可能性があります。
+
+この問題は、十分な GPU メモリや RAM を持たない環境で LLM を実行しようとする際に特に発生しやすいです。
+
+### Model CLI での digest 指定の一貫性がない
+
+現在、Docker Model CLI ではイメージの digest を使用してモデルを指定するための一貫したサポートが提供されていません。
+
+一時的な回避策として、digest ではなくモデル名で参照してください。
+
+## フィードバックの共有
+
+Docker Model Runner をお試しいただきありがとうございます。
+
+ご意見や不具合の報告は、**Enable Docker Model Runner** 設定の横にある **Give feedback** リンクからお送りください。
