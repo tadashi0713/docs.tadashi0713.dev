@@ -1,0 +1,69 @@
+---
+title: Docker MCP Catalog and Toolkit
+description: Docker Hub 上の Docker の MCP Catalog について学びましょう。
+asIndexPage: true
+---
+
+import { Cards } from 'nextra/components'
+import { MdHub } from 'react-icons/md'
+import { FaTools } from 'react-icons/fa'
+
+# Docker MCP Catalog and Toolkit
+
+Model Context Protocol（MCP）は、AI エージェントを単なる受け身の応答者から、アクション重視のシステムへと変革する現代的な標準です。ツールの記述方法、発見方法、呼び出し方法を標準化することで、MCP はエージェントが多様な環境において API への安全なクエリ、データアクセス、サービスの実行を可能にします。
+
+AI エージェントが本番運用に移行する中で、MCP は相互運用性・信頼性・セキュリティといった一般的な統合課題を解決します。エージェントとツールの間に一貫性のある、疎結合かつスケーラブルなインターフェースを提供することで、MCP はコンテナがソフトウェアのデプロイ方法を再定義したように、AI システムの外界との連携方法を再構築しつつあります。
+
+> **例**
+> 
+> 端的に言えば、MCP サーバとは LLM（大規模言語モデル）が外部システムとやり取りするための手段です。
+>
+> たとえば、「会議を作成して」とモデルに指示した場合、それを実現するにはカレンダーアプリと連携する必要があります。
+> カレンダーアプリに対応した MCP サーバは、次のような基本的な処理（アトミックアクション）を行うツールを提供します：
+> 
+> - 会議の詳細を取得する
+> 
+> - 新しい会議を作成する
+
+## Docker MCP Catalog と Toolkit とは？
+
+Docker MCP Catalog and Toolkit は、MCP ツールを安全に構築・共有・実行するための包括的なソリューションです。以下の主要領域において、開発者体験を大幅にシンプルにします：
+
+- ディスカバリ（Discovery）: 検証済みかつバージョン管理されたツールを集約した中央カタログ
+
+- 認証情報の管理（Credential Management）: OAuth ベースでデフォルトでセキュア
+
+- 実行環境（Execution）: ツールは分離されたコンテナ環境内で実行
+
+- 移植性（Portability）: Claude、Cursor、VS Code など、さまざまな環境でコード変更なしに使用可能
+
+Docker Hub と MCP Toolkit を使えば:
+
+- 数秒で MCP サーバを起動可能
+
+- CLI または GUI からツールを追加
+
+- Docker の Pull ベースの信頼性の高いインフラにより、安全にツールを配信可能
+
+<br />
+
+<Cards.Card
+  icon={<MdHub />}
+  title="MCP Catalog"
+  href="/ai/mcp-catalog-and-toolkit/catalog/"
+  arrow
+/>
+
+MCP Catalog の利点や活用方法、そして貢献の仕方について学びましょう。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaTools />}
+  title="MCP Toolkit"
+  href="/ai/mcp-catalog-and-toolkit/toolkit/"
+  arrow
+/>
+
+MCP サーバおよびクライアントを管理するための MCP Toolkit について学びましょう。
