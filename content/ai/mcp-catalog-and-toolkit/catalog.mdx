@@ -7,3 +7,63 @@ description: MCP Catalog の利点、活用方法、そして貢献の仕方に�
 
 Docker MCP Catalog は、MCP 対応ツールを発見・共有・実行するための、信頼性の高い中央レジストリです。Docker Hub にシームレスに統合されており、検証済み・バージョン管理された MCP サーバを Docker イメージとして提供します。また、このカタログは Docker Desktop からも利用可能です。
 
+このカタログは、MCP サーバに共通する以下の課題を解決します：
+
+- 環境の競合：ツールには特定のランタイムが必要なことが多く、既存の環境と衝突する可能性があります。
+
+- 分離性の欠如：従来のセットアップでは、ホストシステムが外部にさらされるリスクがあります。
+
+- セットアップの複雑さ：手動でのインストールや構成が必要なため、導入が遅れがちです。
+
+- プラットフォーム間の不整合：ツールが異なる OS 上で予期しない動作をすることがあります。
+
+Docker を使えば、各 MCP サーバは自己完結型のコンテナとして実行されるため、ポータブルで、分離されており、一貫性のある動作が可能です。
+依存関係や互換性を気にすることなく、Docker CLI や Docker Desktop を使ってツールを即座に起動できます。
+
+## 主な特徴
+
+- 100 以上の検証済み MCP サーバを一元的に提供
+
+- パブリッシャーの検証とバージョン管理されたリリース
+
+- Docker のインフラを活用した Pull ベースの配信方式
+
+- New Relic、Stripe、Grafana などのパートナーによるツール提供
+
+## 仕組み
+
+MCP Catalog に登録されている各ツールは、メタデータ付きの Docker イメージとしてパッケージ化されています。
+
+- `mcp/` 名前空間の下で Docker Hub 上からツールを検索
+
+-  MCP Toolkit を使って、ツールを好みのエージェントと簡単に接続
+
+- Docker Desktop または CLI を使ってツールを Pull および実行
+
+各カタログエントリには以下の情報が表示されます:
+
+- ツールの説明およびメタデータ
+
+- バージョン履歴
+
+- MCP サーバによって提供されるツール一覧
+
+- エージェントとの統合に関する構成例
+
+## MCP Catalog の MCP サーバを利用する
+
+MCP Catalog に登録されている MCP サーバを利用するには、[MCP Toolkit](/ai/mcp-catalog-and-toolkit/toolkit/) の手順を参照してください。
+
+## MCP サーバをカタログに貢献する
+
+MCP サーバのレジストリは https://github.com/docker/mcp-registry で公開されています。
+
+MCP サーバを提出するには、[貢献ガイドライン](https://github.com/docker/mcp-registry/blob/main/CONTRIBUTING.md) に従ってください。
+
+Pull request がレビューされ承認されると、24 時間以内に以下の場所であなたの MCP サーバが公開されます：
+
+- Docker Desktop の [MCP Toolkit 機能](/ai/mcp-catalog-and-toolkit/toolkit/)
+
+- [Docker MCP Catalog](https://hub.docker.com/mcp)
+
+- [Docker Hub](https://hub.docker.com/u/mcp) の `mcp` 名前空間（Docker によってビルドされた MCP サーバ向け）
