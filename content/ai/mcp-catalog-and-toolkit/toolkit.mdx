@@ -1,0 +1,224 @@
+---
+title: MCP Toolkit
+description: MCP Toolkit を使用して、MCP サーバおよび MCP クライアントをセットアップしましょう。
+---
+
+import { Tabs } from 'nextra/components'
+
+# MCP Toolkit
+
+Docker MCP Toolkit は、コンテナ化された MCP サーバのセットアップ・管理・実行、そして AI エージェントとの接続をシームレスに実現するゲートウェイです。セキュアなデフォルト設定、ワンクリックセットアップ、LLM ベースのクライアントエコシステムへの対応により、ツール利用に伴う手間を取り除きます。
+MCP ツールの発見からローカル実行までを最短で実現するためのツールキットです。
+
+## 主な特徴
+
+- LLM 横断の互換性：Claude Desktop、Cursor、Continue.dev、[Gordon](/ai/gordon/) などと即時連携可能
+
+- ツールの統合的な発見体験：Docker Desktop 上から Docker MCP Catalog にある MCP サーバを閲覧・起動可能
+
+- 手動セットアップ不要：依存関係の管理、ランタイム構成、サーバのセットアップは一切不要
+
+- MCP サーバの集約器として機能しつつ、クライアントがインストール済みの MCP サーバにアクセスするためのゲートウェイとしても機能
+
+## MCP Toolkit の仕組み
+
+MCP は、次の 2 つの基本的な概念を導入しています：
+
+- MCP クライアント: 一般的に LLM ベースのアプリケーション（例：Claude Desktop アプリ）に組み込まれており、リソースやアクションの実行を要求します。
+
+- MCP サーバ: クライアントによって起動され、リクエストされた処理を、必要なツールや言語、プロセスを使って実行します。
+
+Docker は、MCP サーバを含むアプリケーションの開発・パッケージ化・配信を標準化します。
+
+MCP サーバをコンテナとしてパッケージ化することで、Docker は環境差異や分離性に関する問題を排除します。ユーザーは依存関係やランタイムを管理せずに、コンテナをそのまま実行できます。
+
+MCP サーバの設計によっては、サーバとツールが同一のコンテナ内で動作する場合と、ツールごとに専用のコンテナを使用する場合があります。
+
+<Tabs items={['単一コンテナ構成', '分離コンテナ構成']}>
+  <Tabs.Tab>
+    ![単一コンテナ構成](/ai/mcp_servers.png)
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ![分離コンテナ構成](/ai/mcp_servers_2.png)
+  </Tabs.Tab>
+</Tabs>
+
+## セキュリティ
+
+Docker MCP Toolkit は、受動的対策と能動的対策の両面から安全性を確保し、攻撃対象領域（アタックサーフェス）の削減と実行時の安全性を実現します。
+
+### 受動的セキュリティ（Passive security）
+
+- イメージ署名と証明：`mcp/` 名前空間にあるすべての MCP サーバイメージは [カタログ](/ai/mcp-catalog-and-toolkit/catalog/) 上で Docker によってビルドされ、デジタル署名によって出所と完全性が検証されます。さらに各イメージには SBOM（Software Bill of Materials） が含まれており、完全な透明性が確保されています。
+
+### 能動的セキュリティ（Active security）
+
+実行時には、以下のようなリソース制限およびアクセス制御によってセキュリティが強化されます：
+
+- CPU 割り当て: MCP ツールは専用のコンテナ内で動作し、最大 1 CPU に制限されます。これにより、リソースの不正使用による影響を最小限に抑えます。
+
+- メモリ割り当て: MCP ツール用コンテナは 最大 2GB のメモリに制限されます。
+
+- ファイルシステムへのアクセス制限: デフォルトでは MCP サーバにはホストファイルシステムへのアクセス権がありません。ファイルマウントを許可する場合は、ユーザーが明示的に選択する必要があります。
+
+- ツールリクエストの検査: シークレットなどの機密情報を含むリクエストの送受信はブロックされます。
+
+## Docker MCP Toolkit を有効にする
+
+1. Docker Desktop の設定を開き、**Beta features** タブを選択します。
+
+2. **Enable Docker MCP Toolkit** を選択します。
+
+3. **Apply** をクリックして設定を反映します
+
+>[!NOTE]
+>
+> この機能はもともと「MCP Toolkit 拡張機能」として提供されていました。
+> この拡張機能は現在非推奨（deprecated）となっており、アンインストールすることが推奨されます。
+
+## MCP サーバをインストールする
+
+MCP サーバをインストールするには、以下の手順を実行します：
+
+1. Docker Desktop を開き、**MCP Toolkit** を選択し、**Catalog** タブを開きます。サーバを選択すると、以下の情報が表示されます：
+
+    - ツール名とその説明
+
+    - パートナー／パブリッシャー情報
+
+    - サーバが提供する呼び出し可能なツールの一覧
+
+2. インストールしたい MCP サーバを見つけたら、**プラスアイコン（+）** をクリックします。
+
+3. （任意）一部のサーバでは追加設定が必要です。**Config** タブを選択し、MCP サーバ提供元のリポジトリに記載されている手順に従って設定してください。
+
+> [!TIP]
+>
+> デフォルトで Gordon [クライアント](#mcp-クライアントをインストールする) が有効になっており、MCP サーバと自動的に連携できるようになっています。
+
+MCP サーバカタログの詳細については、[Catalog](/ai/mcp-catalog-and-toolkit/catalog/)  を参照してください。
+
+### 例：**GitHub Official** MCP サーバを使う
+
+たとえば、Ask Gordon に GitHub アカウントと連携させたい場合は、以下の手順で設定できます:
+
+1. **MCP Toolkit** メニューから **Catalog** タブを開き、**GitHub Official** サーバを見つけて追加します。
+
+2. 追加後、サーバの **Config** タブで [OAuth を使って認証]() を行います。
+
+3. **Clients** タブで、Gordon が接続されていることを確認します。
+
+4. これで **Ask Gordon** メニューから、GitHub アカウントに関するリクエストを送信できるようになります。
+    
+    GitHub Official サーバが提供するツールに応じて操作が実行されます。以下のようにテストしてみてください:
+
+    ```text
+    What's my GitHub handle?
+    ```
+
+    Gordon の回答内で表示されるプロンプトで **Always allow** を選択すると、以降の GitHub 操作も自動的に許可されます。
+
+## MCP クライアントをインストールする
+
+MCP サーバをインストールした後は、MCP Toolkit にクライアントを追加できます。これらのクライアントはインストール済みの MCP サーバとやり取りすることができ、MCP Toolkit はゲートウェイとして機能します。
+
+クライアントのインストール手順：
+
+1. Docker Desktop を開き、**MCP Toolkit** を選択して **Clients** タブを開きます。
+
+2. 使用したいクライアントを見つけて、**Connect** をクリックします。
+
+これでクライアントが MCP Toolkit と接続され、インストール済みの MCP サーバと対話できるようになります。
+
+### 例: Claude Desktop をクライアントとして使う
+
+たとえば Claude Desktop をインストール済みで、GitHub MCP サーバとPuppeteer MCP サーバを使いたいとします。この場合、Claude Desktop にサーバを直接インストールする必要はありません。
+
+代わりに、これら 2 つの MCP サーバを MCP Toolkit にインストールし、Claude Desktop をクライアントとして追加するだけで利用できます。
+
+1. **MCP Toolkit** メニューから **Catalog** タブを開き、**Puppeteer** サーバを見つけて追加します。
+
+2. 同様に、**GitHub Official** サーバも追加します。
+
+3. **Clients** タブに移動し、**Claude Desktop** の横にある **Connect** をクリックします。Claude Desktop を実行中の場合は再起動してください。これで Claude Desktop から MCP Toolkit 内のすべてのサーバへアクセスできるようになります。
+
+5. Claude Desktop 内で以下のプロンプトを入力し、Sonnet 3.5 モデルを使ってテストします：
+
+    ```text
+    Take a screenshot of docs.docker.com and then invert the colors
+    ```
+
+### 例: Visual Studio Code をクライアントとして使用する
+
+Visual Studio Code（VS Code）を使えば、インストール済みのすべての MCP サーバと連携できます。
+
+1. MCP Toolkit を有効にするには：
+
+    <Tabs items={['グローバルに有効化する場合', 'プロジェクト単位で有効化する場合']}>
+        <Tabs.Tab>
+            1. VS Code の settings.json（ユーザー設定）に以下を追加します：
+
+            ```json
+            "mcp": {
+                "servers": {
+                    "MCP_DOCKER": {
+                    "command": "docker",
+                    "args": [
+                        "mcp",
+                        "gateway",
+                        "run"
+                    ],
+                    "type": "stdio"
+                    }
+                }
+            }
+            ```
+        </Tabs.Tab>
+        <Tabs.Tab>
+            1. ターミナルで、対象プロジェクトのディレクトリに移動します。
+            2. 以下のコマンドを実行します：
+
+                ```bash
+                docker mcp client connect vscode
+                ```
+
+                > [!NOTE]
+                >
+                > このコマンドは `.vscode/mcp.json` を作成します。
+                > このファイルは `.gitignore` に追加してバージョン管理から除外することを推奨します。
+        </Tabs.Tab>
+    </Tabs>
+
+<br />
+
+2. Visual Studio Code 内でチャットを新規作成し、**Agent** モード に切り替えます:
+
+    ![Visual Studio Code の Agent モード](/ai/copilot-mode.png)
+
+3. 使用可能な MCP ツールの一覧も確認できます:
+
+    ![Visual Studio Code の MCP ツール一覧](/ai/tools.png)
+
+Agent モードに関する詳細は、[Visual Studio Code の公式ドキュメント](https://code.visualstudio.com/docs/copilot/chat/mcp-servers#_use-mcp-tools-in-agent-mode) を参照してください。
+
+## OAuth による認証
+
+MCP Toolkit を OAuth 統合を通じて開発ワークフローに接続することができます。現在のところ、MCP Toolkit が対応しているのは GitHub OAuth のみです。
+
+1. https://github.com/ にログインしていることを確認します。
+
+2. Docker Desktop を開き、**MCP Toolkit** > **OAuth** タブを選択します。
+
+3. GitHub の項目で **Authorize** をクリックします。ブラウザで GitHub の認可ページが開きます。
+
+4. GitHub の認可ページで **Authorize Docker** をクリックします。認証が成功すると、自動的に Docker Desktop にリダイレクトされます。
+
+5. GitHub Official MCP サーバをインストールします。手順は [MCP サーバをインストールする](/ai/mcp-catalog-and-toolkit/toolkit/#mcp-サーバをインストールする) を参照してください。
+
+これで MCP Toolkit があなたの GitHub アカウントと連携されました。アクセスを取り消したい場合は、**OAuth** タブで **Revoke** をクリックしてください。
+
+使用例は、[GitHub Official MCP サーバを使う](#例github-official-mcp-サーバを使う) を参照してください。
+
+## 関連ページ
+
+- [オープンソース版 MCP Gateway](/ai/mcp-gateway/)
