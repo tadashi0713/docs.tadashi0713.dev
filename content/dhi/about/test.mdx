@@ -1,0 +1,135 @@
+---
+title: Docker Hardened Images のテスト方法
+description: Docker Hardened Images が、標準準拠、機能性、セキュリティの観点からどのように自動的にテストされているかをご紹介します。
+---
+
+# Docker Hardened Images のテスト方法
+
+Docker Hardened Images（DHI）は、セキュアで最小構成、かつ本番環境対応を目的として設計されています。
+
+その信頼性とセキュリティを保証するために、Docker は包括的なテスト戦略を採用しており、署名付きアテステーションとオープンなツールを用いて、ユーザー自身で検証することも可能です。
+
+すべてのイメージは、標準準拠・機能性・セキュリティの観点からテストされます。
+
+そのテスト結果は署名付きアテステーションとして埋め込まれており、[Docker Scout CLI を使ってプログラム的に確認・検証](#テストアテステーションを表示検証する)できます。
+
+## テスト戦略の概要
+
+DHI（Docker Hardened Images）のテストプロセスは、主に次の2つの領域に重点を置いています：
+
+- イメージの標準準拠: 各イメージが、サイズ、セキュリティ、互換性に関する厳格な基準を満たしていることを確認します。
+
+- アプリケーションの機能検証: イメージ内のアプリケーションが正しく動作することを検証します。
+
+## イメージの標準準拠
+
+各 Docker Hardened Image（DHI）は、以下の基準を満たすために厳格なチェックを受けています:
+
+- 攻撃対象領域の最小化: イメージは可能な限り小さく構築されており、不必要なコンポーネントを削除することで潜在的な脆弱性を減らします。
+
+- 既知の CVE をほぼゼロに維持: Docker Scout などのツールを用いてスキャンされ、既知の脆弱性（CVE：Common Vulnerabilities and Exposures）が含まれていないことを確認します。
+
+- マルチアーキテクチャ対応: `linux/amd64` および `linux/arm64` 向けにビルドされており、幅広い環境での互換性を確保します。
+
+- Kubernetes 互換性: Kubernetes クラスター内でも問題なく動作することをテストし、コンテナオーケストレーション環境での要件を満たしていることを保証します。
+
+## アプリケーションの機能テスト
+
+Docker は、Docker Hardened Images（DHI）が一般的なユースケースにおいて期待どおりに動作することを確認するためにテストを実施しています。これには以下の検証が含まれます:
+
+- アプリケーションがコンテナ環境で正常に起動し、実行されること
+
+- 実行時の動作が、アップストリーム（元のアプリケーション）の期待に沿っていること
+
+- `-dev` イメージなどのビルドバリアントが、一般的な開発・ビルド作業をサポートしていること
+
+このテストの目的は、ハードニングされ最小化された設計を維持しながらも、DHI がよくあるユースケースにおいてそのまま問題なく利用できる状態を確保することです。
+
+## 自動テストと CI/CD への統合
+
+Docker は、自動テストを継続的インテグレーション / 継続的デリバリー（CI/CD）パイプラインに統合しています:
+
+- 自動スキャン: 各イメージのビルド時に、自動的に脆弱性スキャンおよびコンプライアンスチェックが実行されます。
+
+- 再現可能なビルド: ビルドプロセスは再現性を重視して設計されており、異なる環境間でも一貫した結果が得られるようになっています。
+
+- 継続的なモニタリング: Docker は新たな脆弱性の発見に対して常時監視を行い、セキュリティ基準を維持するためにイメージを随時更新しています。
+
+## テストアテステーション
+
+Docker は、各 Docker Hardened Image（DHI）に対して実施されたテストおよび検証プロセスの詳細を示す「テストアテステーション（Test Attestation）」を提供しています。
+
+### テストアテステーションを表示・検証する
+
+Docker Scout CLI を使用して、アテステーションを表示および検証できます。
+
+1. `docker scout attest get` コマンドを使って、テストの述語タイプ（predicate type）を指定して実行します：
+
+    ```bash
+    $ docker scout attest get \
+      --predicate-type https://scout.docker.com/tests/v0.1 \
+      --predicate \
+      <your-namespace>/dhi-<image>:<tag> --platform <platform>
+    ```
+
+    例:
+    ```bash
+    $ docker scout attest get \
+      --predicate-type https://scout.docker.com/tests/v0.1 \
+      --predicate \
+      docs/dhi-python:3.13 --platform linux/amd64
+    ```
+
+    この出力には、テストの一覧とその結果が含まれます。
+    
+    出力例：
+
+    ```bash
+    v SBOM obtained from attestation, 101 packages found
+    v Provenance obtained from attestation
+    {
+      "reportFormat": "CTRF",
+      "results": {
+        "summary": {
+          "failed": 0,
+          "passed": 1,
+          "skipped": 0,
+          "start": 1749216533,
+          "stop": 1749216574,
+          "tests": 1
+        },
+        "tests": [
+          {
+            ...
+    ```
+
+2. テストアテステーションの署名を検証します。アテステーションが Docker によって署名された正当なものであることを確認するには、次のコマンドを実行します：
+
+    ```bash
+    $ docker scout attest get \
+      --predicate-type https://scout.docker.com/tests/v0.1 \
+      --verify \
+      <your-namespace>/dhi-<image>:<tag> --platform <platform>
+    ```
+
+    出力例:
+
+    ```bash
+    v SBOM obtained from attestation, 101 packages found
+    v Provenance obtained from attestation
+    v cosign verify registry.scout.docker.com/docker/dhi-python@sha256:70c8299c4d3cb4d5432734773c45ae58d8acc2f2f07803435c65515f662136d5 \
+        --key https://registry.scout.docker.com/keyring/dhi/latest.pub --experimental-oci11
+
+      Verification for registry.scout.docker.com/docker/dhi-python@sha256:70c8299c4d3cb4d5432734773c45ae58d8acc2f2f07803435c65515f662136d5 --
+      The following checks were performed on each of these signatures:
+        - The cosign claims were validated
+        - Existence of the claims in the transparency log was verified offline
+        - The signatures were verified against the specified public key
+
+    i Signature payload
+    ...
+    ```
+
+アテステーションが有効であれば、Docker Scout は署名を確認し、対応する `cosign verify` コマンドを出力します。
+
+他のアテステーション（SBOM や脆弱性レポートなど）を確認するには、[イメージの検証](/dhi/how-to/verify) を参照してください。
