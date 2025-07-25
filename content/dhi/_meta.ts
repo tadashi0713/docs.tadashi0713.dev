@@ -1,3 +1,3 @@
 export default {
-  'get-started': 'クイックスタート'
+  'get-started': 'クイックスタート',
 }
