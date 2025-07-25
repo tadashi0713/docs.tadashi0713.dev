@@ -1,0 +1,103 @@
+---
+title: Docker Hardened Images クイックスタート
+description: Docker Hardened Image を探索、ミラー、実行するためのクイックスタートガイドです。
+---
+
+# Docker Hardened Images クイックスタート
+
+このガイドでは、Docker Hardened Image（DHI）を実際の例を使って、ゼロから実行できるようになるまでの手順を紹介します。
+ここでは特定のイメージを例に使用しますが、手順はすべての DHI に適用可能です。
+
+## ステップ 1: DHI にサインアップしてサブスクリプションに登録する
+
+Docker Hardened Images にアクセスするには、Organization が [サインアップ](https://www.docker.com/products/hardened-images/#getstarted)(https://www.docker.com/products/hardened-images/#getstarted) し、サブスクリプションに登録する必要があります。
+
+## ステップ 2: 使用するイメージを探す
+
+サブスクリプション登録が完了すると、Docker Hardened Images は Docker Hub 上の貴社の Organization の名前空間に表示されます。
+
+1. [Docker Hub](https://hub.docker.com) にアクセスしてサインインします。
+
+2. 上部ナビゲーションから **My Hub** を選択します。
+
+3. 左サイドバーで、DHI へのアクセス権がある Organization を選択します。
+
+4. 左サイドバーで **DHI catalog** を選択します。
+
+![DHI catalog](/dhi/dhi-catalog.png)
+
+5. 検索バーやフィルターを使って、使用したいイメージを探します（例：`python`、`node`、`golang`）。このガイドでは Python イメージを例として使用します。
+
+![DHI catalog Python](/dhi/dhi-python-search.png)
+
+6. Python のリポジトリを選択して詳細を表示します。
+
+次のステップでは、このイメージをミラーします。
+
+イメージの詳細な探索方法については、[Docker Hardened Images を探索する](/dhi/how-to/explore) をご覧ください。
+
+## ステップ 3: イメージをミラーリングする
+
+Docker Hardened Image を使用するには、Organization にイメージをミラーリング（複製）する必要があります。この操作は Organization のオーナーのみが実行できます。ミラーを行うと、Organization の名前空間にイメージのコピーが作成され、チームメンバーがそのイメージを pull して使用できるようになります。
+
+1. 対象のイメージリポジトリのページで、**Mirror to repository** を選択します。
+
+![DHIミラーリングボタン](/dhi/dhi-mirror-button.png)
+
+> [!NOTE]
+>
+> **Mirror to repository** ボタンが表示されていない場合は、そのリポジトリはすでに Organization にミラーされている可能性があります。この場合は、**View in repository** を選択してミラー済みイメージの場所を確認するか、別のリポジトリにミラーすることもできます。
+
+2. 表示される指示に従ってリポジトリ名を指定します。このガイドでは例として `dhi-python` を使用します。名前は `dhi-` で始める必要がある点に注意してください。
+
+![DHIミラーリング画面](/dhi/dhi-mirror-screen.png)
+
+3. **Create repository** を選択して、ミラーリングを開始します。
+
+すべてのタグのミラーが完了するまでに数分かかる場合があります。ミラーが完了すると、そのイメージリポジトリは Organization の名前空間に表示されます。
+
+たとえば [Docker Hub](https://hub.docker.com) の **My Hub** > **YOUR_ORG** > **Repositories** に移動すると、`dhi-python` が表示されているはずです。これで他のイメージと同様に pull できるようになります。
+
+![ミラーリングしたレポジトリ](/dhi/dhi-python-mirror.png)
+
+次のステップでは、このイメージを pull して実行します。
+
+イメージのミラーリングについてさらに詳しく知りたい場合は、[Docker Hardened Image リポジトリをミラーする](/dhi/how-to/mirror) を参照してください。
+
+## ステップ 4: イメージを pull して実行する
+
+イメージを Organization にミラーしたら、他の Docker イメージと同様に pull して実行できるようになります。
+
+ただし、Docker Hardened Images はセキュアかつ最小構成になるよう設計されているため、一般的なイメージに含まれているようなツールやライブラリが含まれていない場合があります。
+
+そのような違いについては、[DHI 導入時の注意点](/dhi/how-to/use) をご覧ください。
+
+以下の例では、Python イメージを実行し、簡単な Python コマンドを実行できることを確認しています：
+
+1. ミラー済みのイメージを pull します。ターミナルを開き、以下のコマンドを実行してください（`<your-namespace>` は貴社の名前空間に置き換えてください）:
+
+    ```bash
+    $ docker pull <your-namespace>/dhi-python:3.13
+    ```
+
+2. イメージを実行して、正常に動作することを確認します:
+
+    ```bash
+    $ docker run --rm <your-namespace>/dhi-python:3.13 python -c "print('Hello from DHI')"
+    ```
+
+    このコマンドは `dhi-python:3.13` イメージからコンテナを起動し、`Hello from DHI` を出力するシンプルな Python スクリプトを実行します。
+
+イメージの活用についてさらに詳しく知りたい場合は、[Docker Hardened Image を使用する](/dhi/how-to/use) をご覧ください。
+
+## 次のステップ
+
+初めての Docker Hardened Image を pull して実行できました。
+
+ここからさらに進めるための方法をいくつかご紹介します:
+
+- [既存アプリケーションを DHI に移行する](/dhi/how-to/migrate): Dockerfile を更新し、ベースイメージとして Docker Hardened Images を使用する方法を学びましょう。
+
+- [DHI を検証する](/dhi/how-to/verify): [Docker Scout](/scout-ja) や Cosign などのツールを使用して、SBOM（ソフトウェア部品表）やプロビナンス（出所情報）などの署名付きアテステーションを確認・検証しましょう。
+
+- [DHI をスキャンする](/dhi/how-to/scan): Docker Scout やその他のスキャナーを使用して、既知の CVE（脆弱性）を特定するためにイメージを分析しましょう。
