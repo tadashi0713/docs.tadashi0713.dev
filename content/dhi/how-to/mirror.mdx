@@ -1,0 +1,172 @@
+---
+title: Docker Hardened Image リポジトリをミラーリングする
+description: イメージを自社の名前空間にミラーリングし、必要に応じて別のプライベートレジストリにプッシュする方法を学びましょう。
+---
+
+# Docker Hardened Image リポジトリをミラーリングする
+
+Docker Hardened Image（DHI）を使用する前に、そのリポジトリを Organization にミラーリングする必要があります。
+
+この操作を実行できるのは Organization のオーナーのみです。
+
+ミラーリングが完了すると、イメージは Organization の名前空間内で利用可能になり、アクセス権のあるユーザーはイメージを pull して使用できるようになります。
+
+ミラーリングされたリポジトリは自動的に最新状態に保たれます。
+
+Docker はアップストリームの DHI カタログと継続的に同期し、新しいタグやイメージの更新を反映するため、常に最新のセキュアなバージョンにアクセスできます。
+
+## 前提条件
+
+- ミラーリングを管理するには、[Organization のオーナー](https://docs.docker.com/admin/) である必要があります。
+
+- Docker Hardened Images を使用するには、貴社の Organization が [サインアップ済み](https://www.docker.com/products/hardened-images/#getstarted) である必要があります。
+
+## イメージリポジトリをミラーリングする
+
+Docker Hardened Image のリポジトリをミラーリングするには、以下の手順に従います:
+
+1. [Docker Hub](https://hub.docker.com) にアクセスしてサインインします。
+
+2. **My Hub** を選択します。
+
+3. 名前空間のドロップダウンから、DHI にアクセス可能な自身の Organization を選択します。
+
+4. **DHI catalog** を選択します。
+
+5. 任意の DHI リポジトリを選択して詳細を表示します。
+
+6. **Mirror to repository** を選択し、画面上の指示に従って操作します。
+
+すべてのタグのミラーリングが完了するまで数分かかる場合があります。
+
+イメージのミラーリングが完了すると、**Mirror to repository** ボタンは **View in repository** に変わります。
+
+**View in repository** を選択すると、イメージがすでにミラーリングされているリポジトリの一覧がドロップダウンで表示されます。そこから以下の操作が可能です:
+
+- 既存のミラーリング済みリポジトリを選択して詳細を確認する
+
+- **Mirror to repository** を再度選択して、別のリポジトリに追加でミラーリングする
+
+リポジトリをミラーリングすると、指定した名前で `dhi-` プレフィックス付きのリポジトリが Organization のリポジトリ一覧に表示されます。
+
+このリポジトリは、その後も継続的にイメージの更新を受け取ります。
+
+![ミラーリングしたレポジトリ](/dhi/dhi-python-mirror.png)
+
+> [!IMPORTANT]
+>
+> ミラーリングされたリポジトリの可視性は **必ず非公開（private）** のままにしてください。
+> 公開（public）に変更すると、以降の更新がミラーリングされなくなります。
+
+ミラーリングが完了したリポジトリは、Docker Hub 上の他のプライベートリポジトリと同様に扱えます。
+
+そのリポジトリにアクセス権を持つチームメンバーは、イメージを pull して使用できます。
+
+アクセス管理、タグの確認、設定の変更については [リポジトリの管理方法](https://docs.docker.com/docker-hub/repos/) を参照してください。
+
+### 同期と通知のための Webhook 連携
+
+外部レジストリやシステムとミラーリング済みの Docker Hardened Images を同期させたり、更新時に通知を受け取ったりするには、Docker Hub 上のミラーリング済みリポジトリに [Webhook](https://docs.docker.com/docker-hub/repos/manage/webhooks/) を設定できます。
+
+Webhook は、新しいイメージタグが push または更新されるたびに、指定した `URL` に POST リクエストを送信します。
+
+たとえば、https://ci.example.com/hooks/dhi-sync のような URL に webhook を設定すれば、新しいタグがミラーリングされるたびに CI/CD システムを呼び出すことができます。
+
+この自動化により、Docker Hub から更新されたイメージを pull して、Amazon ECR、Google Artifact Registry、GitHub Container Registry などの社内レジストリに push できます。
+
+その他の一般的な webhook のユースケースには以下が含まれます:
+
+- バリデーションや脆弱性スキャンワークフローのトリガー
+
+- イメージの署名や昇格（プロモート）
+
+- 下流システムへの通知送信
+
+#### Webhook ペイロードの例
+
+Webhook がトリガーされると、Docker Hub は以下のような JSON ペイロードを送信します:
+
+```json
+{
+  "callback_url": "https://registry.hub.docker.com/u/exampleorg/dhi-python/hook/abc123/",
+  "push_data": {
+    "pushed_at": 1712345678,
+    "pusher": "trustedbuilder",
+    "tag": "3.13-alpine3.21"
+  },
+  "repository": {
+    "name": "dhi-python",
+    "namespace": "exampleorg",
+    "repo_name": "exampleorg/dhi-python",
+    "repo_url": "https://hub.docker.com/r/exampleorg/dhi-python",
+    "is_private": true,
+    "status": "Active",
+    ...
+  }
+}
+```
+
+## イメージリポジトリのミラーリングを停止する
+
+リポジトリのミラーリングを停止できるのは、Organization のオーナーのみです。
+
+ミラーリングを停止してもリポジトリ自体は残りますが、以降は更新を受け取らなくなります。
+
+最後にミラーリングされたイメージは引き続き pull できますが、新しいタグや更新は元のリポジトリから反映されなくなります。
+
+イメージリポジトリのミラーリングを停止するには:
+
+1. Organization の名前空間にあるミラーリング済みリポジトリへ移動します。
+
+2. **Stop mirroring** を選択します。
+
+ミラーリングを停止すると、別の DHI リポジトリを選択してミラーリングすることができます。
+
+## Docker Hub から他のレジストリへミラーリングする
+
+Docker Hardened Image（DHI）のリポジトリを Docker Hub 上の Organization の名前空間にミラーリングした後、必要に応じてさらに別のコンテナレジストリ（Amazon ECR、Google Artifact Registry、GitHub Container Registry、またはプライベートな Harbor インスタンスなど）へミラーリングすることも可能です。
+
+以下のような標準的なワークフローが使用できます:
+
+- [Docker CLI](https://docs.docker.com/reference/cli/docker/)
+
+- [Docker Hub Registry API](https://docs.docker.com/reference/api/registry/latest/)
+
+- サードパーティ製のレジストリツールや CI/CD 自動化フロー
+
+以下は、Docker CLI を使用してミラーリング済みの DHI を pull し、別のレジストリへ push する例です:
+
+```bash
+# Docker Hub にログイン（まだであれば）
+$ docker login
+
+# Docker Hub 上の組織の名前空間からイメージを pull
+$ docker pull <your-namespace>/dhi-<image>:<tag>
+
+# 移行先レジストリ向けにタグ付け
+$ docker tag <your-namespace>/dhi-<image>:<tag> registry.example.com/my-project/<image>:<tag>
+
+# イメージを移行先レジストリへ push
+# 事前に対象レジストリへログインしておく必要があります
+$ docker push registry.example.com/my-project/<image>:<tag>
+```
+
+> [!IMPORTANT]
+> 
+> Docker Hardened Images の更新を継続的に受け取り、アクセスを維持するには、他のレジストリへ push するコピーも **必ず非公開（private）** のままにしてください。
+
+### イメージをミラーリングする際にアテステーションも含める
+
+Docker Hardened Images は署名付きで、ビルドプロビナンスや脆弱性スキャン結果といったメタデータを含むアテステーションが付属しています。
+
+これらのアテステーションは OCI アーティファクトとして保存されており、Docker CLI を使用した単純なミラーリングではデフォルトで含まれません。
+
+DHI の完全なセキュリティコンテキストを他のレジストリにコピーする場合、アテステーションも明示的に含める必要があります。
+
+これには `regctl` の使用が推奨されており、イメージ本体と関連するアーティファクトの両方をコピーすることが可能です。
+
+`regctl` を使用してイメージおよびアテステーションをコピーする方法については、[regclient ドキュメント](https://regclient.org/cli/regctl/image/copy/) を参照してください。
+
+## 次のステップ
+
+イメージリポジトリのミラーリングが完了したら、[イメージの使用](/dhi/how-to/use/)を開始できます。
