@@ -3,4 +3,5 @@ export default {
   'integration': 'シームレスな統合',
   'support': 'エンタープライズサポート',
   'patching': '継続的なパッチ適用',
+  'flexible': '柔軟性',
 }
