@@ -1,0 +1,130 @@
+---
+title: ハウツー
+description: Docker Hardened Images を扱うための手順ガイド。イメージの探索からデバッグまでをカバーします。
+---
+
+import { Cards } from 'nextra/components'
+import { MdTravelExplore, MdCompareArrows, MdDirectionsRun, MdBugReport, MdPolicy, MdOutlineTerminal } from 'react-icons/md'
+import { FaPlay, FaCheckCircle } from 'react-icons/fa'
+
+# ハウツー
+
+このセクションでは、Docker Hardened Images（DHI）を扱うための実践的なステップバイステップのガイドを提供します。
+
+初めて DHI を評価する場合でも、本番環境の CI/CD パイプラインに統合する場合でも、ここで紹介する各トピックが導入の全フェーズ（探索からデバッグまで）を順を追ってサポートします。
+
+セキュリティを保ちながらスムーズに導入できるよう、トピックは DHI 活用の一般的なライフサイクルに沿って構成されています。
+
+## ライフサイクルの流れ
+
+1. DHI カタログ内で利用可能なイメージやメタデータを探索する
+
+2. 信頼できるイメージを自身の名前空間やレジストリにミラーする
+
+3. DHI を開発・CI・本番ワークフローに取り入れ、既存アプリケーションをセキュアかつミニマルなベースイメージへ移行する
+
+4. 署名・SBOM・プロビナンスの検証や、脆弱性スキャンを通じてイメージを分析する
+
+5. ポリシーを適用し、セキュリティとコンプライアンスを維持する
+
+6. イメージを変更せずに、DHI ベースのコンテナをデバッグする
+
+以下の各トピックはこのライフサイクルのステップと対応しており、DHI の探索から導入、運用・保守までを安心して進められるよう構成されています。
+
+## ステップバイステップガイド
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdTravelExplore />}
+  title="Docker Hardened Images を探索する"
+  href="/dhi/how-to/explore/"
+  arrow
+/>
+
+Docker Hub 上の DHI カタログで、リポジトリ、バリアント、メタデータ、アテステーションの探し方と評価方法を学びましょう。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdCompareArrows />}
+  title="Docker Hardened Image リポジトリをミラーする"
+  href="/dhi/how-to/mirror/"
+  arrow
+/>
+
+イメージを Organization の名前空間にミラーし、必要に応じて他のプライベートレジストリにプッシュする方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaPlay />}
+  title="Docker Hardened Image を使用する"
+  href="/dhi/how-to/use/"
+  arrow
+/>
+
+Dockerfile、CI パイプライン、標準的な開発ワークフローで Docker Hardened Images を pull・実行・参照する方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdDirectionsRun />}
+  title="既存アプリケーションを Docker Hardened Images に移行する"
+  href="/dhi/how-to/migrate/"
+  arrow
+/>
+
+Dockerfile を更新し、セキュアかつ最小構成で本番対応可能なビルドに向けて DHI を導入する手順を順を追って解説します。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaCheckCircle />}
+  title="Docker Hardened Image を検証する"
+  href="/dhi/how-to/verify/"
+  arrow
+/>
+
+Docker Scout や cosign を使って、SBOM、プロビナンス、脆弱性情報などの署名付きアテステーションを検証する方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdBugReport />}
+  title="Docker Hardened Image をスキャンする"
+  href="/dhi/how-to/scan/"
+  arrow
+/>
+
+Docker Scout、Grype、Trivy を使って、DHI に既知の脆弱性がないかスキャンする方法を学びましょう。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdBugReport />}
+  title="ポリシーで Docker Hardened Images の使用を強制する"
+  href="/dhi/how-to/policies/"
+  arrow
+/>
+
+Docker Scout のイメージポリシー機能を使って、DHI の使用を強制・管理する方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdOutlineTerminal />}
+  title="Docker Hardened Image をデバッグする"
+  href="/dhi/how-to/debug/"
+  arrow
+/>
+
+Docker Debug を使って、ハードニングされたイメージ上の実行中コンテナを変更せずに調査する方法を学びます。
