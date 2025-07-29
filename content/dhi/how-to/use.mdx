@@ -1,0 +1,168 @@
+---
+title: Docker Hardened Image を使用する
+description: Dockerfile、CI パイプライン、標準的な開発ワークフローにおいて、Docker Hardened Images を pull・実行・参照する方法を学びましょう。
+---
+
+# Docker Hardened Image を使用する
+
+Docker Hardened Image（DHI）は、Docker Hub 上の他のイメージと同様に使用できます。
+
+DHI も一般的な使い方に従っており、`docker pull` で取得し、Dockerfile で参照し、`docker run` でコンテナを実行できます。
+
+主な違いは、DHI がセキュリティ重視かつ意図的にミニマルに設計されている点です。
+
+そのため、一部のバリアントにはシェルやパッケージマネージャが含まれておらず、デフォルトで非 root ユーザーとして実行されることがあります。
+
+> [!NOTE]
+>
+> 既存のワークフローを変更する必要はありません。
+> イメージを手動で pull する場合でも、Dockerfile で参照する場合でも、CI パイプラインに統合する場合でも、DHI はこれまで使ってきたイメージと同じように動作します。
+
+[ミラーリング](/dhi/how-to/mirror/) を通じて DHI を Organization の名前空間に追加すると、そのイメージは使用可能になります。
+
+ミラーリング済みのリポジトリを確認するには、Hardened Images カタログ内の元のイメージのページに移動し、**View in repository** を選択すると、ミラーリングされたリポジトリの一覧が表示されます。
+
+## DHI 導入時の注意点
+
+Docker Hardened Images（DHI）は、セキュリティ強化のために意図的にミニマルな構成となっています。
+
+既存の Dockerfile やフレームワークを DHI に置き換える場合は、以下の点にご注意ください:
+
+| 特性                               | 説明                                                                                                                                                                                    |
+|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| シェルやパッケージマネージャが含まれない | 実行時イメージにはシェルやパッケージマネージャが含まれていません。ビルドステージでは -dev や -sdk バリアントを使用してコマンド実行やパッケージのインストールを行い、生成物を最小構成の実行時イメージにコピーしてください。|
+| 非 root 実行                       | 実行時の DHI はデフォルトで非 root ユーザーとして動作します。アプリケーションが特権アクセスを必要としないこと、および必要なファイルに非 root ユーザーがアクセス可能であることを確認してください。                    |
+| ポート制限                          | 非 root ユーザーでは、古いバージョンの Docker や一部の Kubernetes 環境では 1024 番未満のポートにバインドできません。互換性のためには 1025 番以上のポートを使用してください。                                  |
+| エントリーポイント                   | DHI にはデフォルトの ENTRYPOINT が含まれていない場合や、既存のイメージとは異なる設定がされている場合があります。イメージ構成を確認し、CMD や ENTRYPOINT の指示を必要に応じて調整してください。                    |
+| マルチステージビルドの活用            | フレームワークを使う場合は必ずマルチステージビルドを利用しましょう。ビルドや依存関係のインストールには -dev イメージを使用し、最終ステージでは最小構成の実行時イメージを使います。                                   |
+| TLS 証明書                         | DHIs include standard TLS certificates. You do not need to manually install CA certs.                                                                                                  |
+
+既存のアプリケーションを移行する場合は、[既存アプリケーションを Docker Hardened Images に移行する](/dhi/how-to/migrate/) を参照してください。
+
+## DHI を Dockerfile で使う方法
+
+コンテナのベースイメージとして DHI（Docker Hardened Image）を使用するには、Dockerfile の `FROM` 命令で指定します:
+
+```dockerfile
+FROM <your-namespace>/dhi-<image>:<tag>
+```
+
+使用したいバリアントに応じて、イメージ名とタグを置き換えてください。
+
+たとえば、ビルドステージでシェルやパッケージマネージャが必要な場合は `-dev` タグを使用します:
+
+```dockerfile
+FROM <your-namespace>/dhi-python:3.13-dev AS build
+```
+
+利用可能なバリアントを確認する方法については、[イメージを探索する](/dhi/how-to/explore/) を参照してください。
+
+> [!TIP]
+>
+> マルチステージの Dockerfile を使って、ビルドステージと実行ステージを分けましょう。
+> ビルドステージでは `-dev` バリアントを使用し、最終ステージでは最小構成の実行時イメージを使うのがおすすめです。
+
+## Docker Hub から DHI を pull する
+
+Docker Hardened Images（DHI）は、Docker Hub 上の他のイメージと同様に、Docker CLI、Docker Hub Registry API、または CI パイプライン内などのツールを使って pull できます。
+
+以下は CLI を使って DHI を pull する例です:
+
+```bash
+$ docker pull <your-namespace>/dhi-<image>:<tag>
+```
+
+この操作を行うには、Docker Hub 上で該当イメージが存在する名前空間へのアクセス権が必要です。
+
+詳しくは [Docker Hardened Image をミラーリングする](/dhi/how-to/mirror/) を参照してください。
+
+## DHI を実行する
+
+イメージを pull したら、`docker run` を使って実行できます。たとえば、Organization の名前空間に `dhi-python` リポジトリがミラーリングされている場合、以下のようにコンテナを起動して Python コマンドを実行できます:
+
+```bash
+$ docker run --rm <your-namespace>/dhi-python:3.13 python -c "print('Hello from DHI')"
+```
+
+## CI/CD パイプラインで DHI を使用する
+
+Docker Hardened Images（DHI）は、CI/CD パイプライン内でも他のイメージと同様に使用できます。
+
+Dockerfile 内で参照したり、パイプラインステップの中で pull したり、ビルドやテスト中にコンテナとして実行することが可能です。
+
+ただし、一般的なコンテナイメージと異なり、DHI には署名付きの [アテステーション](/dhi/core-concepts/attestations)（SBOM やビルドプロビナンスなどのメタデータ）が含まれています。
+
+CI/CD ツールが対応していれば、これらをパイプラインに取り込むことで、ソフトウェアサプライチェーンのセキュリティ強化、ポリシーチェック、監査対応などが実現できます。
+
+DHI を元にイメージをビルドする際、自分自身のアテステーションを追加することも検討してください。
+
+これにより、イメージのビルド経緯を文書化し、その整合性を検証し、下流での検証や [ポリシー適用](/dhi/how-to/policies/)（Docker Scout などを使用）に役立てることができます。
+
+ビルド時にアテステーションを付与する方法については、[Docker Build Attestations](https://docs.docker.com/build/metadata/attestations/) をご覧ください。
+
+## コンパイル済みバイナリ向けの静的イメージを使用する
+
+Docker Hardened Images には、コンパイル済みバイナリを極めてミニマルかつセキュアな実行環境で動かすために設計された `static` イメージリポジトリが用意されています。
+
+`-dev` などのビルダー用イメージをビルドステージで使用し、そこで生成されたバイナリを `static` イメージにコピーすることで、安全性の高い最小構成のコンテナを作成できます。
+
+以下は、Go アプリケーションをビルドし、最小構成の static イメージで実行するマルチステージ Dockerfile の例です:
+
+```dockerfile
+#syntax=docker/dockerfile:1
+
+FROM <your-namespace>/dhi-golang:1.22-dev AS build
+WORKDIR /app
+COPY . .
+RUN CGO_ENABLED=0 go build -o myapp
+
+FROM <your-namespace>/dhi-static:20230311
+COPY --from=build /app/myapp /myapp
+ENTRYPOINT ["/myapp"]
+```
+
+このパターンにより、不要なコンポーネントを一切含まないハードニング済みの実行環境が実現され、攻撃対象領域を最小限に抑えることができます。
+
+### フレームワークベースのアプリケーションには -dev バリアントを使用する
+
+Python、Node.js、Go など、パッケージマネージャやビルドツールを必要とするフレームワークベースのアプリケーションを構築する場合は、開発またはビルドステージで `-dev` バリアントを使用してください。
+
+これらのバリアントには、ローカルでの反復開発や CI ワークフローを支えるためのシェル、コンパイラ、パッケージマネージャなどの基本的なツールが含まれています。
+
+`-dev` イメージは、開発ループの内側や CI のビルド専用ステージなどで活用することで、生産性を最大化できます。
+
+本番用の成果物を生成する段階では、より小さなランタイムバリアントに切り替えることで、攻撃対象領域の縮小とイメージサイズの削減が実現できます。
+
+以下は、Python アプリケーションを `-dev` バリアントでビルドし、軽量なランタイムイメージで実行する例です：
+
+```dockerfile
+#syntax=docker/dockerfile:1
+
+FROM <your-namespace>/dhi-python:3.13-alpine3.21-dev AS builder
+
+ENV LANG=C.UTF-8
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/app/venv/bin:$PATH"
+
+WORKDIR /app
+
+RUN python -m venv /app/venv
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+FROM <your-namespace>/dhi-python:3.13-alpine3.21
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1
+ENV PATH="/app/venv/bin:$PATH"
+
+COPY image.py image.png ./
+COPY --from=builder /app/venv /app/venv
+
+ENTRYPOINT [ "python", "/app/image.py" ]
+```
+
+このパターンでは、ビルド環境と実行環境を分離することで、不要なツールを本番イメージから除外し、イメージサイズとセキュリティリスクの削減を両立しています。
