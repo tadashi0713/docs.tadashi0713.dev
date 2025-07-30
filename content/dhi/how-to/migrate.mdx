@@ -1,0 +1,264 @@
+---
+title: 既存アプリケーションを Docker Hardened Images に移行する
+description: Dockerfile を順を追って更新し、セキュアでミニマルかつ本番環境に対応したビルドを実現するために Docker Hardened Images を導入する手順を解説します。
+---
+
+import { Tabs } from 'nextra/components'
+
+# 既存アプリケーションを Docker Hardened Images に移行する
+
+このガイドでは、既存の Dockerfile を Docker Hardened Images（DHI）に移行する方法を解説します。
+
+移行は、[手動で行う方法](#ステップ-1dockerfile-のベースイメージを更新する)と、[Gordon を使用する方法](#gordon-を使う)のいずれかを選べます。
+
+DHI はミニマルかつセキュリティ重視の設計であるため、ベースイメージ、ビルドプロセス、実行時の構成に一部調整が必要となる場合があります。
+
+本ガイドでは、Go、Python、Node.js などの言語を用いてソースコードからアプリケーションをビルドするフレームワークイメージの移行に焦点を当てています。
+
+ただし、データベースやプロキシなどの事前ビルド済みサービスを含むアプリケーションイメージを移行する場合にも、多くの原則は共通して適用されます。
+
+## 移行時の注意点
+
+Docker Hardened Images（DHI）は、攻撃対象領域を最小限に抑えるため、シェルやパッケージマネージャといった一般的なツールを省略しています。
+
+また、デフォルトで非 root ユーザーとして実行される設計になっているため、DHI への移行では通常、以下のような Dockerfile の変更が必要になります:
+
+| 項目              | 移行に関する注意点                                                                                                                                                                                                            |
+|:-----------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ベースイメージ      | Dockerfile 内のベースイメージを Docker Hardened Image に置き換えてください。                                                                                                                                                      |
+| パッケージ管理      | 実行時用イメージにはパッケージマネージャが含まれていません。パッケージのインストールが必要な場合は dev タグ付きのイメージをビルドステージで使用し、マルチステージビルドによって成果物を実行時ステージにコピーしてください。                                    |
+| 非 root ユーザー   | 実行時用の DHI はデフォルトで非 root ユーザーとして動作します。必要なファイルやディレクトリに非 root ユーザーがアクセスできるように設定してください。                                                                                            |
+| マルチステージビルド | ビルドステージでは `dev` または `sdk` タグ付きのイメージを使用し、実行時ステージでは非 `dev` イメージを使用してください。                                                                                                                  |
+| TLS 証明書        | DHI には標準の TLS 証明書があらかじめ含まれているため、追加インストールは不要です。                                                                                                                                                    |
+| ポート設定         | 実行時用 DHI は非 root ユーザーで動作するため、Kubernetes や Docker Engine（バージョン 20.10 未満）上では 1024 番未満の特権ポートにバインドできません。回避するには、アプリケーションがコンテナ内で 1025 番以上のポートでリッスンするよう設定してください。 |
+| エントリーポイント  | DHI のエントリーポイントは、Docker Official Images などの一般的なイメージと異なる場合があります。必要に応じて Dockerfile 内の ENTRYPOINT や CMD を見直してください。                                                                         |
+| シェルなし         | 実行時用 DHI にはシェルが含まれていません。シェルコマンドを使いたい場合は、ビルドステージで dev イメージを使用し、成果物を実行時ステージにコピーしてください。                                                                                      |
+
+より詳しい情報やトラブルシューティングのヒントについては、[トラブルシューティングガイド](/dhi/troubleshoot/) を参照してください。
+
+## 既存アプリケーションを移行する
+
+以下の手順に従って、既存アプリケーションを Docker Hardened Images（DHI）へ移行します。
+
+### ステップ 1：Dockerfile のベースイメージを更新する
+
+アプリケーションの Dockerfile に記載されているベースイメージを、DHI に置き換えます。
+
+ビルドや依存関係のインストールに必要なツールが含まれている `-dev` や `-sdk` タグ付きのイメージを使うのが一般的です。
+
+以下は、Dockerfile の元のベースイメージをハードニングイメージに置き換えた例です:
+
+```diff
+- ## 元のベースイメージ
+- FROM golang:1.22
+
++ ## ハードニングされたベースイメージに更新
++ FROM <your-namespace>/dhi-golang:1.22-dev
+```
+
+### ステップ 2：Dockerfile の実行時イメージを更新する
+
+最終的なイメージをできるだけミニマルに保つために、[マルチステージビルド](https://docs.docker.com/build/building/multi-stage/) を使用してください。
+
+Dockerfile のすべてのステージでハードニングされたイメージを使用し、ビルドステージでは `-dev` や `-sdk` タグ付きイメージを、実行時ステージでは非 dev バリアントを使用します。
+
+アプリケーションをビルドステージでコンパイルし、その成果物を実行時ステージにコピーすることで、最終イメージを安全かつミニマルに保つことができます。
+
+Dockerfile の更新例については、以下の [Dockerfile 移行例](#dockerfile-移行例) を参照してください。
+
+## Dockerfile 移行例
+
+以下は、移行前と移行後の Dockerfile の比較例です。
+
+### Go の例
+
+<Tabs items={['移行前', '移行後']}>
+  <Tabs.Tab>
+    ```dockerfile
+    #syntax=docker/dockerfile:1
+
+    FROM golang:latest
+
+    WORKDIR /app
+    ADD . ./
+    RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" --installsuffix cgo -o main .
+
+    ENTRYPOINT ["/app/main"]
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```dockerfile
+    #syntax=docker/dockerfile:1
+
+    # === ビルドステージ：Go アプリケーションのコンパイル ===
+    FROM <your-namespace>/dhi-golang:1-alpine3.21-dev AS builder
+
+    WORKDIR /app
+    ADD . ./
+    RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" --installsuffix cgo -o main .
+
+    # === 実行ステージ：ミニマルな実行環境の作成 ===
+    FROM <your-namespace>/dhi-golang:1-alpine3.21
+
+    WORKDIR /app
+    COPY --from=builder /app/main  /app/main
+
+    ENTRYPOINT ["/app/main"]
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+### Node.js の例
+
+<Tabs items={['移行前', '移行後']}>
+  <Tabs.Tab>
+    ```dockerfile
+    #syntax=docker/dockerfile:1
+
+    FROM node:latest
+    WORKDIR /usr/src/app
+
+    COPY package*.json ./
+    RUN npm install
+
+    COPY image.jpg ./image.jpg
+    COPY . .
+
+    CMD ["node", "index.js"]
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```dockerfile
+    #syntax=docker/dockerfile:1
+
+    # === ビルドステージ：依存関係のインストールとアプリケーション構築 ===
+    FROM <your-namespace>/dhi-node:23-alpine3.21-dev AS builder
+    WORKDIR /usr/src/app
+
+    COPY package*.json ./
+    RUN npm install
+
+    COPY image.jpg ./image.jpg
+    COPY . .
+
+    # === 実行ステージ：ミニマルなランタイムイメージの作成 ===
+    FROM <your-namespace>/dhi-node:23-alpine3.21
+    ENV PATH=/app/node_modules/.bin:$PATH
+
+    COPY --from=builder --chown=node:node /usr/src/app /app
+
+    WORKDIR /app
+
+    CMD ["index.js"]
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+### Python の例
+
+<Tabs items={['移行前', '移行後']}>
+  <Tabs.Tab>
+    ```dockerfile
+    #syntax=docker/dockerfile:1
+
+    FROM python:latest AS builder
+
+    ENV LANG=C.UTF-8
+    ENV PYTHONDONTWRITEBYTECODE=1
+    ENV PYTHONUNBUFFERED=1
+    ENV PATH="/app/venv/bin:$PATH"
+
+    WORKDIR /app
+
+    RUN python -m venv /app/venv
+    COPY requirements.txt .
+
+    RUN pip install --no-cache-dir -r requirements.txt
+
+    FROM python:latest
+
+    WORKDIR /app
+
+    ENV PYTHONUNBUFFERED=1
+    ENV PATH="/app/venv/bin:$PATH"
+
+    COPY image.py image.png ./
+    COPY --from=builder /app/venv /app/venv
+
+    ENTRYPOINT [ "python", "/app/image.py" ]
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```dockerfile
+    #syntax=docker/dockerfile:1
+
+    # === ビルドステージ：依存関係のインストールと仮想環境の作成 ===
+    FROM <your-namespace>/dhi-python:3.13-alpine3.21-dev AS builder
+
+    ENV LANG=C.UTF-8
+    ENV PYTHONDONTWRITEBYTECODE=1
+    ENV PYTHONUNBUFFERED=1
+    ENV PATH="/app/venv/bin:$PATH"
+
+    WORKDIR /app
+
+    RUN python -m venv /app/venv
+    COPY requirements.txt .
+
+    RUN pip install --no-cache-dir -r requirements.txt
+
+    # === 実行ステージ：ミニマルなランタイムイメージの作成 ===
+    FROM <your-namespace>/dhi-python:3.13-alpine3.21
+
+    WORKDIR /app
+
+    ENV PYTHONUNBUFFERED=1
+    ENV PATH="/app/venv/bin:$PATH"
+
+    COPY image.py image.png ./
+    COPY --from=builder /app/venv /app/venv
+
+    ENTRYPOINT [ "python", "/app/image.py" ]
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+### Gordon を使う
+
+代替手段として、Docker の AI 搭載アシスタントである [Gordon](/ai/gordon) に Dockerfile の移行を依頼することもできます。
+
+1. [Gordon を有効化](/ai/gordon)していることを確認します。
+
+2. Gordon のツールボックスで、[Developer MCP ツールキットが有効](/ai/gordon/mcp/built-in-tools)になっていることを確認します。
+
+3. ターミナルで、Dockerfile を含むディレクトリに移動します。
+
+4. Gordon との会話を開始します:
+
+    ```bash
+    docker ai
+    ```
+
+5. 次のように入力します:
+
+    ```bash
+    "Migrate my dockerfile to DHI"
+    ```
+
+6. Gordon との会話に従って操作を進めます。Gordon は Dockerfile を編集するため、ファイルシステムへのアクセスなどを求められたら `yes` と入力して許可してください。
+
+    > [!NOTE]
+    >
+    > Gordon のデータ保持方針やアクセス可能なデータについて詳しくは、[Gordon のドキュメント](/ai/gordon)をご覧ください。
+
+移行が完了すると、次のような成功メッセージが表示されます:
+
+```text
+The migration to Docker Hardened Images (DHI) is complete. The updated Dockerfile
+successfully builds the image, and no vulnerabilities were detected in the final image.
+The functionality and optimizations of the original Dockerfile have been preserved.
+```
+
+> [!IMPORTANT]
+>
+> 他の AI ツールと同様に、Gordon の編集内容は必ずご自身で検証し、イメージの動作確認を行ってください。
