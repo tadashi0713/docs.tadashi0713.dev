@@ -1,0 +1,168 @@
+---
+title: Docker Hardened Image を検証する
+description: Docker Scout または cosign を使用して、Docker Hardened Images に含まれる署名付きアテステーション（SBOM、プロビナンス、脆弱性情報など）を検証する方法を紹介します。
+---
+
+# Docker Hardened Image を検証する
+
+Docker Hardened Images（DHI）には、イメージのビルドプロセス、内容、セキュリティ状態を検証するための署名付きアテステーションが含まれています。
+
+これらのアテステーションは各イメージバリアントごとに提供されており、[cosign](https://docs.sigstore.dev/) または Docker Scout CLI を使用して検証できます。
+
+DHI イメージ用の Docker の公開鍵は、以下の URL で公開されています:
+
+- https://registry.scout.docker.com/keyring/dhi/latest.pub
+
+- https://github.com/docker-hardened-images/keyring
+
+## Docker Scout を使ってアテステーションを検証する
+
+Docker Scout CLI を使用すると、Docker Hardened Images（DHI）のアテステーションを一覧表示・取得できます。
+
+これは、Organization の名前空間にミラーリングされたイメージに対しても利用可能です。
+
+> [!NOTE]
+> 
+> `docker scout attest` コマンドを実行する前に、ローカルに pull 済みのイメージがリモートの最新版であることを確認してください。
+> `docker pull` を実行して最新状態にしておかないと、`No attestation found`（アテステーションが見つかりません）というエラーが表示される可能性があります。
+
+### なぜ cosign を直接使うのではなく Docker Scout を使うのか？
+
+cosign を使ってアテステーションを手動で検証することも可能ですが、Docker Hardened Images（DHI）においては Docker Scout CLI を使うことで以下のような主な利点があります:
+
+- DHI に特化した体験: Docker Scout は DHI のアテステーション構造やイメージの命名規則を理解しており、完全なイメージダイジェストや URI を手動で指定する必要がありません。
+
+- プラットフォームの自動解決: Scout では `--platform linux/amd64` のようにプラットフォームを指定するだけで、該当するバリアントを自動で検証します。cosign では、自分でダイジェストを調べる必要があります。
+
+- 人間が読みやすいサマリ出力: Scout は、パッケージ数やビルドプロビナンスステップなど、アテステーションの内容を要約して表示します。cosign は基本的に生の署名検証結果のみを出力します。
+
+- ワンステップ検証: `docker scout attest get --verify` フラグを使えば、アテステーションを一括で検証でき、対応する cosign コマンドも表示されるため、裏で何が行われているかを理解しやすくなります。
+
+- Docker Hub および DHI の信頼モデルと統合: Docker Scout は Docker のアテステーションインフラと公開鍵リングに密接に統合されており、Docker エコシステム内での検証がよりスムーズかつ確実に行えます。
+
+要するに、Docker Scout は検証プロセスを簡素化し、人為的なミスのリスクを減らしながら、透明性と柔軟性を保ちつつ必要に応じて cosign にも戻れるツールです。
+
+### 利用可能なアテステーションを一覧表示する
+
+ミラーリングされた DHI に対して利用可能なアテステーションを一覧表示するには、以下のコマンドを使用します:
+
+```bash
+$ docker scout attest list <your-org-namespace>/dhi-<image>:<tag> --platform <platform>
+```
+
+このコマンドを実行すると、SBOM（ソフトウェア部品表）、ビルドプロビナンス、脆弱性レポートなど、すべての利用可能なアテステーションが表示されます。
+
+### 特定のアテステーションを取得する
+
+特定のアテステーションを取得するには、`--predicate-type` フラグを使い、対象の述語（predicate）タイプの完全な URI を指定します:
+
+```bash
+$ docker scout attest get \
+  --predicate-type https://cyclonedx.org/bom/v1.5 \
+  <your-org-namespace>/dhi-<image>:<tag> --platform <platform>
+```
+
+たとえば:
+
+```bash
+$ docker scout attest get \
+  --predicate-type https://cyclonedx.org/bom/v1.5 \
+  docs/dhi-python:3.13 --platform linux/amd64
+```
+
+述語本体（predicate body）のみを取得したい場合は、`--predicate` フラグを追加します:
+
+```bash
+$ docker scout attest get \
+  --predicate-type https://cyclonedx.org/bom/v1.5 \
+  --predicate \
+  <your-org-namespace>/dhi-<image>:<tag> --platform <platform>
+```
+
+たとえば:
+
+```bash
+$ docker scout attest get \
+  --predicate-type https://cyclonedx.org/bom/v1.5 \
+  --predicate \
+  docs/dhi-python:3.13 --platform linux/amd64
+```
+
+### Docker Scout を使ってアテステーションを検証する
+
+Docker Scout を使用してアテステーションを検証するには、`--verify` フラグを使用します:
+
+```bash
+$ docker scout attest get <image-name>:<tag> \
+   --predicate-type https://scout.docker.com/sbom/v0.1 --verify
+```
+
+たとえば、`dhi/node:20.19-debian12-fips-20250701182639` イメージの SBOM アテステーションを検証するには、以下のように実行します:
+
+```bash
+$ docker scout attest get docs/dhi-node:20.19-debian12-fips-20250701182639 \
+   --predicate-type https://scout.docker.com/sbom/v0.1 --verify
+```
+
+### 対応する cosign コマンドを表示する
+
+`--verify` フラグを使用すると、イメージ署名を検証するための対応する [cosign](https://docs.sigstore.dev/) コマンドも表示されます。
+
+```bash
+$ docker scout attest get \
+  --predicate-type https://cyclonedx.org/bom/v1.5 \
+  --verify \
+  <your-org-namespace>/dhi-<image>:<tag> --platform <platform>
+```
+
+たとえば:
+
+```bash
+$ docker scout attest get \
+  --predicate-type https://cyclonedx.org/bom/v1.5 \
+  --verify \
+  docs/dhi-python:3.13 --platform linux/amd64
+```
+
+検証が成功すると、Docker Scout は対応する `cosign verify` コマンドを出力します。
+
+出力例:
+
+```bash
+    v SBOM obtained from attestation, 101 packages found
+    v Provenance obtained from attestation
+    v cosign verify registry.scout.docker.com/docker/dhi-python@sha256:b5418da893ada6272add2268573a3d5f595b5c486fb7ec58370a93217a9785ae \
+        --key https://registry.scout.docker.com/keyring/dhi/latest.pub --experimental-oci11
+    ...
+```
+
+> [!IMPORTANT]
+> 
+> cosign を使用する際は、Docker Hub レジストリと Docker Scout レジストリの両方に認証する必要があります。
+>
+> たとえば:
+> ```bash
+> $ docker login
+> $ docker login registry.scout.docker.com
+> $ cosign verify \
+>     registry.scout.docker.com/docker/dhi-python@sha256:b5418da893ada6272add2268573a3d5f595b5c486fb7ec58370a93217a9785ae \
+>     --key https://registry.scout.docker.com/keyring/dhi/latest.pub --experimental-oci11
+> ```
+
+## 利用可能な DHI のアテステーション
+
+各 DHI に対して提供されているアテステーションの一覧は、[利用可能なアテステーション](/dhi/core-concepts/attestations)をご覧ください。
+
+## Docker Hub でアテステーションを確認する
+
+[イメージバリアントを確認する](/dhi/how-to/explore)際に、Docker Hub 上でアテステーションを視覚的に閲覧することも可能です。
+
+Attestations セクションには、以下の情報が一覧で表示されます:
+
+- 種類（例：SBOM、VEX）
+
+- Predicate Type URI（述語タイプの識別子）
+
+- `cosign` コマンドで使用できるダイジェストリファレンス
+
+これらのアテステーションは、Docker Hardened Image のビルドプロセスの一環として自動的に生成・署名されています。
