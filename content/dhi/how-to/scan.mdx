@@ -1,0 +1,197 @@
+---
+title: Docker Hardened Images をスキャンする
+description: Docker Scout、Grype、Trivy を使用して、Docker Hardened Images に含まれる既知の脆弱性をスキャンする方法を学びましょう。
+---
+
+# Docker Hardened Images をスキャンする
+
+Docker Hardened Images（DHI）はデフォルトでセキュアに設計されていますが、他のコンテナイメージと同様に、脆弱性管理の一環として定期的にスキャンすることが重要です。
+
+DHI は、Docker Scout、Grype、Trivy など、標準的なイメージに使用しているツールと同じものを使ってスキャンできます。
+
+DHI は一般的なフォーマットと標準に従っているため、既存のセキュリティツールチェーンとの互換性が保たれています。
+
+なお、スキャンを実行するには、イメージが事前に Docker Hub 上の Organization にミラーリングされている必要があります。
+
+> [!NOTE]
+>
+> [Docker Scout](/scout-ja) は、Docker Hub 上でミラーリングされたすべての DHI リポジトリに対して追加費用なしで自動的に有効化されます。
+> スキャン結果は、Docker Hub の UI 上で Organization のリポジトリにアクセスすれば直接確認できます。
+
+## Docker Scout
+
+Docker Scout は Docker Desktop および Docker CLI に統合されており、脆弱性情報、CVE サマリ、修正ガイダンスへのリンクなどを提供します。
+
+### Docker Scout を使って DHI をスキャンする
+
+Docker Hardened Image を Docker Scout でスキャンするには、以下のコマンドを実行します:
+
+```bash
+$ docker scout cves <your-namespace>/dhi-<image>:<tag> --platform <platform>
+```
+
+出力例:
+
+```plaintext
+v SBOM obtained from attestation, 101 packages found
+v Provenance obtained from attestation
+v VEX statements obtained from attestation
+v No vulnerable package detected
+...
+```
+
+より詳細なフィルタリングや JSON 形式での出力方法については、[Docker Scout CLI リファレンス](https://docs.docker.com/reference/cli/docker/scout/) を参照してください。
+
+### CI/CD で Docker Scout を使って DHI スキャンを自動化する
+
+Docker Scout を CI/CD パイプラインに統合することで、Docker Hardened Images（DHI）を元にビルドされたイメージが、ビルド時点で既知の脆弱性を含まないことを自動的に検証できます。
+
+このプロアクティブなアプローチにより、開発ライフサイクル全体を通じてイメージのセキュリティ整合性を維持できます。
+
+#### GitHub Actions ワークフローの例
+
+以下は、Docker イメージをビルドして Docker Scout でスキャンする GitHub Actions のサンプルワークフローです:
+
+```yaml
+name: DHI Vulnerability Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ "**" ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ github.repository }}
+  SHA: ${{ github.event.pull_request.head.sha || github.event.after }}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHA }} .
+
+      - name: Run Docker Scout CVE scan
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.SHA }}
+          only-severities: critical,high
+          exit-code: true
+```
+
+`exit-code: true` を指定すると、重大（critical）または高（high）深刻度の脆弱性が検出された場合にワークフローが失敗するため、脆弱なイメージが本番にデプロイされるのを防げます。
+
+CI での Docker Scout の使い方についてさらに詳しく知りたい方は、[他のシステムとの統合方法](/scout-ja/integrations/)をご覧ください。
+
+## Grype
+
+[Grype](https://github.com/anchore/grype) は、NVD やディストリビューションのアドバイザリなどの脆弱性データベースをもとに、コンテナイメージをスキャンするオープンソースのツールです。
+
+### Grype を使って DHI をスキャンする
+
+Grype をインストールした後、Docker Hardened Image を pull して、以下のようにスキャンを実行できます:
+
+```shell
+$ docker pull <your-namespace>/dhi-<image>:<tag>
+$ grype <your-namespace>/dhi-<image>:<tag>
+```
+
+```plaintext
+NAME               INSTALLED              FIXED-IN     TYPE  VULNERABILITY     SEVERITY    EPSS%  RISK
+libperl5.36        5.36.0-7+deb12u2       (won't fix)  deb   CVE-2023-31484    High        79.45    1.1
+perl               5.36.0-7+deb12u2       (won't fix)  deb   CVE-2023-31484    High        79.45    1.1
+perl-base          5.36.0-7+deb12u2       (won't fix)  deb   CVE-2023-31484    High        79.45    1.1
+...
+```
+
+スキャン時に `--vex` フラグを指定することで、既知だが悪用不可能と判断された CVE（VEX ステートメント）を除外することができます。
+
+詳しくは、[VEX ステートメントを使って既知の悪用不可 CVE を除外する](#vex-を使って既知の悪用不可能な-cve-を除外する) セクションをご覧ください。
+
+## Trivy
+
+[Trivy](https://github.com/aquasecurity/trivy) は、コンテナやその他のアーティファクト向けのオープンソース脆弱性スキャナです。
+
+OS パッケージやアプリケーション依存関係に含まれる脆弱性を検出できます。
+
+### Trivy を使って DHI をスキャンする
+
+Trivy をインストール後、Docker Hardened Image を pull し、以下のコマンドでスキャンを実行します:
+
+```shell
+$ docker pull <your-namespace>/dhi-<image>:<tag>
+$ trivy image <your-namespace>/dhi-<image>:<tag>
+```
+
+出力例:
+
+```plaintext
+Report Summary
+
+┌──────────────────────────────────────────────────────────────────────────────┬────────────┬─────────────────┬─────────┐
+│                                    Target                                    │    Type    │ Vulnerabilities │ Secrets │
+├──────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┼─────────┤
+│ <namespace>/dhi-<image>:<tag> (debian 12.11)                                 │   debian   │       66        │    -    │
+├──────────────────────────────────────────────────────────────────────────────┼────────────┼─────────────────┼─────────┤
+│ opt/python-3.13.4/lib/python3.13/site-packages/pip-25.1.1.dist-info/METADATA │ python-pkg │        0        │    -    │
+└──────────────────────────────────────────────────────────────────────────────┴────────────┴─────────────────┴─────────┘
+```
+
+スキャン時に `--vex` フラグを指定することで、既知だが悪用不可能と判断された CVE（VEX ステートメント）を除外することができます。
+
+詳しくは、[VEX ステートメントを使って既知の悪用不可 CVE を除外する](#vex-を使って既知の悪用不可能な-cve-を除外する) セクションをご覧ください。
+
+## VEX を使って既知の悪用不可能な CVE を除外する
+
+Docker Hardened Images には、署名付きの VEX（Vulnerability Exploitability eXchange）アテステーションが含まれており、イメージの実行時動作に影響しない脆弱性を識別します。
+
+Docker Scout を使用する場合、VEX ステートメントは自動的に適用され、追加設定は不要です。
+
+VEX に対応したツールで使用するために、VEX アテステーションを JSON ファイルとして手動で取得したい場合は、以下のコマンドを実行します:
+
+```shell
+$ docker scout attest get \
+  --predicate-type https://openvex.dev/ns/v0.2.0 \
+  --predicate \
+  <your-namespace>/dhi-<image>:<tag> --platform <platform> > vex.json
+```
+
+たとえば:
+
+```shell
+$ docker scout attest get \
+  --predicate-type https://openvex.dev/ns/v0.2.0 \
+  --predicate \
+  docs/dhi-python:3.13 --platform linux/amd64 > vex.json
+```
+
+このコマンドにより、指定したイメージに対する VEX ステートメントを含む `vex.json` ファイルが作成されます。
+
+このファイルは、VEX に対応したスキャナに読み込ませることで、悪用不可能と判断された既知の脆弱性を除外することができます。
+
+たとえば、Grype や Trivy では、`--vex` フラグを使用して以下のようにスキャンできます:
+
+```shell
+$ grype <your-namespace>/dhi-<image>:<tag> --vex vex.json
+```
