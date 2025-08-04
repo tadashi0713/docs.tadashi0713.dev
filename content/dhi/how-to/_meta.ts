@@ -5,4 +5,5 @@ export default {
   'migrate': 'アプリを移行',
   'verify': 'イメージを検証',
   'scan': 'イメージをスキャン',
+  'policies': 'イメージ使用を強制',
 }

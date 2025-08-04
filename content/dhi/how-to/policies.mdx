@@ -1,0 +1,113 @@
+---
+title: ポリシーで Docker Hardened Images の使用を強制する
+description: Docker Hardened Images に対して Docker Scout のイメージポリシーを使用し、使用ルールやセキュリティ基準を適用する方法を学びましょう。
+---
+
+# ポリシーで Docker Hardened Images の使用を強制する
+
+Docker Hardened Image（DHI）リポジトリをミラーリングすると、自動的に [Docker Scout](/scout-ja/) が有効になり、追加設定なしでセキュリティおよびコンプライアンスポリシーの適用を開始できます。
+
+Docker Scout のポリシー機能を使えば、DHI をベースとした承認済みかつセキュアなイメージのみを環境全体で使用できるようにするルールを定義・適用できます。
+
+ポリシー評価は Docker Scout に組み込まれており、リアルタイムでのコンプライアンス監視、CI/CD ワークフローへのチェック統合、そしてイメージのセキュリティとプロビナンスに関する一貫した基準の維持が可能になります。
+
+## 既存のポリシーを確認する
+
+ミラーリングされた DHI リポジトリに適用されている現在のポリシーを確認するには：
+
+1. [Docker Hub](https://hub.docker.com) 上のミラーリング済み DHI リポジトリにアクセスします。
+
+2. **View on Scout** を選択します。
+
+    この操作により、[Docker Scout ダッシュボード](https://scout.docker.com) が開き、現在有効なポリシーや、イメージがポリシー基準を満たしているかどうかを確認できます。
+
+Docker Scout は、新しいイメージが push されるたびに自動的にポリシー適合性を評価します。
+
+各ポリシーには、コンプライアンス結果と、影響を受けるイメージやレイヤーへのリンクが表示されます。
+
+## DHI ベースのイメージに対してポリシーを作成する
+
+Docker Hardened Images を使用してビルドしたイメージのセキュリティを確保するために、自社リポジトリに対して要件に応じた Docker Scout ポリシーを作成できます。
+
+これらのポリシーを活用することで、以下のようなセキュリティ基準を強制できます:
+
+- 高深刻度の脆弱性を含むイメージの禁止
+
+- 最新のベースイメージの使用必須
+
+- SBOM やプロビナンスなど、必要なメタデータの存在確認
+
+ポリシーはイメージがリポジトリに push されたタイミングで評価されます。
+
+これにより、コンプライアンス状況の追跡、逸脱の通知、CI/CD パイプラインへのチェック統合が可能になります。
+
+### 例: DHI ベースのイメージに対するポリシーを作成する
+
+この例では、Organization 内のすべてのイメージが Docker Hardened Images（DHI）をベースに使用することを要求するポリシーの作成手順を示します。
+
+これにより、すべてのアプリケーションがセキュアでミニマルかつ本番環境に適したイメージ上で構築されることが保証されます。
+
+#### ステップ 1： Dockerfile で DHI をベースイメージとして使用する
+
+まず、ミラーリング済みの DHI リポジトリをベースとして使用する Dockerfile を作成します。
+
+例:
+
+```dockerfile
+# Dockerfile
+FROM ORG_NAME/dhi-python:3.13-alpine3.21
+
+ENTRYPOINT ["python", "-c", "print('Hello from a DHI-based image')"]
+```
+
+#### ステップ 2： イメージをビルドしてプッシュする
+
+ターミナルを開いて、Dockerfile があるディレクトリへ移動し、以下のコマンドでイメージをビルドして Docker Hub にプッシュします:
+
+```shell
+$ docker build \
+  --push \
+  -t YOUR_ORG/my-dhi-app:v1 .
+```
+
+#### ステップ 3： Docker Scout を有効化する
+
+以下のコマンドを使って、Docker Scout を Oranization とリポジトリに対して有効化します:
+
+```shell
+$ docker login
+$ docker scout enroll YOUR_ORG
+$ docker scout repo enable --org YOUR_ORG YOUR_ORG/my-dhi-app
+```
+
+#### ステップ 4： ポリシーを作成する
+
+1. [Docker Scout ダッシュボード](https://scout.docker.com) にアクセスします。
+
+2. Organization を選択し、**Policies** に移動します。
+
+3. **Add policy** を選択します。
+
+4. **Approved Base Images Policy** の **Configure** を選択します。
+
+5. ポリシーに「Approved DHI Base Images」などの分かりやすい名前を付けます。
+
+6. **Approved base image sources** のデフォルト項目を削除します。
+
+7. **Approved base image sources** に、承認された DHI のベースイメージを追加します。
+
+    この例ではワイルドカード `docker.io/ORG_NAME/dhi-*` を使い、すべてのミラーリング済み DHI を許可します（ORG_NAME は Organization 名に置き換えてください）。
+
+8. **Save policy** を選択して保存します。
+
+#### ステップ 5： ポリシー適合性を評価する
+
+1. [Docker Scout ダッシュボード](https://scout.docker.com) にアクセスします。
+
+2. Organization を選択し、**Images** に移動します。
+
+3. `YOUR_ORG/my-dhi-app:v1` を探し、**Compliance** 列のリンクをクリックします。
+
+ここでは、**Approved DHI Base Images** ポリシーの要件を満たしているかどうかなど、イメージのポリシー適合性の結果が表示されます。
+
+CI パイプライン内でポリシー適合性を評価する方法については、[CI でのポリシー評価](/scout-ja/policy/ci/) を参照してください。
