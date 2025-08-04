@@ -6,4 +6,5 @@ export default {
   'verify': 'イメージを検証',
   'scan': 'イメージをスキャン',
   'policies': 'イメージ使用を強制',
+  'debug': 'コンテナをデバッグ',
 }
