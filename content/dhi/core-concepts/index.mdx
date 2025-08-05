@@ -1,0 +1,217 @@
+---
+title: コアコンセプト
+description: Docker Hardened Images のコアコンセプト（セキュリティメタデータ、脆弱性管理、イメージ構造、検証方法）について学びましょう。
+asIndexPage: true
+---
+
+import { Cards } from 'nextra/components'
+import { MdAssignment, MdFactCheck, MdTrackChanges, MdVerified, MdPolicy, MdError, MdWarning, MdShield, MdBuildCircle, MdLayersClear, MdOutlineSwapVert, MdDoNotDisturbOn, MdOutlineSecurity, MdFingerprint, MdKey } from 'react-icons/md'
+import { FaListAlt } from 'react-icons/fa'
+
+# コアコンセプト
+
+Docker Hardened Images（DHI）は、セキュアなソフトウェアサプライチェーンの実践を基盤として構築されています。
+
+このセクションでは、署名付きアテステーションやイメージの不変性（ダイジェスト）、SLSA や VEX といった標準仕様など、DHI の基盤となるコアコンセプトを解説します。
+
+Docker Hardened Images がどのようにコンプライアンス、透明性、セキュリティを支えているのかを理解したい方は、まずこのセクションから始めてください。
+
+## セキュリティメタデータとアテステーション
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdAssignment />}
+  title="アテステーション"
+  href="/dhi/core-concepts/attestations/"
+  arrow
+/>
+
+SBOM、VEX、ビルドプロビナンス、スキャン結果など、各 Docker Hardened Image に含まれる署名付きアテステーションの全体像を確認します。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<FaListAlt />}
+  title="ソフトウェア部品表（SBOM）"
+  href="/dhi/core-concepts/sbom/"
+  arrow
+/>
+
+SBOM とは何か、その重要性、Docker Hardened Images における署名付き SBOM の活用方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdFactCheck />}
+  title="SLSA（ソフトウェア成果物のサプライチェーンレベル）"
+  href="/dhi/core-concepts/slsa/"
+  arrow
+/>
+
+Docker Hardened Images が SLSA Build Level 3 に準拠している方法と、セキュアかつ改ざん耐性のあるビルドの検証方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdTrackChanges />}
+  title="イメージプロビナンス"
+  href="/dhi/core-concepts/provenance/"
+  arrow
+/>
+
+Docker Hardened Images のビルドの由来をトレースするためのプロビナンスメタデータと、それが SLSA コンプライアンスをどう支えるかを理解します。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdVerified />}
+  title="FIPS"
+  href="/dhi/core-concepts/fips/"
+  arrow
+/>
+
+Docker Hardened Images が FIPS 140 をどのようにサポートしているか、検証済み暗号モジュールと署名付きアテステーションを通じてコンプライアンス監査を実現する方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdPolicy />}
+  title="STIG"
+  href="/dhi/core-concepts/stig/"
+  arrow
+/>
+
+政府やエンタープライズ向けのコンプライアンス要件に対応する STIG ハードニング済みイメージと、そのセキュリティスキャンアテステーションを確認します。
+
+## 脆弱性とリスク管理
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdError />}
+  title="共通脆弱性識別子（CVE）"
+  href="/dhi/core-concepts/cves/"
+  arrow
+/>
+
+CVE とは何か、Docker Hardened Images が脆弱性露出をどう低減するか、また人気のツールでイメージをスキャンする方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdWarning />}
+  title="VEX（Vulnerability Exploitability eXchange）"
+  href="/dhi/core-concepts/vex/"
+  arrow
+/>
+
+VEX を用いて実際に悪用可能な脆弱性を特定し、リスクの優先順位づけを行う方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdShield />}
+  title="ソフトウェアサプライチェーンセキュリティ"
+  href="/dhi/core-concepts/sscs/"
+  arrow
+/>
+
+Docker Hardened Images が署名付きメタデータやプロビナンス、最小化された攻撃対象領域を通じてソフトウェアサプライチェーン全体をどう守るかを学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdBuildCircle />}
+  title="セキュアなソフトウェア開発ライフサイクル（SSDLC）"
+  href="/dhi/core-concepts/ssdlc/"
+  arrow
+/>
+
+Docker Hardened Images がスキャン、署名、デバッグツールと連携してセキュアな SDLC をどう支援するかを確認します。
+
+## イメージ構造と挙動
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdBuildCircle />}
+  title="Distroless イメージ"
+  href="/dhi/core-concepts/distroless/"
+  arrow
+/>
+
+Docker Hardened Images が distroless バリアントを用いて攻撃対象領域をどのように最小化し、不要なコンポーネントを排除しているかを学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdOutlineSwapVert />}
+  title="glibc と musl のサポート"
+  href="/dhi/core-concepts/glibc-musl/"
+  arrow
+/>
+
+DHI における glibc バリアントと musl バリアントの違いを比較し、互換性、サイズ、パフォーマンスの観点から適切なベースイメージを選ぶ方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdDoNotDisturbOn />}
+  title="イメージの不変性"
+  href="/dhi/core-concepts/immutability/"
+  arrow
+/>
+
+イメージダイジェスト、読み取り専用コンテナ、署名付きメタデータが Docker Hardened Images の改ざん防止と不変性をどのように担保するかを学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdOutlineSecurity />}
+  title="イメージのハードニング"
+  href="/dhi/core-concepts/hardening/"
+  arrow
+/>
+
+Docker Hardened Images が最小構成、非 root 実行、セキュアデフォルト構成を通じてどのようにセキュリティを実現しているかを学びます。
+
+## 検証とトレーサビリティ
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdOutlineSecurity />}
+  title="ダイジェスト"
+  href="/dhi/core-concepts/digests/"
+  arrow
+/>
+
+不変なイメージダイジェストを使って、使用中の Docker Hardened Image の一貫性と正確性を検証する方法を学びます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdKey />}
+  title="コード署名"
+  href="/dhi/core-concepts/signatures/"
+  arrow
+/>
+
+Docker Hardened Images が Cosign を用いて暗号的に署名され、真正性・完全性・セキュアなプロビナンスを保証している仕組みを理解します。
