@@ -1,0 +1,89 @@
+---
+title: ソフトウェア部品表（SBOM）
+description: SBOM（ソフトウェア部品表）とは何か、その重要性、そして Docker Hardened Images が透明性とコンプライアンスの支援として署名付き SBOM をどのように提供しているかを学びましょう。
+---
+
+# ソフトウェア部品表（SBOM）
+
+## SBOM とは？
+
+SBOM（Software Bill of Materials / ソフトウェア部品表）とは、ソフトウェアアプリケーションのビルドに使用されたすべてのコンポーネント、ライブラリ、依存関係を記載した詳細なインベントリです。
+
+SBOM は、各コンポーネントのバージョン、出所（由来）、他コンポーネントとの関係性などを文書化することで、ソフトウェアサプライチェーンの透明性を提供します。
+
+言い換えれば、SBOM はソフトウェアにおける「レシピ」のようなもので、すべての「材料」とその組み合わせを明示します。
+
+SBOM に含まれるソフトウェアアーティファクトの記述には、以下のようなメタデータが含まれることがあります:
+
+- アーティファクト名
+
+- バージョン情報
+
+- ライセンス種別
+
+- 作成者（Authors）
+
+- 一意なパッケージ識別子
+
+## SBOM が重要な理由
+
+現代のソフトウェアアプリケーションは、多くの場合、オープンソースライブラリ、サードパーティサービス、自社コードなど、さまざまな出所のコンポーネントで構成されています。
+
+このような複雑さにより、脆弱性の可視性が低下し、コンプライアンスの確保が困難になることがあります。
+
+SBOM（ソフトウェア部品表）は、アプリケーションに含まれるすべてのコンポーネントを詳細に記録することで、こうした課題に対応します。
+
+SBOM の重要性は以下の観点から特に強調されます:
+
+- 透明性の向上: SBOM はアプリケーションを構成するすべてのコンポーネントを明確に示し、組織がサードパーティライブラリや依存関係に伴うリスクを特定・評価することを可能にします。
+
+- 脆弱性管理の前倒し対応: SBOM を常に最新に保つことで、使用中のソフトウェアコンポーネントに潜む脆弱性を素早く特定・修正でき、攻撃を受けるリスクの期間を短縮できます。
+
+- 法規制・業界基準への対応: 多くの規制や業界標準では、使用しているソフトウェアコンポーネントの管理が求められています。SBOM はその要件に対応する明確かつ容易にアクセス可能な記録を提供します。
+
+- インシデント対応の迅速化: セキュリティ侵害が発生した際、SBOM によって影響を受けるコンポーネントを迅速に特定し、被害を最小限に抑えるための適切な対応が可能になります。
+
+## Docker Hardened Image における SBOM
+
+Docker Hardened Images（DHI）には SBOM（ソフトウェア部品表）が組み込まれており、イメージに含まれるすべてのコンポーネントが文書化・検証可能な状態で提供されます。
+
+これらの SBOM は暗号的に署名されており、改ざん検出機能を備えた信頼性の高い記録として扱えます。
+
+この統合により、セキュリティ監査が簡素化され、サプライチェーン全体の信頼性が向上します。\
+
+## Docker Hardened Image の SBOM を表示する
+
+Docker Hardened Image の SBOM を表示するには、以下のように `docker scout sbom` コマンドを使用します。
+
+`<image-name>:<tag>` は対象のイメージ名とタグに置き換えてください。
+
+```shell
+$ docker scout sbom <image-name>:<tag>
+```
+
+## Docker Hardened Image の SBOM を検証する
+
+Docker Hardened Images には署名付き SBOM が含まれているため、Docker Scout を使って SBOM の真正性と完全性を検証することができます。
+
+これにより、SBOM が改ざんされていないこと、イメージの内容が信頼できるものであることを保証できます。
+
+以下のコマンドを使って、Docker Scout で SBOM を検証できます:
+
+```shell
+$ docker scout attest get <image-name>:<tag> \
+   --predicate-type https://scout.docker.com/sbom/v0.1 --verify --platform <platform>
+```
+
+例:
+`dhi/node:20.19-debian12-fips-20250701182639` イメージの SBOM を検証する場合:
+
+```shell
+$ docker scout attest get docs/dhi-node:20.19-debian12-fips-20250701182639 \
+   --predicate-type https://scout.docker.com/sbom/v0.1 --verify --platform linux/amd64
+```
+
+## リソース
+
+SBOM アテステーションや Docker Build に関する詳細は、[SBOM アテステーションのドキュメント](https://docs.docker.com/build/metadata/attestations/sbom/)をご覧ください。
+
+Docker Scout と SBOM の活用方法については、[Docker Scout での SBOM 管理](/scout-ja/how-tos/view-create-sboms/) を参照してください。
