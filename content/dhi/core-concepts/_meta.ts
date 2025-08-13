@@ -1,4 +1,4 @@
 export default {
   'attestations': 'アテステーション',
-  'sbom': 'SBOM'
+  'sbom': 'SBOM',
 }
