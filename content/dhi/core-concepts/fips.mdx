@@ -1,0 +1,98 @@
+---
+title: FIPS
+description: Docker Hardened Images が、FIPS 140 準拠の検証済み暗号モジュールを通じて、組織のコンプライアンス要件への対応を支援する方法を学びましょう。
+---
+
+# FIPS
+
+## FIPS 140 とは？
+
+[FIPS 140](https://csrc.nist.gov/publications/detail/fips/140/3/final) は、機密情報を保護する暗号モジュールのセキュリティ要件を定義する米国政府の標準規格です。
+
+この規格は、政府機関、医療、金融サービスなどの規制対象環境で広く利用されています。
+
+FIPS 認証は、[NIST（米国国立標準技術研究所）による暗号モジュール認証プログラム（CMVP）](https://csrc.nist.gov/projects/cryptographic-module-validation-program) によって管理されており、暗号モジュールが厳格なセキュリティ基準を満たしていることを保証します。
+
+## なぜ FIPS 準拠が重要なのか
+
+FIPS 140 準拠は、政府、医療、金融、防衛など、機密データの保護が求められる多くの規制対象環境において、必須または強く推奨されています。
+
+この規格は、暗号処理が信頼できるアルゴリズムを使用し、安全なモジュール内で実行されることを保証します。
+
+検証済み暗号モジュールに依存するソフトウェアコンポーネントを使用することで、組織は次のようなメリットを得られます：
+
+- FedRAMP のように、FIPS 140 検証済み暗号の使用を必須または強く推奨する連邦・業界規制の要件を満たせる
+
+- 監査対応性の向上: 安全で標準に基づく暗号処理を行っていることを、検証可能な証拠として提示可能
+
+- セキュリティリスクの低減: MD5 などの承認されていない、または安全でないアルゴリズムをブロックし、環境間での動作を一貫させられる
+
+## Docker Hardened Images による FIPS 準拠のサポート
+
+Docker Hardened Images（DHI）には、FIPS 140 検証済み暗号モジュールを使用したバリアントが含まれています。
+
+これらのイメージは、規格を満たすコンポーネントを組み込むことで、組織がコンプライアンス要件を満たすことを支援することを目的としています。
+
+- FIPS イメージバリアントは、すでに FIPS 140 の検証を受けた暗号モジュールを使用します。
+
+- これらのバリアントは、規制やコンプライアンス要件のある環境をサポートするために Docker によって構築・保守されています。
+
+- Docker は、FIPS 検証済み暗号モジュールの使用を記録した署名付きテストアテステーションを提供します。これらは内部監査やコンプライアンス報告に利用できます。
+
+> [!NOTE]
+>
+> FIPS イメージバリアントの使用は、コンプライアンス要件を満たす一助にはなりますが、それだけでアプリケーションやシステム全体が完全に準拠するわけではありません。
+> 準拠かどうかは、イメージがシステム全体でどのように統合・運用されるかに依存します。
+
+## FIPS に対応しているイメージを特定する
+
+FIPS に対応している Docker Hardened Images は、Docker Hardened Images カタログ内で FIPS 準拠 として表示されます。
+
+FIPS イメージバリアントを含む DHI リポジトリを探すには、[イメージを探索する](/dhi/how-to/explore) に進み、以下を実行します:
+
+- カタログページで **FIPS** フィルターを使用する
+
+- 各イメージのリストで **FIPS compliant** 表示を探す
+
+これらの表示により、FIPS 準拠が必要なコンプライアンス対応をサポートするリポジトリを素早く特定できます。
+
+FIPS 対応のイメージバリアントは、`3.13-fips` のようにタグの末尾が `-fips` になっています。
+
+## FIPS アテステーションを表示する
+
+Docker Hardened Images の FIPS バリアントには、そのイメージに含まれる実際の暗号モジュールを一覧化した FIPS アテステーション が含まれています。
+
+Docker Scout CLI を使用して、この FIPS アテステーションを取得・確認できます:
+
+```shell
+$ docker scout attest get \
+  --predicate-type https://docker.com/dhi/fips/v0.1 \
+  --predicate \
+  <your-namespace>/dhi-<image>:<tag>
+```
+
+例:
+
+```shell
+$ docker scout attest get \
+  --predicate-type https://docker.com/dhi/fips/v0.1 \
+  --predicate \
+  docs/dhi-python:3.13-fips
+```
+
+アテステーションの出力は JSON 配列で、イメージに含まれる暗号モジュールとそのコンプライアンス状況を記載しています。例:
+
+```json
+[
+  {
+    "certification": "CMVP #4985",
+    "certificationUrl": "https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/4985",
+    "name": "OpenSSL FIPS Provider",
+    "package": "pkg:dhi/openssl-provider-fips@3.1.2",
+    "standard": "FIPS 140-3",
+    "status": "active",
+    "sunsetDate": "2030-03-10",
+    "version": "3.1.2"
+  }
+]
+```

@@ -3,4 +3,5 @@ export default {
   'sbom': 'SBOM',
   'slsa': 'SLSA',
   'provenance': 'イメージプロビナンス',
+  'fips': 'FIPS',
 }
