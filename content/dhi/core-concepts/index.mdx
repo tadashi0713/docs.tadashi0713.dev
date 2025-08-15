@@ -5,7 +5,7 @@ asIndexPage: true
 ---
 
 import { Cards } from 'nextra/components'
-import { MdAssignment, MdFactCheck, MdTrackChanges, MdVerified, MdPolicy, MdError, MdWarning, MdShield, MdBuildCircle, MdLayersClear, MdOutlineSwapVert, MdDoNotDisturbOn, MdOutlineSecurity, MdFingerprint, MdKey } from 'react-icons/md'
+import { MdCheckCircle, MdAssignment, MdFactCheck, MdTrackChanges, MdVerified, MdPolicy, MdError, MdWarning, MdShield, MdBuildCircle, MdLayersClear, MdOutlineSwapVert, MdDoNotDisturbOn, MdOutlineSecurity, MdFingerprint, MdKey } from 'react-icons/md'
 import { FaListAlt } from 'react-icons/fa'
 
 # コアコンセプト
@@ -92,6 +92,18 @@ Docker Hardened Images が FIPS 140 をどのようにサポートしている�
 
 政府やエンタープライズ向けのコンプライアンス要件に対応する STIG ハードニング済みイメージと、そのセキュリティスキャンアテステーションを確認します。
 
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdCheckCircle />}
+  title="CIS ベンチマーク"
+  href="/dhi/core-concepts/cis/"
+  arrow
+/>
+
+Docker Hardened Images が、安全なコンテナ構成とデプロイメントのために Center for Internet Security（CIS）Docker ベンチマークの要件を満たす方法を学びましょう。
+
 ## 脆弱性とリスク管理
 
 <br />
@@ -148,7 +160,7 @@ Docker Hardened Images がスキャン、署名、デバッグツールと連携
 <br />
 
 <Cards.Card
-  icon={<MdBuildCircle />}
+  icon={<MdLayersClear />}
   title="Distroless イメージ"
   href="/dhi/core-concepts/distroless/"
   arrow
@@ -198,7 +210,7 @@ Docker Hardened Images が最小構成、非 root 実行、セキュアデフォ
 <br />
 
 <Cards.Card
-  icon={<MdOutlineSecurity />}
+  icon={<MdFingerprint />}
   title="ダイジェスト"
   href="/dhi/core-concepts/digests/"
   arrow
