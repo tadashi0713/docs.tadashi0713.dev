@@ -1,0 +1,118 @@
+---
+title: STIG
+description: Docker Hardened Images が、政府やエンタープライズのコンプライアンス要件に対応するため、検証可能なセキュリティスキャンアテステーション付きの STIG ハードニング済みコンテナイメージを提供する方法を学びましょう。
+---
+
+# STIG
+
+## STIG とは？
+
+STIG（Security Technical Implementation Guides） は、米国国防総省情報システム局（DISA） が発行する構成標準です。
+
+これは、米国国防総省（DoD）環境で使用されるオペレーティングシステム、アプリケーション、データベース、その他のテクノロジーに関するセキュリティ要件を定義しています。
+
+STIG は、システムが安全かつ一貫性のある構成で運用され、脆弱性を減らすことを目的としています。
+
+多くの場合、DoD の「General Purpose Operating System Security Requirements Guide（GPOS SRG）」のような、より広範な要件に基づいています。
+
+## STIG ガイダンスが重要な理由
+
+STIG ガイダンスの遵守は、米国政府のシステムに携わる、またはそれを支援する組織にとって極めて重要です。
+
+これにより、DoD（米国国防総省）のセキュリティ標準に準拠していることを示すことができ、次のような効果があります:
+
+- DoD システムにおける ATO（Authority to Operate／運用認可）プロセスの迅速化
+
+- 誤った構成や悪用可能な脆弱性のリスク低減
+
+- 標準化されたベースラインによる 監査および報告の簡素化
+
+連邦政府以外の環境でも、STIG はセキュリティ重視の組織によって、強化されたシステム構成のベンチマークとして利用されています。
+
+STIG は、より広範な NIST ガイダンス、特に [NIST Special Publication 800-53](https://csrc.nist.gov/publications/sp800) を基にしています。
+
+この文書は、連邦システム向けのセキュリティおよびプライバシー管理策のカタログを定義しており、800-53 や FedRAMP などの関連フレームワークの準拠を目指す組織は、STIG を実装ガイドとして活用し、該当する管理策要件を満たすことができます。
+
+## Docker Hardened Images による STIG ガイダンス適用の支援
+
+Docker Hardened Images（DHI）には、STIG バリアントが用意されており、カスタムの STIG ベースプロファイルに基づいてスキャンが実施され、署名付き STIG スキャンアテステーションが付属します。
+
+これらのアテステーションは、監査やコンプライアンス報告の際に活用できます。
+
+Docker は、GPOS SRG（General Purpose Operating System Security Requirements Guide） および DoD Container Hardening Process Guide に基づき、イメージごとにカスタムの STIG ベースプロファイルを作成しています。
+
+DISA はコンテナ専用の STIG をまだ発行していないため、これらのプロファイルは、STIG に類似したガイダンスをコンテナ環境に一貫性を持って、かつレビュー可能な形で適用することを可能にします。
+
+また、コンテナイメージでよく見られる誤検知（false positive）を減らすよう設計されています。
+
+## STIG スキャン結果を含むイメージを特定する
+
+STIG スキャン結果を含む Docker Hardened Images は、Docker Hardened Images カタログ内で **STIG** と表示されています。
+
+STIG イメージバリアントを含む DHI リポジトリを探すには、[イメージを探索する](/dhi/how-to/explore) に進み、次の操作を行います:
+
+- カタログページで **STIG** フィルターを使用する
+
+- 各イメージ一覧で **STIG** ラベルを探す
+
+特定のリポジトリ内で STIG イメージバリアントを探すには、そのリポジトリの **Tags** タブを開き、**Compliance** 列に **STIG** と表示されているイメージを確認します。
+
+## STIG スキャン結果の表示と検証
+
+Docker は、各 STIG ハードニング済みイメージに対して署名付きの [STIG スキャンアテステーション](/dhi/core-concepts/attestations) を提供しています。
+
+このアテステーションには以下が含まれます:
+
+- 合格・不合格・該当なし（not applicable）チェックの件数を含むスキャン結果の概要
+
+- 使用された STIG プロファイルの名称とバージョン
+
+- HTML および XCCDF（XML）の両形式での完全な出力
+
+### STIG スキャンアテステーションの表示
+
+Docker Scout CLI を使って STIG スキャンアテステーションを取得・確認できます:
+
+```shell
+$ docker scout attest get \
+  --predicate-type https://docker.com/dhi/stig/v0.1 \
+  --verify \
+  --predicate \
+  <your-namespace>/dhi-<image>:<tag>
+```
+
+### HTML レポートの抽出
+
+人間が読みやすい HTML 形式のレポートを抽出して表示するには:
+
+```shell
+$ docker scout attest get <your-namespace>/dhi-<image>:<tag> \
+  --predicate-type https://docker.com/dhi/stig/v0.1 \
+  --verify \
+  --predicate \
+  | jq -r '.[0].output[] | select(.format == "html").content | @base64d' > stig_report.html
+```
+
+### XCCDF レポートの抽出
+
+他のツールと連携するための XML（XCCDF）形式のレポートを抽出するには:
+
+```shell
+$ docker scout attest get <your-namespace>/dhi-<image>:<tag> \
+  --predicate-type https://docker.com/dhi/stig/v0.1 \
+  --verify \
+  --predicate \
+  | jq -r '.[0].output[] | select(.format == "xccdf").content | @base64d' > stig_report.xml
+```
+
+### STIG スキャン概要の表示
+
+完全なレポートではなく、スキャンの概要だけを表示するには:
+
+```shell
+$ docker scout attest get <your-namespace>/dhi-<image>:<tag> \
+  --predicate-type https://docker.com/dhi/stig/v0.1 \
+  --verify \
+  --predicate \
+  | jq -r '.[0] | del(.output)'
+```

@@ -4,4 +4,5 @@ export default {
   'slsa': 'SLSA',
   'provenance': 'イメージプロビナンス',
   'fips': 'FIPS',
+  'stig': 'STIG',
 }
