@@ -1,0 +1,51 @@
+---
+title: CIS ベンチマーク
+description: Docker Hardened Images が CIS Docker ベンチマークに準拠し、組織が安全なデプロイメントのためにコンテナイメージをハードニングできるよう支援する方法を学びましょう。
+---
+
+# CIS ベンチマーク
+
+## CIS Docker ベンチマークとは？
+
+[CIS Docker ベンチマーク](https://www.cisecurity.org/benchmark/docker) は、世界的に認知されている CIS ベンチマーク の一部であり、[Center for Internet Security（CIS）](https://www.cisecurity.org/) によって策定されています。
+
+このベンチマークは、コンテナホスト、Docker デーモン、コンテナイメージ、コンテナランタイムなど、Docker コンテナエコシステム全体に関する推奨される安全な構成を定義しています。
+
+## なぜ CIS ベンチマーク準拠が重要なのか
+
+CIS Docker ベンチマークに従うことで、組織は次のようなメリットを得られます:
+
+- 広く認知されたハードニングガイドラインに基づき、セキュリティリスクを低減できる。
+
+- CIS コントロールを参照する規制要件や契約要件を満たすことができる。
+
+- チーム間でイメージや Dockerfile の運用方法を標準化できる。
+
+- 公開標準に基づく構成判断により、監査対応の準備状況を示すことができる。
+
+## Docker Hardened Images における CIS ベンチマーク準拠
+
+Docker Hardened Images（DHI）はセキュリティを重視して設計されており、コンテナイメージおよび Dockerfile 構成に適用される範囲において、最新の CIS Docker ベンチマーク（v1.8.0）の関連コントロールに準拠していることが検証されています。
+
+CIS 準拠の DHI は、Section 4（イメージおよび Dockerfile のベストプラクティス）に含まれるすべてのコントロールに準拠しています。
+
+唯一の例外は Docker Content Trust（DCT）の有効化を求めるコントロールであり、これは [Docker によって公式に廃止](https://www.docker.com/blog/retiring-docker-content-trust/) されています。
+
+CIS 準拠の DHI をベースにすることで、チームはベンチマークに基づいたイメージレベルのベストプラクティスを、より迅速かつ安心して採用できます。
+
+> [!NOTE]
+>
+> CIS Docker ベンチマークには、ホスト、デーモン、ランタイムに関するコントロールも含まれています。
+> CIS 準拠の DHI が対応するのは、イメージおよび Dockerfile に関する範囲（Section 4）のみです。
+> 全体的な準拠は、より広い環境の構成や運用方法にも依存します。
+
+## CIS 準拠イメージの特定
+
+CIS 準拠のイメージは、Docker Hardened Images カタログ内で **CIS** と表示されています。
+
+これらを探すには、[イメージを探索する](/dhi/how-to/explore) に進み、各イメージ一覧で **CIS** 表示を確認してください。
+
+## ベンチマークの入手
+
+最新の CIS Docker ベンチマークは、以下のリンクから CIS 公式サイトより直接ダウンロードできます:
+https://www.cisecurity.org/benchmark/docker

@@ -5,4 +5,5 @@ export default {
   'provenance': 'イメージプロビナンス',
   'fips': 'FIPS',
   'stig': 'STIG',
+  'cis': 'CIS ベンチマーク',
 }
