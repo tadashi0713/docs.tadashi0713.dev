@@ -11,4 +11,5 @@ export default {
   'sscs': 'ソフトウェアサプライチェーンセキュリティ',
   'ssdlc': 'SSDLC',
   'distroless': 'Distroless イメージ',
+  'glibc-musl': 'glibc と musl',
 }
