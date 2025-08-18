@@ -10,4 +10,5 @@ export default {
   'vex': 'VEX',
   'sscs': 'ソフトウェアサプライチェーンセキュリティ',
   'ssdlc': 'SSDLC',
+  'distroless': 'Distroless イメージ',
 }
