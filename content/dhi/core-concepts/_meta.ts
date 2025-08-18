@@ -7,4 +7,5 @@ export default {
   'stig': 'STIG',
   'cis': 'CIS ベンチマーク',
   'cves': 'CVE',
+  'vex': 'VEX',
 }
