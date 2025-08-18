@@ -9,4 +9,5 @@ export default {
   'cves': 'CVE',
   'vex': 'VEX',
   'sscs': 'ソフトウェアサプライチェーンセキュリティ',
+  'ssdlc': 'SSDLC',
 }
