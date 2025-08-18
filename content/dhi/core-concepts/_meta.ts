@@ -8,4 +8,5 @@ export default {
   'cis': 'CIS ベンチマーク',
   'cves': 'CVE',
   'vex': 'VEX',
+  'sscs': 'ソフトウェアサプライチェーンセキュリティ',
 }
