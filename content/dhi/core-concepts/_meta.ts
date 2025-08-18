@@ -12,4 +12,5 @@ export default {
   'ssdlc': 'SSDLC',
   'distroless': 'Distroless イメージ',
   'glibc-musl': 'glibc と musl',
+  'immutability': 'イミュータビリティ',
 }
