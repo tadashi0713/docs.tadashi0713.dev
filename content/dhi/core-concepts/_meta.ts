@@ -13,4 +13,5 @@ export default {
   'distroless': 'Distroless イメージ',
   'glibc-musl': 'glibc と musl',
   'immutability': 'イミュータビリティ',
+  'hardening': 'ハードニング',
 }
