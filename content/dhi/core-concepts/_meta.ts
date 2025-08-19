@@ -14,4 +14,5 @@ export default {
   'glibc-musl': 'glibc と musl',
   'immutability': 'イミュータビリティ',
   'hardening': 'ハードニング',
+  'digests': 'イメージダイジェスト',
 }
