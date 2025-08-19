@@ -15,4 +15,5 @@ export default {
   'immutability': 'イミュータビリティ',
   'hardening': 'ハードニング',
   'digests': 'イメージダイジェスト',
+  'signatures': 'コード署名',
 }
