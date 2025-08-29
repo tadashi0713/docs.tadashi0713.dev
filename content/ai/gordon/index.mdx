@@ -1,0 +1,282 @@
+---
+title: Ask Gordon
+description: Docker Desktop と CLI に組み込まれた AI アシスタントで、ワークフローを効率化しましょう。
+asIndexPage: true
+---
+
+# Ask Gordon
+
+Ask Gordon は、Docker Desktop と Docker CLI に組み込まれたあなた専用の AI アシスタントです。
+ワークフローを効率化し、Docker エコシステムを最大限に活用できるよう設計されています。
+
+## 主な機能
+
+Ask Gordon は Docker ツールにおける AI 支援 を提供します。以下のことが可能です：
+
+- Dockerfile の改善
+
+- コンテナの実行とトラブルシューティング
+
+- イメージやコードとの対話
+
+- 脆弱性や設定上の問題の発見
+
+- [Docker Hardened Images](/dhi/) を利用するように Dockerfile を移行
+
+Ask Gordon はローカル環境（ソースコード、Dockerfile、イメージなど）を理解し、個別かつ実用的なガイダンスを提供します。
+また、会話を記憶するため、トピックの切り替えも容易です。
+
+Ask Gordon はデフォルトでは無効化されており、本番環境利用を想定したものではありません。
+この技術をより広い意味で指す場合は「Docker AI」という用語が使われることもあります。
+
+> [!NOTE]
+> 
+> Ask Gordon は LLM（大規模言語モデル） によって動作します。
+> 他の LLM ベースのツールと同様に、回答が不正確な場合があります。必ず提供された情報を検証してください。
+
+### Gordon がアクセスするデータ
+
+Ask Gordon がアクセスするデータは、あなたのクエリ内容によって異なります：
+
+- ローカルファイル: `docker ai` コマンドを使用すると、カレントディレクトリにあるファイルやディレクトリにアクセスします。Docker Desktop の **Ask Gordon** ビューで特定のファイルやディレクトリを指定した場合は、対象を選択するよう求められます。
+
+- ローカルイメージ: Gordon は Docker Desktop と統合されており、ローカルのイメージストアにあるすべてのイメージ（自身でビルドしたものやレジストリから pull したものを含む）を閲覧できます。
+
+正確な回答を提供するために、関連するファイルやディレクトリ、イメージのメタデータが Gordon のバックエンドに送信される場合があります。
+このデータはネットワーク経由で転送されますが、永続的に保存されたり、第三者と共有されたりすることはありません。
+これはリクエスト処理と回答生成にのみ利用されます。詳細は [Gordon の追加規約](https://www.docker.com/legal/docker-ai-supplemental-terms/)を参照してください。
+
+すべてのデータは転送中に暗号化されます。
+
+### データ収集と利用方法
+
+Docker は Ask Gordon とのやり取りから匿名化されたデータを収集し、サービス改善に役立てています。収集されるのは以下の情報です：
+
+- あなたのクエリ（質問内容）
+
+- Gordon の回答
+
+- フィードバック（👍／👎による評価）
+
+プライバシーとセキュリティを確保するために：
+
+- データは匿名化され、ユーザーやアカウントに紐付けられることはありません。
+
+- Docker はこのデータを AI モデルの学習には利用せず、第三者と共有することもありません。
+
+Ask Gordon を利用することで、Docker AI の信頼性と正確性の向上に貢献できます。
+
+データ収集や利用に懸念がある場合は、いつでも機能を[無効化]()できます。
+
+## Ask Gordon を有効化する
+
+1. Docker アカウントにサインインします。
+
+2. 設定画面で **Beta features** タブを開きます。
+
+3. **Enable Docker AI** チェックボックスをオンにします。
+
+    Docker AI の利用規約が表示されます。機能を有効化するには規約への同意が必要です。規約を確認し、**Accept and enable** を選択して続行します。
+
+4. **Apply** をクリックします。
+
+> [!IMPORTANT]
+> 
+> Docker Desktop バージョン 4.41 以前では、この設定は **Features in development** ページ内の **Experimental features** タブにあります。
+
+## Ask Gordon の利用方法
+
+Gordon には次の方法でアクセスできます：
+
+- Docker Desktop の **Ask Gordon** ビューから
+
+- Docker CLI の `docker ai` コマンドから
+
+Docker AI 機能を有効化すると、Docker Desktop の他の場所でも **Ask Gordon** が表示されます。
+✨（スパークル）アイコンの付いたボタンが表示されている場合は、そこから Ask Gordon を呼び出してコンテキストに応じたサポートを受けることができます。
+
+## ワークフロー例
+
+Ask Gordon は Docker に関するタスクやワークフローのための汎用 AI アシスタントです。以下のようなことが可能です：
+
+- [クラッシュしたコンテナのトラブルシュート](#クラッシュしたコンテナのトラブルシュート)
+
+- [コンテナの実行サポート](#コンテナ実行のサポート)
+
+- [Dockerfile の改善](#dockerfile-の改善)
+
+- [Dockerfile の DHI への移行](#dockerfile-の-dhi-への移行)
+
+さらに例を知りたい場合は、直接 Gordon に質問してみてください。例：
+
+```shell
+$ docker ai "What can you do?"
+```
+
+### クラッシュしたコンテナのトラブルシュート
+
+無効な設定やコマンドでコンテナを起動した場合、Ask Gordon を使ってエラーを調査できます。
+
+例：Postgres コンテナをデータベースパスワードなしで起動した場合：
+
+```shell
+$ docker run postgres
+Error: Database is uninitialized and superuser password is not specified.
+       You must specify POSTGRES_PASSWORD to a non-empty value for the
+       superuser. For example, "-e POSTGRES_PASSWORD=password" on "docker run".
+
+       You may also use "POSTGRES_HOST_AUTH_METHOD=trust" to allow all
+       connections without a password. This is *not* recommended.
+
+       See PostgreSQL documentation about "trust":
+       https://www.postgresql.org/docs/current/auth-trust.html
+```
+
+Docker Desktop の **Containers** ビューで、コンテナ名の横にある ✨ アイコンを選択するか、
+
+コンテナをインスペクトして **Ask Gordon** タブを開きます。
+
+### コンテナ実行のサポート
+
+特定のイメージを実行したいが方法がわからない場合、Gordon がセットアップを支援します：
+
+1. Docker Hub からイメージを pull（例：`postgres`）。
+
+2. Docker Desktop の **Images** ビューを開き、対象イメージを選択。
+
+3. **Run** ボタンを選択。
+
+**Run a new container** ダイアログに **Ask Gordon** に関するメッセージが表示されます。
+
+リンクテキストは、Ask Gordon との会話を開始するための推奨プロンプトです。
+
+### Dockerfile の改善
+
+Gordon は Dockerfile を解析し、改善点を提案できます。
+
+`docker ai` コマンドを使用して Dockerfile を評価するには：
+
+1. プロジェクトディレクトリへ移動：
+
+    ```shell
+    $ cd <path-to-your-project>
+    ```
+
+2. `docker ai` コマンドで Dockerfile を評価：
+
+    ```shell
+    $ docker ai rate my Dockerfile
+    ```
+
+Gordon は Dockerfile を分析し、以下の観点で改善点を提示します：
+
+- ビルドキャッシュの最適化
+
+- セキュリティ
+
+- イメージサイズの効率化
+
+- ベストプラクティス準拠
+
+- 保守性
+
+- 再現性
+
+- 移植性
+
+- リソース効率
+
+### Dockerfile の DHI への移行
+
+Dockerfile を [Docker Hardened Images](/dhi/) に移行することで、よりセキュアでミニマル、本番対応可能なコンテナを構築できます。
+DHI は脆弱性を減らし、ベストプラクティスを強制し、コンプライアンスを簡素化するため、セキュアなソフトウェアサプライチェーンの強固な基盤となります。
+
+移行を Gordon に依頼するには：
+
+1. Gordon が [有効化されている](#ask-gordon-を有効化する)ことを確認します。
+
+2. Gordon のツールボックスで、[Developer MCP Toolkit が有効化されている]()ことを確認します。
+
+3. ターミナルで、Dockerfile を含むディレクトリに移動します。
+
+4. Gordon との会話を開始します：
+
+    ```shell
+    docker ai
+    ```
+
+5. 以下を入力します：
+
+    ```shell
+    "Migrate my dockerfile to DHI"
+    ```
+
+6. Gordon との会話を進めます。Gordon は Dockerfile を編集するため、ファイルシステムへのアクセスなどを求められた場合は `yes` と入力して処理を許可してください。
+
+    > [!NOTE]
+    > 
+    > Gordon がどのデータにアクセスでき、どのように保持されるかについては、[Gordon](#gordon-がアクセスするデータ) を参照してください。
+
+移行が完了すると、次のような成功メッセージが表示されます：
+
+```text
+The migration to Docker Hardened Images (DHI) is complete. The updated Dockerfile
+successfully builds the image, and no vulnerabilities were detected in the final image.
+The functionality and optimizations of the original Dockerfile have been preserved.
+```
+
+> [!IMPORTANT]
+> 
+> 他の AI ツールと同様に、Gordon の編集内容は必ず検証し、生成されたイメージをテストする必要があります。
+
+## Ask Gordon を無効化する
+
+### 個別ユーザーの場合
+
+Ask Gordon を有効化済みで再び無効化したい場合：
+
+1. Docker Desktop の **Settings** ビューを開きます。
+
+2. **Beta features** に移動します。
+
+3. **Enable Docker AI** チェックボックスのチェックを外します。
+
+4. **Apply** をクリックします。
+
+### Organization 全体の場合
+
+Docker Organization 全体で Ask Gordon を無効化するには、[Settings Management](/docker-security-ja/for-admins/hardened-desktop/settings-management) を使用し、`admin-settings.json` ファイルに以下のプロパティを追加します：
+
+```json
+{
+  "enableDockerAI": {
+    "value": false,
+    "locked": true
+  }
+}
+```
+
+または、すべての Beta 機能を無効化するには `allowBetaFeatures` を `false` に設定します：
+
+```json
+{
+  "allowBetaFeatures": {
+    "value": false,
+    "locked": true
+  }
+}
+```
+
+## フィードバック
+
+私たちは Ask Gordon に関する皆さまからのご意見 を大切にしています。ぜひ利用体験を共有してください。
+フィードバックは Ask Gordon をすべてのユーザーにとってより良いものに改善するために役立ちます。
+不具合に遭遇した場合、改善の提案がある場合、あるいは気に入った点を共有したい場合には、以下の方法でお知らせください。
+
+- 👍／👎 ボタン
+
+    Ask Gordon の回答ごとに表示される サムズアップ／サムズダウンボタンを使って、回答を評価できます。
+
+- フィードバックアンケート
+
+    Docker Desktop の **Ask Gordon** ビューにある Give feedback リンク、もしくは CLI で `docker ai feedback` コマンドを実行することで、アンケートにアクセスできます。
