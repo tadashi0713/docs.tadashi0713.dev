@@ -1,0 +1,40 @@
+---
+title: Model Context Protocol (MCP)
+description: Docker Desktop で Gordon と連携し、AI 機能を拡張するために Model Context Protocol (MCP) サーバーを使用する方法を学びましょう。
+asIndexPage: true
+---
+
+import { Cards } from 'nextra/components'
+import { MdOutlineConstruction, MdPrecisionManufacturing } from 'react-icons/md'
+
+# Model Context Protocol (MCP)
+
+[Model Context Protocol](https://modelcontextprotocol.io/introduction) （MCP）は、アプリケーションが大規模言語モデル（LLM）にコンテキストや追加機能を提供する方法を標準化するオープンプロトコルです。
+MCP はクライアント・サーバープロトコルとして機能し、たとえば Gordon のようなアプリケーション（クライアント）がリクエストを送信し、サーバーがそのリクエストを処理して AI に必要なコンテキストを提供します。
+このコンテキストは、MCP サーバーがアクションを実行するコードを実行して結果を取得したり、外部 API を呼び出したり、その他の類似した処理によって収集される場合があります。
+
+Gordon は、Claude Desktop や Cursor などの他の MCP クライアントと同様に、コンテナとして実行されている MCP サーバーと相互作用できます。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdOutlineConstruction />}
+  title="ビルトインツール"
+  href="/ai/gordon/mcp/built-in-tools"
+  arrow
+/>
+
+組み込みツールを使用します。
+
+<br />
+<br />
+
+<Cards.Card
+  icon={<MdPrecisionManufacturing />}
+  title="MCP 設定"
+  href="/ai/gordon/mcp/yaml"
+  arrow
+/>
+
+プロジェクトごとに MCP ツールを設定します。
