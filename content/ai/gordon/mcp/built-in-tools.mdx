@@ -1,0 +1,217 @@
+---
+title: Gordon のビルトインツール
+description: Docker、Kubernetes、セキュリティ、開発ワークフロー向けに Gordon のビルトインツールを利用・設定する方法を学びましょう
+---
+
+# Gordon のビルトインツール
+
+Gordon には 統合ツールボックス が含まれており、システムツールや各種機能へアクセスできます。
+これらのツールは Gordon の機能を拡張し、Docker Engine、Kubernetes、Docker Scout によるセキュリティスキャン、その他の開発者向けユーティリティと対話できるようにします。
+
+この記事では、利用可能なツール、その設定方法、そして使用パターンについて説明します。
+
+## ツールの設定
+
+ツールボックスでツールをグローバルに設定すると、Docker Desktop や CLI を含む Gordon 全体で利用できるようになります。
+
+ツールを設定するには：
+
+1. Docker Desktop の **Ask Gordon** ビューで、入力エリア左下にある **Toolbox** ボタンを選択します。
+
+    ![Gordon](/ai/gordon.png)
+
+<br />
+
+2. 有効化または無効化したいツールを左側のメニューから選択し、トグルを切り替えます。
+
+    ![Toolbox](/ai/toolbox.png)
+
+    Docker ツールの詳細については、[リファレンス](#リファレンス)を参照してください。
+
+## 使用例
+
+このセクションでは、Gordon のツールを使って実行できる一般的なタスクを紹介します。
+
+### Docker コンテナの管理
+
+#### コンテナの一覧と監視
+
+```shell
+# 実行中のすべてのコンテナを一覧表示
+$ docker ai "Show me all running containers"
+
+# 特定のリソースを使用しているコンテナを一覧表示
+$ docker ai "List all containers using more than 1GB of memory"
+
+# 特定のコンテナのログを表示
+$ docker ai "Show me logs from my running api-container from the last hour"
+```
+
+#### コンテナライフサイクルの管理
+
+```shell
+# 新しいコンテナを実行
+$ docker ai "Run a nginx container with port 80 exposed to localhost"
+
+# 特定のコンテナを停止
+$ docker ai "Stop my database container"
+
+# 未使用のコンテナをクリーンアップ
+$ docker ai "Remove all stopped containers"
+```
+
+### Docker イメージの操作
+
+```shell
+# 利用可能なイメージを一覧表示
+$ docker ai "Show me all my local Docker images"
+
+# 特定のイメージを pull
+$ docker ai "Pull the latest Ubuntu image"
+
+# Dockerfile からイメージをビルド
+$ docker ai "Build an image from my current directory and tag it as myapp:latest"
+
+# 未使用のイメージをクリーンアップ
+$ docker ai "Remove all my unused images"
+```
+
+### Docker ボリュームの管理
+
+```shell
+# ボリュームを一覧表示
+$ docker ai "List all my Docker volumes"
+
+# 新しいボリュームを作成
+$ docker ai "Create a new volume called postgres-data"
+
+# コンテナのデータをボリュームにバックアップ
+$ docker ai "Create a backup of my postgres container data to a new volume"
+```
+
+### Kubernetes の操作
+
+```shell
+# デプロイメントを作成
+$ docker ai "Create an nginx deployment and make sure it's exposed locally"
+
+# リソースを一覧表示
+$ docker ai "Show me all deployments in the default namespace"
+
+# ログを取得
+$ docker ai "Show me logs from the auth-service pod"
+```
+
+### セキュリティ分析の実行
+
+```shell
+# CVE スキャン
+$ docker ai "Scan my application for security vulnerabilities"
+
+# セキュリティ改善の推奨事項を取得
+$ docker ai "Give me recommendations for improving the security of my nodejs-app image"
+```
+
+## リファレンス
+
+このセクションでは、Gordon のツールボックスに含まれるビルトインツールを一覧します。
+
+### Docker ツール
+
+Docker コンテナ、イメージ、ボリュームと対話します。
+
+#### コンテナ管理
+
+| 名前           | 説明                        |
+|---------------|-----------------------------|
+| `docker`      | Docker CLI へアクセス         |
+| `list_builds` | Docker デーモン上のビルドを一覧 |
+| `build_logs`  | ビルドログを表示               |
+
+#### ボリューム管理
+
+| ツール          | 説明                          |
+|----------------|------------------------------|
+| `list_volumes` | すべての Docker ボリュームを一覧 |
+| `remove_volume`| Docker ボリュームを削除         |
+| `create_volume`| 新しい Docker ボリュームを作成   |
+
+#### イメージ管理
+
+| ツール          | 説明                            |
+|----------------|--------------------------------|
+| `list_images`  | すべての Docker イメージを一覧表示 |
+| `remove_images`| Docker イメージを削除            |
+| `pull_image`   | レジストリからイメージを pull     |
+| `push_image`   | レジストリへイメージを push       |
+| `build_image`  | Docker イメージをビルド          |
+| `tag_image`    | Docker イメージにタグを付与       |
+| `inspect`      | Docker オブジェクトをインスペクト  |
+
+### Kubernetes ツール
+
+Kubernetes クラスターと対話します。
+
+#### Pod 管理
+
+| ツール          | 説明                          |
+|----------------|------------------------------|
+| `list_pods`    | クラスター内のすべての Pod を一覧 |
+| `get_pod_logs` | 特定の Pod のログを取得         |
+
+#### デプロイメント管理
+
+| ツール              | 説明                          |
+|--------------------|------------------------------|
+| `list_deployments` | すべてのデプロイメントを一覧      |
+| `create_deployment`| 新しいデプロイメントを作成        |
+| `expose_deployment`| デプロイメントをサービスとして公開 |
+| `remove_deployment`| デプロイメントを削除             |
+
+#### サービス管理
+
+| ツール           | 説明                |
+|-----------------|--------------------|
+| `list_services` | すべてのサービスを一覧 |
+| `remove_service`| サービスを削除        |
+
+#### クラスター情報
+
+| ツール            | 説明                     |
+|------------------|------------------------- |
+| `list_namespaces`| すべてのネームスペースを一覧 |
+| `list_nodes`     | クラスター内のノードを一覧   |
+
+### Docker Scout ツール
+
+Docker Scout によるセキュリティ分析。
+
+| ツール                          | 説明                                                                                 |
+|--------------------------------|-------------------------------------------------------------------------------------|
+| `search_for_cves`              | Docker イメージ、プロジェクトディレクトリ、その他アーティファクトの脆弱性を CVE データベースで分析 |
+| `get_security_recommendations` | Docker イメージやディレクトリを分析し、ベースイメージ更新に関する推奨を提示.                    |
+
+### 開発者ツール
+
+汎用的な開発ユーティリティ。
+
+| ツール             | 説明                    |
+|-------------------|------------------------|
+| `fetch`           | URL からコンテンツを取得   |
+| `get_command_help`| CLI コマンドのヘルプを取得 |
+| `run_command`     | シェルコマンドを実行       |
+| `filesystem`      | ファイルシステム操作を実行  |
+| `git`             | Git コマンドを実行        |
+
+### AI モデルツール
+
+| ツール          | 説明                           |
+|----------------|--------------------------------|
+| `list_models`  | 利用可能な Docker モデルを一覧表示 |
+| `pull_model`   | Docker モデルをダウンロード       |
+| `run_model`    | モデルにプロンプトを投げて実行      |
+| `remove_model` | Docker モデルを削除              |
+
+### Docker MCP カタログ
+
+[MCP Toolkit 機能](/ai/mcp-catalog-and-toolkit/)を有効化している場合、有効化・設定したすべてのツールを Gordon で利用できます。
