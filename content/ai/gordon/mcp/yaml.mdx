@@ -1,0 +1,127 @@
+---
+title: YAML で MCP サーバーを設定する
+description: Gordon と一緒に MCP サーバーを利用する
+---
+
+# YAML で MCP サーバーを設定する
+
+Docker は Anthropic と連携し、MCP サーバーの[リファレンス実装用](https://github.com/modelcontextprotocol/servers/)コンテナイメージを提供しています。
+これらは Docker Hub 上の [mcp 名前空間](https://hub.docker.com/u/mcp)で利用できます。
+
+ターミナルで `docker ai` コマンドを実行すると、Gordon は作業ディレクトリ内に `gordon-mcp.yml` ファイルが存在するか確認します。
+存在する場合、そのファイルに記載された MCP サーバーが Gordon で利用されます。
+`gordon-mcp.yml` ファイルは Docker Compose ファイルであり、MCP サーバーを Compose サービスとして設定し、Gordon からアクセス可能にします。
+
+以下の最小構成例は、[mcp-time サーバー](https://hub.docker.com/r/mcp/time) を使って Gordon に時刻関連の機能を提供するものです。
+詳細については [ソースコードとドキュメント](https://github.com/modelcontextprotocol/servers/tree/main/src/time) を参照してください。
+
+作業ディレクトリに `gordon-mcp.yml` ファイルを作成し、time サーバーを追加します：
+
+```yaml
+services:
+  time:
+    image: mcp/time
+```
+
+このファイルが存在する状態で、他のタイムゾーンの時刻を Gordon に問い合わせることができます：
+
+```shell
+$ docker ai 'what time is it now in kiribati?'
+
+    • Calling get_current_time
+
+  The current time in Kiribati (Tarawa) is 9:38 PM on January 7, 2025.
+```
+
+Gordon は MCP time サーバーを見つけ、必要に応じてそのツールを呼び出します。
+
+## 高度な MCP サーバー機能の利用
+
+一部の MCP サーバーは、ファイルシステムやシステム環境変数へのアクセスを必要とします。
+これには Docker Compose が役立ちます。`gordon-mcp.yml` は Compose ファイルなので、標準的な Docker Compose 構文を使って バインドマウント を追加できます。
+これにより、ファイルシステムのリソースをコンテナから利用可能にできます。
+
+```yaml
+services:
+  fs:
+    image: mcp/filesystem
+    command:
+      - /rootfs
+    volumes:
+      - .:/rootfs
+```
+
+この `gordon-mcp.yml` ファイルを使うと、Gordon にファイルシステムアクセス機能が追加されます。
+すべてはコンテナ内で実行されるため、Gordon は 指定されたディレクトリのみにアクセス可能です。
+
+Gordon は任意の数の MCP サーバーを利用できます。
+例えば、`mcp/fetch` サーバーを使って Gordon にインターネットアクセスを提供するには：
+
+```yaml
+services:
+  fetch:
+    image: mcp/fetch
+  fs:
+    image: mcp/filesystem
+    command:
+      - /rootfs
+    volumes:
+      - .:/rootfs
+```
+
+これで、Gordon にコンテンツを取得してファイルに書き込むよう依頼できます：
+
+```shell
+$ docker ai can you fetch rumpl.dev and write the summary to a file test.txt
+
+    • Calling fetch ✔️
+    • Calling write_file ✔️
+
+  The summary of the website rumpl.dev has been successfully written to the
+  file test.txt in the allowed directory. Let me know if you need further
+  assistance!
+
+$ cat test.txt
+The website rumpl.dev features a variety of blog posts and articles authored
+by the site owner. Here's a summary of the content:
+
+1. **Wasmio 2023 (March 25, 2023)**: A recap of the WasmIO 2023 conference 
+   held in Barcelona. The author shares their experience as a speaker and 
+   praises the organizers for a successful event.
+
+2. **Writing a Window Manager in Rust - Part 2 (January 3, 2023)**: The 
+   second part of a series on creating a window manager in Rust. This 
+   installment focuses on enhancing the functionality to manage windows 
+   effectively.
+
+3. **2022 in Review (December 29, 2022)**: A personal and professional recap 
+   of the year 2022. The author reflects on the highs and lows of the year, 
+   emphasizing professional achievements.
+
+4. **Writing a Window Manager in Rust - Part 1 (December 28, 2022)**: The 
+   first part of the series on building a window manager in Rust. The author 
+   discusses setting up a Linux machine and the challenges of working with 
+   X11 and Rust.
+
+5. **Add docker/docker to your dependencies (May 10, 2020)**: A guide for Go 
+   developers on how to use the Docker client library in their projects. The 
+   post includes a code snippet demonstrating the integration.
+
+6. **First (October 11, 2019)**: The inaugural post on the blog, featuring a 
+   simple "Hello World" program in Go.
+```
+
+## 次のステップは？
+
+MCP サーバーを Gordon で利用する方法を理解したら、次は以下のステップを試してみましょう：
+
+- 試してみる: 1 つ以上のテスト済み MCP サーバーを `gordon-mcp.yml` ファイルに統合し、その機能を探索してみてください。
+
+- エコシステムを調べる: [GitHub のリファレンス実装](https://github.com/modelcontextprotocol/servers/) を確認したり、[Docker Hub の MCP 名前空間](https://hub.docker.com/u/mcp) を閲覧して、ニーズに合うサーバーを探してください。
+
+- 自作する: 既存のサーバーがニーズを満たさない場合や、さらに深く学びたい場合は、独自の MCP サーバーを開発してみましょう。[MCP 仕様](https://www.anthropic.com/news/model-context-protocol) がガイドになります。
+
+- フィードバックを共有する: Gordon と連携してうまく動作する新しいサーバーを見つけた場合や、問題に遭遇した場合は、[発見を共有してエコシステム改善に貢献](https://docker.qualtrics.com/jfe/form/SV_9tT3kdgXfAa6cWa) してください。
+
+MCP サポートによって、Gordon は強力な拡張性と柔軟性を備えます。
+時刻認識、ファイル管理、インターネットアクセスなど、ユースケースに応じて利用できます。
