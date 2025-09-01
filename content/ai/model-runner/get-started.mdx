@@ -1,0 +1,203 @@
+---
+title: DMR を始める
+description: Docker Model Runner をインストール、有効化、使用して AI モデルを管理・実行する方法。
+---
+
+import { Tabs } from 'nextra/components'
+
+# DMR を始める
+
+[Docker Model Runner](/ai/model-runner/) を始めましょう。
+
+## Docker Model Runner を有効にする
+
+### Docker Desktop で DMR を有効にする
+
+1. 設定ビューで **AI** タブに移動します。
+
+2. **Enable Docker Model Runner** 設定を選択します。
+
+3. Windows でサポート対象の NVIDIA GPU を利用している場合、**Enable GPU-backed inference** も表示され、選択できます。
+
+4. （任意）TCP サポートを有効にしたい場合は、**Enable host-side TCP support** を選択します。
+
+    1. **Port** フィールドに任意のポート番号を入力します。
+    2. Model Runner をローカルのフロントエンド Web アプリから利用する場合は、**CORS Allows Origins** にそのアプリの URL（例：`http://localhost:3131`）を指定します。
+
+これで `docker model` コマンドを CLI で使用できるようになり、Docker Desktop の **Models** タブからローカルモデルを表示・操作できます。
+
+> [!IMPORTANT]
+>
+> Docker Desktop バージョン 4.45 以前では、この設定は **Beta features** タブにありました。
+
+### Docker Engine で DMR を有効にする
+
+1. [Docker Engine](https://docs.docker.com/engine/install/) がインストールされていることを確認してください。
+
+2. DMR はパッケージとして提供されています。以下のコマンドでインストールできます：
+
+<Tabs items={['Ubuntu/Debian', 'RPM-base distributions']}>
+  <Tabs.Tab>
+    ```bash
+    $ sudo apt-get update
+    $ sudo apt-get install docker-model-plugin
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```bash
+    $ sudo dnf update
+    $ sudo dnf install docker-model-plugin
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+3. インストールをテストします:
+
+    ```bash
+    $ docker model version
+    $ docker model run ai/smollm2
+    ```
+
+> [!NOTE]
+> 
+> Docker Engine では TCP サポートがデフォルトで有効化されており、ポートは 12434 が使用されます。
+
+### Docker Engine で DMR を更新する
+
+Docker Engine 上の Docker Model Runner を更新するには、まずアンインストールしてから再インストールします。
+
+```bash
+docker model uninstall-runner --images && docker model install-runner
+```
+
+> [!NOTE]
+>
+> 上記コマンドではローカルモデルは保持されます。
+> アップグレード時にモデルも削除したい場合は、`uninstall-runner` コマンドに `--models` オプションを追加してください。
+
+## モデルを pull する
+
+モデルはローカルにキャッシュされます。
+
+> [!NOTE]
+> 
+> Docker CLI を使用する場合、モデルは [HuggingFace](https://huggingface.co/) から直接 pull することもできます。
+
+<Tabs items={['Docker Desktop から', 'Docker CLI から']}>
+  <Tabs.Tab>
+    1. **Models** タブを開き、**Docker Hub** タブを選択します。
+    2. 使用したいモデルを探して、**Pull** をクリックします。
+
+    ![Docker Model Runner カタログ](/ai/dmr-catalog.png)
+  </Tabs.Tab>
+  <Tabs.Tab>
+   [`docker model pull`](https://docs.docker.com/reference/cli/docker/model/pull/) コマンドを使用します。例：
+
+   ```bash
+   # Docker Hub から Pull
+   docker model pull ai/smollm2:360M-Q4_K_M
+   ```
+
+   ```bash
+   # Hugging Face から Pull
+   docker model pull hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF
+   ```
+  </Tabs.Tab>
+</Tabs>
+
+## モデルを実行する
+
+<Tabs items={['Docker Desktop から', 'Docker CLI から']}>
+  <Tabs.Tab>
+    1. **Models** タブを開き、**Local** タブを選択します。
+    2. 実行したいモデルの再生ボタン（▶）をクリックします。インタラクティブなチャット画面が表示されます。
+
+    ![Docker Model Runner 実行](/ai/dmr-run.png)
+  </Tabs.Tab>
+  <Tabs.Tab>
+    [`docker model run`](https://docs.docker.com/reference/cli/docker/model/run/) コマンドを使用します。
+  </Tabs.Tab>
+</Tabs>
+
+## モデルを設定する
+
+モデルの最大トークン数などを設定するには Docker Compose を使用します。
+
+詳細は [Models and Compose - Model configuration options]() を参照してください。
+
+## モデルの公開（Publish）
+
+> [!NOTE]
+>
+> この機能は Docker Hub に限らず、OCI アーティファクトをサポートするすべてのコンテナレジストリで利用可能です。
+
+既存のモデルに新しい名前を付けて、別の namespace やリポジトリで公開できます：
+
+```bash
+# Pull 済みのモデルに新しい名前をタグ付け
+$ docker model tag ai/smollm2 myorg/smollm2
+
+# Docker Hub に Push
+$ docker model push myorg/smollm2
+```
+
+詳細は [`docker model tag`](https://docs.docker.com/reference/cli/docker/model/tag/) および [`docker model push`](https://docs.docker.com/reference/cli/docker/model/push/) のコマンドリファレンスを参照してください。
+
+GGUF 形式のモデルファイルを直接 OCI アーティファクトとしてパッケージ化し、Docker Hub に公開することもできます：
+
+```bash
+# 例：HuggingFace から GGUF 形式のモデルファイルをダウンロード
+$ curl -L -o model.gguf https://huggingface.co/TheBloke/Mistral-7B-v0.1-GGUF/resolve/main/mistral-7b-v0.1.Q4_K_M.gguf
+
+# OCI アーティファクトとしてパッケージ化し、Docker Hub に Push
+$ docker model package --gguf "$(pwd)/model.gguf" --push myorg/mistral-7b-v0.1:Q4_K_M
+```
+
+詳細は [`docker model package`](https://docs.docker.com/reference/cli/docker/model/package/) のコマンドリファレンスをご覧ください。
+
+## トラブルシューティング
+
+### ログの表示
+
+問題が発生した場合は、ログを表示して原因を確認できます：
+
+<Tabs items={['Docker Desktop から', 'Docker CLI から']}>
+  <Tabs.Tab>
+    **Models** タブを開き、**Logs** タブを選択します。
+
+    ![Docker Model Runner ログ](/ai/dmr-logs.png)
+  </Tabs.Tab>
+  <Tabs.Tab>
+    [`docker model logs`](https://docs.docker.com/reference/cli/docker/model/logs/) コマンドを使用します。
+  </Tabs.Tab>
+</Tabs>
+
+### リクエストとレスポンスの確認
+
+リクエストとレスポンスを確認することで、モデル関連の問題を診断できます。
+例えば、コンテキストウィンドウ内に収まっているかを確認したり、フレームワークを使った開発時に渡しているリクエストパラメータを制御したりするために、リクエスト本文を表示できます。
+
+Docker Desktop でモデルごとのリクエストとレスポンスを確認するには：
+
+1. **Models** を選択し、**Requests** タブを開きます。このビューでは、すべてのモデルへのリクエストが表示されます：
+
+    - リクエスト送信時刻
+    - モデル名とバージョン
+    - プロンプト／リクエスト内容
+    - コンテキスト使用量
+    - レスポンス生成にかかった時間
+
+2. 任意のリクエストを選択すると、さらに詳細が表示されます：
+
+    - **Overview** タブでは、トークン使用量、レスポンスのメタデータ、生成速度、実際のプロンプトとレスポンスを確認可能
+    - **Request** タブと **Response** タブでは、リクエストとレスポンスの完全な JSON ペイロードを確認可能
+
+> [!NOTE]
+> 
+> 特定のモデルを選択して **Requests** タブを開くと、そのモデルに対するリクエストのみを表示できます。
+
+## 関連ページ
+
+- [モデルとプログラムでやり取りする](/ai/model-runner/api-reference/)
+- [Models and Compose](/ai/compose/models-and-compose/)
+- [Docker Model Runner CLI リファレンスドキュメント](https://docs.docker.com/reference/cli/docker/model/)
