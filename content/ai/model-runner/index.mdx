@@ -1,0 +1,93 @@
+---
+title: Docker Model Runner
+description: Docker Model Runner の使い方を学び、AI モデルを管理・実行しましょう
+asIndexPage: true
+---
+
+import { Tabs } from 'nextra/components'
+
+# Docker Model Runner
+
+Docker Model Runner は、Docker を使って AI モデルを簡単に管理・実行・デプロイできるようにする機能です。開発者向けに設計されており、大規模言語モデル（LLM）やその他の AI モデルを Docker Hub や OCI 準拠のレジストリから直接 Pull・実行・提供するプロセスを効率化します。
+
+Docker Desktop や Docker Engine とシームレスに統合されており、OpenAI 互換 API を通じてモデルを提供したり、GGUF ファイルを OCI アーティファクトとしてパッケージ化して公開したり、CLI や GUI からモデルを操作できます。
+
+生成 AI アプリの開発、機械学習ワークフローの実験、開発ライフサイクルへの AI 統合など、Docker Model Runner を使えば、AI モデルをローカルで一貫性・安全性・効率性をもって利用できます。
+
+## 主な特徴
+
+- [Docker Hub からモデルを Pull・Push](https://hub.docker.com/u/ai)
+- OpenAI 互換 API でモデルを提供し、既存アプリに統合可能
+- GGUF ファイルを OCI アーティファクトとしてパッケージ・あらゆるコンテナレジストリに公開
+- CLI や Docker Desktop GUI からモデルを実行・対話
+- ローカルモデルの管理とログ表示
+- プロンプトとレスポンスの詳細を表示
+
+## 対応環境
+
+Docker Model Runner は以下のプラットフォームに対応しています:
+
+<Tabs items={['Windows', 'MacOS', 'Linux']}>
+  <Tabs.Tab>
+    Windows(amd64):
+    -  NVIDIA GPU 
+    -  NVIDIA ドライバー 576.57以降
+
+    Windows(arm64):
+    - OpenCL for Adreno
+    - Qualcomm Adreno GPU (6xx シリーズ以降)
+
+    > [!NOTE]
+    >
+    > llama.cpp の一部機能は 6xx シリーズで完全にサポートされない場合があります。
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+    - Apple Silicon
+  </Tabs.Tab>
+  <Tabs.Tab>
+    Docker Engine のみ対応:
+    - Linux CPU & Linux NVIDIA
+    - NVIDIA ドライバー 575.57.08 以降
+  </Tabs.Tab>
+</Tabs>
+
+## 動作の仕組み
+
+モデルは初回使用時に Docker Hub から Pull され、ローカルに保存されます。リクエストがあったときにのみメモリへ読み込まれ、使用されていないときはリソースを最適化するためにアンロードされます。モデルは大容量になることがあるため、初回の Pull には時間がかかる場合がありますが、一度キャッシュされれば以降は高速にアクセスできます。[OpenAI 互換 API]() を使ってモデルと対話できます。
+
+> [!TIP]
+>
+> Testcontainers や Docker Compose を使っていますか？
+> [Java 向け Testcontainers](https://java.testcontainers.org/modules/docker_model_runner/)、[Go 向け Testcontainers](https://golang.testcontainers.org/modules/dockermodelrunner/)、[Docker Compose](/ai/compose/models-and-compose) が Docker Model Runner に対応しました。
+
+
+## 既知の問題
+
+### `docker model` が認識されない
+
+Docker Model Runner のコマンドを実行した際に、以下のようなエラーが表示される場合：
+
+```bash
+docker: 'model' is not a docker command
+```
+
+これは、Docker がプラグインを検出できないことを意味します。CLI プラグインの所定のディレクトリに存在しないことが原因です。
+
+対処方法： シンボリックリンクを作成して、Docker がプラグインを認識できるようにします：
+
+```bash
+$ ln -s /Applications/Docker.app/Contents/Resources/cli-plugins/docker-model ~/.docker/cli-plugins/docker-model
+```
+
+リンクを作成したら、再度コマンドを実行してください。
+
+### Model CLI での digest 指定の一貫性がない
+
+現在、Docker Model CLI ではイメージの digest を使用してモデルを指定するための一貫したサポートが提供されていません。
+一時的な回避策として、digest ではなくモデル名で参照してください。
+
+## フィードバックの共有
+
+Docker Model Runner をお試しいただきありがとうございます。
+ご意見や不具合の報告は、**Enable Docker Model Runner** 設定の横にある **Give feedback** リンクからお送りください。
