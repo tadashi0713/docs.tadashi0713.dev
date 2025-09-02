@@ -1,0 +1,369 @@
+---
+title: Docker Compose アプリケーションで AI モデルを定義する
+description: models トップレベル要素を使用して、Docker Compose アプリケーションで AI モデルを定義・利用する方法を学びましょう。
+---
+
+# Docker Compose アプリケーションで AI モデルを定義する
+
+Compose では、AI モデルをアプリケーションのコアコンポーネントとして定義できるため、サービスと並んでモデルの依存関係を宣言し、Compose Specification をサポートするあらゆるプラットフォーム上でアプリケーションを実行できます。
+
+## 前提条件
+
+- Docker Compose v2.38 以降
+
+- Docker Model Runner (DMR) や対応するクラウドプロバイダなど、Compose models をサポートするプラットフォーム。DMR を使用する場合は、[要件](/ai/model-runner#対応環境) を参照してください。
+
+## Compose モデルとは？
+
+Compose の `models` は、アプリケーション内で AI モデルの依存関係を定義するための標準化された方法です。
+
+Compose ファイルで [`models` トップレベル要素](https://docs.docker.com/reference/compose-file/models/) を使用すると、次のことができます：
+
+- アプリケーションが必要とする AI モデルを宣言する
+
+- モデルの設定や要件を指定する
+
+- アプリケーションを異なるプラットフォーム間で移植可能にする
+
+- プラットフォームにモデルのプロビジョニングとライフサイクル管理を任せる
+
+## 基本的なモデル定義
+
+Compose アプリケーションでモデルを定義するには、`models` トップレベル要素を使用します：
+
+```yaml
+services:
+  chat-app:
+    image: my-chat-app
+    models:
+      - llm
+
+models:
+  llm:
+    model: ai/smollm2
+```
+
+この例では次のように定義しています：
+- `chat-app` というサービスがあり、`llm` というモデルを利用する
+- `llm` というモデル定義があり、`ai/smollm2` モデルイメージを参照している
+
+## モデルの設定オプション
+
+モデルはさまざまな設定オプションをサポートしています：
+
+```yaml
+models:
+  llm:
+    model: ai/smollm2
+    context_size: 1024
+    runtime_flags:
+      - "--a-flag"
+      - "--another-flag=42"
+```
+
+一般的な設定オプションには以下が含まれます：
+
+- `model`（必須）: モデルの OCI アーティファクト識別子。Compose がモデルランナーを通じて pull および実行する対象です。
+
+- `context_size`: モデルの最大トークンコンテキストサイズを定義します。
+
+    > [!NOTE]
+    >
+    > 各モデルにはそれぞれの最大コンテキストサイズがあります。
+    > コンテキスト長を増やす際は、ハードウェアの制約を考慮してください。
+    > 一般的には、必要に応じて可能な限り小さいコンテキストサイズにするのが推奨されます。
+
+- `runtime_flags`: モデル起動時に推論エンジンへ渡されるコマンドラインフラグのリスト。
+  例えば llama.cpp を使用する場合、[利用可能なパラメータ](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md) を渡すことができます。
+
+- プラットフォーム固有のオプションは、`x-*` 拡張属性を介して利用できる場合があります。
+
+> [!TIP]
+>
+> より多くの例については [共通のランタイム]() 設定セクションを参照してください。
+
+### プロバイダサービスによる代替設定
+
+> [!IMPORTANT]
+> 
+> この方法は非推奨です。代わりに [models トップレベル要素](#基本的なモデル定義) を使用してください。
+
+`provider` サービスタイプを利用することで、アプリケーションに必要なプラットフォーム機能を宣言できます。
+AI モデルの場合、`model` タイプを使ってモデル依存関係を宣言できます。
+
+モデルプロバイダを定義する例：
+
+```yaml
+services:
+  chat:
+    image: my-chat-app
+    depends_on:
+      - ai_runner
+
+  ai_runner:
+    provider:
+      type: model
+      options:
+        model: ai/smollm2
+        context-size: 1024
+        runtime-flags: "--no-prefill-assistant"
+```
+
+## サービスとモデルのバインディング
+
+サービスはモデルを参照する際に、ショート構文とロング構文の 2 つの方法を使用できます。
+
+### ショート構文
+
+ショート構文は、サービスにモデルをバインドする最もシンプルな方法です：
+
+```yaml
+services:
+  app:
+    image: my-app
+    models:
+      - llm
+      - embedding-model
+
+models:
+  llm:
+    model: ai/smollm2
+  embedding-model:
+    model: ai/all-minilm
+```
+
+ショート構文では、プラットフォームがモデル名に基づいて環境変数を自動生成します：
+
+- `LLM_URL` - LLM モデルにアクセスするための URL
+- `LLM_MODEL` - LLM モデルの識別子
+- `EMBEDDING_MODEL_URL` - embedding-model にアクセスするための URL
+- `EMBEDDING_MODEL_MODEL` - embedding-model の識別子
+
+### ロング構文
+
+ロング構文では、環境変数名をカスタマイズできます：
+
+```yaml
+services:
+  app:
+    image: my-app
+    models:
+      llm:
+        endpoint_var: AI_MODEL_URL
+        model_var: AI_MODEL_NAME
+      embedding-model:
+        endpoint_var: EMBEDDING_URL
+        model_var: EMBEDDING_NAME
+
+models:
+  llm:
+    model: ai/smollm2
+  embedding-model:
+    model: ai/all-minilm
+```
+
+この設定を使うと、サービスは以下の環境変数を受け取ります：
+
+- LLM モデル用に `AI_MODEL_URL` と `AI_MODEL_NAME`
+- Embedding モデル用に `EMBEDDING_URL` と `EMBEDDING_NAME`
+
+## プラットフォーム間の移植性
+
+Compose モデルを利用する大きな利点のひとつは、Compose specification をサポートする異なるプラットフォーム間での移植性です。
+
+### Docker Model Runner
+
+[Docker Model Runner が有効化されている場合](/ai/model-runner)：
+
+```yaml
+services:
+  chat-app:
+    image: my-chat-app
+    models:
+      llm:
+        endpoint_var: AI_MODEL_URL
+        model_var: AI_MODEL_NAME
+
+models:
+  llm:
+    model: ai/smollm2
+    context_size: 4096
+    runtime_flags:
+      - "--no-prefill-assistant"
+```
+
+Docker Model Runner は以下を行います：
+
+- 指定されたモデルをローカルに pull して実行
+- モデルにアクセスするためのエンドポイント URL を提供
+- サービスに環境変数を注入
+
+### クラウドプロバイダ
+
+同じ Compose ファイルは、Compose モデルをサポートするクラウドプロバイダでも実行可能です：
+
+```yaml
+services:
+  chat-app:
+    image: my-chat-app
+    models:
+      - llm
+
+models:
+  llm:
+    model: ai/smollm2
+    # クラウド固有の設定
+    x-cloud-options:
+      - "cloud.instance-type=gpu-small"
+      - "cloud.region=us-west-2"
+```
+
+クラウドプロバイダは以下を実施する場合があります：
+- モデルをローカルで実行する代わりにマネージド AI サービスを利用
+- クラウド固有の最適化やスケーリングを適用
+- 追加のモニタリングやログ機能を提供
+- モデルのバージョン管理や更新を自動的に処理
+
+## 共通のランタイム設定
+
+以下は、さまざまなユースケースに対応した設定例です。
+
+### 開発環境向け
+
+```yaml
+services:
+  app:
+    image: app
+    models:
+      dev_model:
+        endpoint_var: DEV_URL
+        model_var: DEV_MODEL
+
+models:
+  dev_model:
+    model: ai/model
+    context_size: 4096
+    runtime_flags:
+      - "--verbose"                       # 詳細ログを無制限に出力
+      - "--verbose-prompt"                # 生成前に詳細なプロンプトを表示
+      - "--log-prefix"                    # ログメッセージにプレフィックスを追加
+      - "--log-timestamps"                # ログメッセージにタイムスタンプを追加
+      - "--log-colors"                    # ログ出力に色を付ける
+```
+
+### 保守的（推論無効）
+
+```yaml
+services:
+  app:
+    image: app
+    models:
+      conservative_model:
+        endpoint_var: CONSERVATIVE_URL
+        model_var: CONSERVATIVE_MODEL
+
+models:
+  conservative_model:
+    model: ai/model
+    context_size: 4096
+    runtime_flags:
+      - "--temp"                # 温度
+      - "0.1"
+      - "--top-k"               # Top-k サンプリング
+      - "1"
+      - "--reasoning-budget"    # 推論を無効化
+      - "0"
+```
+
+### クリエイティブ（高ランダム性）
+
+```yaml
+services:
+  app:
+    image: app
+    models:
+      creative_model:
+        endpoint_var: CREATIVE_URL
+        model_var: CREATIVE_MODEL
+
+models:
+  creative_model:
+    model: ai/model
+    context_size: 4096
+    runtime_flags:
+      - "--temp"                # 温度
+      - "1"
+      - "--top-p"               # Top-p サンプリング
+      - "0.9"
+```
+
+### 高い決定性
+
+```yaml
+services:
+  app:
+    image: app
+    models:
+      deterministic_model:
+        endpoint_var: DET_URL
+        model_var: DET_MODEL
+
+models:
+  deterministic_model:
+    model: ai/model
+    context_size: 4096
+    runtime_flags:
+      - "--temp"                # 温度
+      - "0"
+      - "--top-k"               # Top-k サンプリング
+      - "1"
+```
+
+### 並列処理
+
+```yaml
+services:
+  app:
+    image: app
+    models:
+      concurrent_model:
+        endpoint_var: CONCURRENT_URL
+        model_var: CONCURRENT_MODEL
+
+models:
+  concurrent_model:
+    model: ai/model
+    context_size: 2048
+    runtime_flags:
+      - "--threads"             # 生成に使用するスレッド数
+      - "8"
+      - "--mlock"               # メモリをロックしてスワップを防ぐ
+```
+
+### 語彙の豊富なモデル
+
+```yaml
+services:
+  app:
+    image: app
+    models:
+      rich_vocab_model:
+        endpoint_var: RICH_VOCAB_URL
+        model_var: RICH_VOCAB_MODEL
+
+models:
+  rich_vocab_model:
+    model: ai/model
+    context_size: 4096
+    runtime_flags:
+      - "--temp"                # 温度
+      - "0.1"
+      - "--top-p"               # Top-p サンプリング
+      - "0.9"
+```
+
+## リファレンス
+
+- [`models` トップレベル要素](https://docs.docker.com/reference/compose-file/models/)
+- [`models` 属性](https://docs.docker.com/reference/compose-file/services/#models)
+- [Docker Model Runner ドキュメント](/ai/model-runner/)
