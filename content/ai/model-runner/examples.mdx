@@ -1,0 +1,215 @@
+---
+title: DMR の例
+description: Docker Model Runner のサンプルプロジェクトと CI/CD ワークフロー。
+---
+
+# DMR の例
+
+Docker Model Runner を使った完全なワークフローの例を見てみましょう。
+
+## サンプルプロジェクト
+
+Docker Model Runner を活用して、独自の生成 AI アプリケーションを構築できます。
+
+既存の GenAI アプリケーションを試したい場合は、次の手順に従ってください：
+
+1. サンプルアプリをセットアップします。以下のリポジトリをクローンして実行します：
+
+    ```shell
+    $ git clone https://github.com/docker/hello-genai.git
+    ```
+
+2. ターミナルで `hello-genai` ディレクトリに移動します。
+
+3. `run.sh` を実行すると、選択したモデルが pull され、アプリが起動します。
+
+4. ブラウザでリポジトリの [README](https://github.com/docker/hello-genai) に記載されたアドレスを開きます。
+
+GenAI アプリのインターフェースが表示され、プロンプトを入力できるようになります。
+
+これで、ローカルモデルを使った独自の GenAI アプリと対話できます。
+いくつかプロンプトを試してみると、すべてが Docker 上でローカルに実行されているため、レスポンスが非常に高速であることに気づくでしょう。
+
+## GitHub Actions で Model Runner を使用する
+
+以下は、GitHub ワークフローの一部として Model Runner を使用する方法の例です。
+この例では、Model Runner のインストール、インストールテスト、モデルの pull と実行、API を通じたモデルとの対話、そしてモデルの削除を行います。
+
+```yaml
+name: Docker Model Runner Example Workflow
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_model:
+        description: 'Model to test with (default: ai/smollm2:360M-Q4_K_M)'
+        required: false
+        type: string
+        default: 'ai/smollm2:360M-Q4_K_M'
+
+jobs:
+  dmr-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
+      - name: Install docker-model-plugin
+        run: |
+          echo "Installing docker-model-plugin..."
+          # Add Docker's official GPG key:
+          sudo apt-get update
+          sudo apt-get install ca-certificates curl
+          sudo install -m 0755 -d /etc/apt/keyrings
+          sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+          sudo chmod a+r /etc/apt/keyrings/docker.asc
+          
+          # Add the repository to Apt sources:
+          echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | \
+          sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-model-plugin
+          
+          echo "Installation completed successfully"
+
+      - name: Test docker model version
+        run: |
+          echo "Testing docker model version command..."
+          sudo docker model version
+          
+          # Verify the command returns successfully
+          if [ $? -eq 0 ]; then
+            echo "✅ docker model version command works correctly"
+          else
+            echo "❌ docker model version command failed"
+            exit 1
+          fi
+
+      - name: Pull the provided model and run it
+        run: |
+          MODEL="${{ github.event.inputs.test_model || 'ai/smollm2:360M-Q4_K_M' }}"
+          echo "Testing with model: $MODEL"
+          
+          # Test model pull
+          echo "Pulling model..."
+          sudo docker model pull "$MODEL"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Model pull successful"
+          else
+            echo "❌ Model pull failed"
+            exit 1
+          fi
+                  
+          # Test basic model run (with timeout to avoid hanging)
+          echo "Testing docker model run..."
+          timeout 60s sudo docker model run "$MODEL" "Give me a fact about whales." || {
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+              echo "✅ Model run test completed (timed out as expected for non-interactive test)"
+            else
+              echo "❌ Model run failed with exit code: $exit_code"
+              exit 1
+            fi
+          }
+               - name: Test model pull and run
+        run: |
+          MODEL="${{ github.event.inputs.test_model || 'ai/smollm2:360M-Q4_K_M' }}"
+          echo "Testing with model: $MODEL"
+          
+          # Test model pull
+          echo "Pulling model..."
+          sudo docker model pull "$MODEL"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Model pull successful"
+          else
+            echo "❌ Model pull failed"
+            exit 1
+          fi
+                  
+          # Test basic model run (with timeout to avoid hanging)
+          echo "Testing docker model run..."
+          timeout 60s sudo docker model run "$MODEL" "Give me a fact about whales." || {
+            exit_code=$?
+            if [ $exit_code -eq 124 ]; then
+              echo "✅ Model run test completed (timed out as expected for non-interactive test)"
+            else
+              echo "❌ Model run failed with exit code: $exit_code"
+              exit 1
+            fi
+          }
+
+      - name: Test API endpoint
+        run: |
+          MODEL="${{ github.event.inputs.test_model || 'ai/smollm2:360M-Q4_K_M' }}"
+          echo "Testing API endpoint with model: $MODEL"
+                  
+          # Test API call with curl
+          echo "Testing API call..."
+          RESPONSE=$(curl -s http://localhost:12434/engines/llama.cpp/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -d "{
+                \"model\": \"$MODEL\",
+                \"messages\": [
+                    {
+                        \"role\": \"user\",
+                        \"content\": \"Say hello\"
+                    }
+                ],
+                \"top_k\": 1,
+                \"temperature\": 0
+            }")
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ API call successful"
+            echo "Response received: $RESPONSE"
+            
+            # Check if response contains "hello" (case-insensitive)
+            if echo "$RESPONSE" | grep -qi "hello"; then
+              echo "✅ Response contains 'hello' (case-insensitive)"
+            else
+              echo "❌ Response does not contain 'hello'"
+              echo "Full response: $RESPONSE"
+              exit 1
+            fi
+          else
+            echo "❌ API call failed"
+            exit 1
+          fi
+
+      - name: Test model cleanup
+        run: |
+          MODEL="${{ github.event.inputs.test_model || 'ai/smollm2:360M-Q4_K_M' }}"
+          
+          echo "Cleaning up test model..."
+          sudo docker model rm "$MODEL" || echo "Model removal failed or model not found"
+          
+          # Verify model was removed
+          echo "Verifying model cleanup..."
+          sudo docker model ls
+          
+          echo "✅ Model cleanup completed"
+
+      - name: Report success
+        if: success()
+        run: |
+          echo "🎉 Docker Model Runner daily health check completed successfully!"
+          echo "All tests passed:"
+          echo "  ✅ docker-model-plugin installation successful"
+          echo "  ✅ docker model version command working"
+          echo "  ✅ Model pull and run operations successful"
+          echo "  ✅ API endpoint operations successful"
+          echo "  ✅ Cleanup operations successful"
+```
+
+## 関連ページ
+
+- [Models and Compose](/ai/compose/models-and-compose/)
