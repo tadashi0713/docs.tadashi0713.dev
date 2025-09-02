@@ -1,0 +1,236 @@
+---
+title: Docker Hub MCP サーバー
+description: Docker Hub MCP サーバーにより、Docker Hub のイメージメタデータを LLM がコンテンツ探索に利用できるようになります。
+keywords: Docker Hub MCP サーバー, Hub MCP サーバー, Hub MCP
+---
+
+import { Tabs } from 'nextra/components'
+
+# Docker Hub MCP サーバー
+
+Docker Hub MCP サーバーは Model Context Protocol（MCP） サーバーであり、Docker Hub API と連携して LLM にリッチなイメージメタデータを提供し、インテリジェントなコンテンツ探索やリポジトリ管理を可能にします。
+
+コンテナを利用して開発を行う開発者、特に AI や LLM を活用したワークフローでは、Docker Hub に存在する膨大なイメージ群の中で十分なコンテキストを得られないという課題に直面することがよくあります。
+その結果、LLM は適切なイメージを推薦するのに苦労し、開発者は本来の開発作業ではなく手動での検索に時間を費やしてしまいます。
+
+## 主な機能
+
+- 高度な LLM コンテキスト: Docker MCP サーバーは Docker Hub イメージに関する詳細で構造化されたコンテキストを LLM に提供します。これにより、開発者がベースイメージを選択する場合や CI/CD ワークフローを自動化する場合でも、より賢く関連性の高い推奨が可能になります。
+
+- 自然言語によるイメージ探索: 開発者はタグやリポジトリ名を覚える必要はありません。必要な内容を自然言語で記述するだけで、Docker Hub が意図に合致するイメージを返してくれます。
+
+- リポジトリ管理の簡素化: Hub MCP サーバーにより、エージェントは自然言語を使ってイメージの詳細取得、統計の表示、コンテンツ検索、主要な操作の実行などを迅速かつ容易に行い、リポジトリ管理を効率化できます。
+
+## Docker Hub MCP サーバーのインストール
+
+1. **MCP Toolkit** メニューから **Catalog** タブを選択し、**Docker Hub** を検索してプラスアイコンをクリックし、Docker Hub MCP サーバーを追加します。
+
+2. サーバーの **Configuration** タブで、Docker Hub のユーザー名とパーソナルアクセストークン（PAT）を入力します。
+
+3. MCP Toolkit の **Clients** タブで、Gordon が接続されていることを確認します。
+
+4. **Ask Gordon** メニューから、Docker Hub MCP サーバーが提供するツールに基づいて Docker Hub アカウントに関連するリクエストを送信できるようになります。テストするには、Gordon に以下を尋ねてください：
+
+    ```text
+    What repositories are in my namespace?
+    ```
+
+> [!TIP]
+>
+> デフォルトで Gordon の [クライアント](/ai/mcp-catalog-and-toolkit/toolkit#mcp-クライアントをインストールする) が有効化されているため、Gordon は MCP サーバーと自動的にやり取りできます。
+
+## Claude Desktop をクライアントとして使用する
+
+1. `claude_desktop_config.json` に Docker Hub MCP サーバーの設定を追加します：
+
+    <Tabs items={['パブリックリポジトリのみ利用する場合', '認証付きアクセスを利用する場合']}>
+      <Tabs.Tab>
+        ```json
+        {
+          "mcpServers": {
+            "docker-hub": {
+              "command": "node",
+              "args": ["/FULL/PATH/TO/YOUR/docker-hub-mcp-server/dist/index.js", "--transport=stdio"]
+            }
+          }
+        }
+        ```
+        - `/FULL/PATH/TO/YOUR/docker-hub-mcp-server` は、リポジトリをクローンした完全なパスです。
+      </Tabs.Tab>
+      <Tabs.Tab>
+        ```json
+        {
+          "mcpServers": {
+            "docker-hub": {
+              "command": "node",
+              "args": ["/FULL/PATH/TO/YOUR/docker-hub-mcp-server/dist/index.js", "--transport=stdio", "--username=YOUR_DOCKER_HUB_USERNAME"],
+              "env": {
+                "HUB_PAT_TOKEN": "YOUR_DOCKER_HUB_PERSONAL_ACCESS_TOKEN"
+              }
+            }
+          }
+        }
+        ```
+        - `YOUR_DOCKER_HUB_USERNAME` は Docker Hub のユーザー名です。
+        - `YOUR_DOCKER_HUB_PERSONAL_ACCESS_TOKEN` は Docker Hub のパーソナルアクセストークンです。
+        - `/FULL/PATH/TO/YOUR/docker-hub-mcp-server` は、リポジトリをクローンした完全なパスです。
+      </Tabs.Tab>
+    </Tabs>
+
+2. 設定ファイルを保存し、Claude Desktop を完全に再起動して変更を反映させます。
+
+## Visual Studio Code での使用
+
+1. Visual Studio Code のユーザー設定（JSON）ファイルに Docker Hub MCP サーバーの設定を追加します。`Command Palette` を開き、`Preferences: Open User Settings (JSON)` と入力して設定を開きます。
+
+    <Tabs items={['パブリックリポジトリのみ利用する場合', '認証付きアクセスを利用する場合']}>
+      <Tabs.Tab>
+        ```json
+        {
+          "mcpServers": {
+            "docker-hub": {
+              "command": "node",
+              "args": ["/FULL/PATH/TO/YOUR/docker-hub-mcp-server/dist/index.js", "--transport=stdio"]
+            }
+          }
+        }
+        ```
+        - `/FULL/PATH/TO/YOUR/docker-hub-mcp-server` は、リポジトリをクローンした完全なパスです。
+      </Tabs.Tab>
+      <Tabs.Tab>
+        ```json
+        {
+          "mcpServers": {
+            "docker-hub": {
+              "command": "node",
+              "args": ["/FULL/PATH/TO/YOUR/docker-hub-mcp-server/dist/index.js", "--transport=stdio"],
+              "env": {
+                "HUB_USERNAME": "YOUR_DOCKER_HUB_USERNAME",
+                "HUB_PAT_TOKEN": "YOUR_DOCKER_HUB_PERSONAL_ACCESS_TOKEN"
+              }
+            }
+          }
+        }
+        ```
+        - `YOUR_DOCKER_HUB_USERNAME` は Docker Hub のユーザー名です。
+        - `YOUR_DOCKER_HUB_PERSONAL_ACCESS_TOKEN` は Docker Hub のパーソナルアクセストークンです。
+        - `/FULL/PATH/TO/YOUR/docker-hub-mcp-server` は、リポジトリをクローンした完全なパスです。
+      </Tabs.Tab>
+    </Tabs>
+
+2. `Command Palette` を開き、`MCP: List Servers` と入力します。
+
+3. `docker-hub` を選択し、`Start Server` をクリックします。
+
+## 使用例
+
+このセクションでは、Docker Hub ツールを利用した一般的な操作例を紹介します。
+
+### イメージの検索
+
+```shell
+# 公式イメージを検索
+$ docker ai "Search for official nginx images on Docker Hub"
+
+# デプロイメントサイズを減らし、パフォーマンスを改善する軽量イメージを検索
+$ docker ai "Search for minimal Node.js images with small footprint"
+
+# ベースイメージの最新タグを取得
+$ docker ai "Show me the latest tag details for go"
+
+# エンタープライズ機能と信頼性を備えた本番対応データベースを検索
+$ docker ai "Search for production ready database images"
+
+# プロジェクトに適した Ubuntu バージョンを比較
+$ docker ai "Help me find the right Ubuntu version for my project"
+```
+
+### リポジトリ管理
+
+```shell
+# リポジトリを作成
+$ docker ai "Create a repository in my namespace"
+
+# 自分の名前空間内のすべてのリポジトリを一覧表示
+$ docker ai "List all repositories in my namespace"
+
+# 名前空間内で最も容量を消費しているリポジトリを特定
+$ docker ai "Which of my repositories takes up the most space?"
+
+# 最近更新されていないリポジトリを検索
+$ docker ai "Which of my repositories haven't had any pushes in the last 60 days?"
+
+# 現在アクティブで利用中のリポジトリを特定
+$ docker ai "Show me my most recently updated repositories"
+
+# 特定のリポジトリの詳細を取得
+$ docker ai "Show me information about my '<repository-name>' repository"
+```
+
+### イメージの pull／push
+
+```shell
+# PostgreSQL の最新バージョンを pull
+$ docker ai "Pull the latest postgres image"
+
+# イメージを自分の Docker Hub リポジトリに push
+$ docker ai "Push my <image-name> to my <repository-name> repository"
+```
+
+### タグ管理
+
+```shell
+# リポジトリ内のすべてのタグを一覧表示
+$ docker ai "Show me all tags for my '<repository-name>' repository"
+
+# 最も最近 push されたタグを特定
+$ docker ai "What's the most recent tag pushed to my '<repository-name>' repository?"
+
+# アーキテクチャでフィルタリングしてタグを一覧表示
+$ docker ai "List tags for in the '<repository-name>' repository that support amd64 architecture"
+
+# 特定のタグの詳細を表示
+$ docker ai "Show me details about the '<tag-name>' tag in the '<repository-name>' repository"
+
+# 特定のタグが存在するか確認
+$ docker ai "Check if version 'v1.2.0' exists for my 'my-web-app' repository"
+```
+
+### Docker Hardened Images
+
+```shell
+# 利用可能な Hardened イメージを一覧表示
+$ docker ai "What is the most secure image I can use to run a node.js application?"
+
+# Dockerfile を Hardened イメージに更新
+$ docker ai "Can you help me update my Dockerfile to use a docker hardened image instead of the current one"
+```
+
+> [!NOTE]
+>
+> Docker Hardened Images を利用するにはサブスクリプションが必要です。ご利用に興味がある方は [Docker Hardened Images](https://www.docker.com/products/hardened-images/) をご覧ください。
+
+## リファレンス
+
+このセクションでは、Docker Hub MCP サーバーで利用できるツールを網羅的に一覧します。
+
+### Docker Hub MCP サーバーツール
+
+Docker リポジトリとやり取りし、Docker Hub 上のコンテンツを探索するためのツールです。
+
+| 名前 | 説明 |
+|-----|------|
+| `check-repository` | リポジトリをチェック |
+| `check-repository-tag` | リポジトリタグをチェック |
+| `check-repository-tags` | リポジトリ内のタグをチェック |
+| `create-repository` | 新しいリポジトリを作成 |
+| `docker-hardened-images` | 指定した名前空間内の [Docker Hardened Images](https://www.docker.com/products/hardened-images/) を一覧表示 |
+| `get-namespaces` | ユーザーの組織／名前空間を取得 |
+| `get-repository-dockerfile` | リポジトリの Dockerfile を取得 |
+| `get-repository-info` | リポジトリ情報を取得 |
+| `list-repositories-by-namespace` | 名前空間内のリポジトリを一覧表示 |
+| `list-repository-tags` | リポジトリのタグを一覧表示 |
+| `read-repository-tag` | リポジトリタグを読み取り |
+| `search` | Docker Hub 上のコンテンツを検索 |
+| `set-repository-dockerfile` | リポジトリの Dockerfile を設定 |
+| `update-repository-info` | リポジトリ情報を更新 |
