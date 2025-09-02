@@ -1,0 +1,191 @@
+---
+title: DMR REST API
+description: Docker Model Runner REST API のエンドポイントと使用例に関するリファレンスドキュメント。
+---
+
+import { Tabs } from 'nextra/components'
+
+# DMR REST API
+
+Model Runner を有効化すると、新しい API エンドポイントが利用可能になります。
+これらのエンドポイントを使って、プログラムからモデルとやり取りできます。
+
+### ベース URL の確認
+
+利用するエンドポイントのベース URL は、Docker の実行環境によって異なります。
+
+<Tabs items={['Docker Desktop', 'Docker Engine']}>
+  <Tabs.Tab>
+    - コンテナからアクセス: `http://model-runner.docker.internal/`
+    - ホストプロセスからアクセス: `http://localhost:12434/`（デフォルトポート 12434 で TCP ホストアクセスが有効な場合）
+  </Tabs.Tab>
+  <Tabs.Tab>
+    - コンテナからアクセス: `http://172.17.0.1:12434/` （`172.17.0.1` はホストゲートウェイアドレス）
+    - ホストプロセスからアクセス: `http://localhost:12434/`
+
+    > [!NOTE]
+    >
+    > `172.17.0.1` インターフェースは、Compose プロジェクト内のコンテナからはデフォルトで利用できない場合があります。
+    > その場合、Compose サービスの YAML に `extra_hosts` を追加します：
+    > ```yaml
+    >  extra_hosts:
+    >    - "model-runner.docker.internal:host-gateway"
+    > ```
+    > これにより、`http://model-runner.docker.internal:12434/` で Docker Model Runner API にアクセス可能になります。
+  </Tabs.Tab>
+</Tabs>
+
+### 利用可能な DMR エンドポイント
+
+- モデルを作成:
+
+  ```text
+  POST /models/create
+  ```
+
+- モデル一覧の取得:
+
+  ```text
+  GET /models
+  ```
+
+- モデルを取得:
+
+  ```text
+  GET /models/{namespace}/{name}
+  ```
+
+- ローカルモデルを削除:
+
+  ```text
+  DELETE /models/{namespace}/{name}
+  ```
+
+### 利用可能な OpenAPI エンドポイント
+
+DMR は以下の OpenAPI エンドポイントをサポートしています：
+
+- [モデル一覧](https://platform.openai.com/docs/api-reference/models/list)
+
+  ```text
+  GET /engines/llama.cpp/v1/models
+  ```
+
+- [モデル取得](https://platform.openai.com/docs/api-reference/models/retrieve)
+
+  ```text
+  GET /engines/llama.cpp/v1/models/{namespace}/{name}
+  ```
+
+- [チャット補完一覧](https://platform.openai.com/docs/api-reference/chat/list)
+
+  ```text
+  POST /engines/llama.cpp/v1/chat/completions
+  ```
+
+- [補完を作成](https://platform.openai.com/docs/api-reference/completions/create)
+
+  ```text
+  POST /engines/llama.cpp/v1/completions
+  ```
+
+- [埋め込みを作成](https://platform.openai.com/docs/api-reference/embeddings/create)
+
+  ```text
+  POST /engines/llama.cpp/v1/embeddings
+  ```
+
+Unix ソケット（`/var/run/docker.sock`）経由でこれらのエンドポイントを呼び出す場合は、
+パスの先頭に `/exp/vDD4.40` を付与してください。
+
+> [!NOTE]
+> 
+> パスから llama.cpp を省略することも可能です。
+> 例: `POST /engines/v1/chat/completions`
+
+## REST API の使用例
+
+### コンテナ内からリクエストする
+
+`curl` を使ってコンテナ内から `chat/completions` の OpenAI エンドポイントを呼び出す例：
+
+```shell
+#!/bin/sh
+
+curl http://model-runner.docker.internal/engines/llama.cpp/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+        "model": "ai/smollm2",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": "Please write 500 words about the fall of Rome."
+            }
+        ]
+    }'
+```
+
+### ホストから TCP を使ってリクエストする
+
+ホストから TCP 経由で `chat/completions` エンドポイントを呼び出す手順：
+
+1. Docker Desktop GUI もしくは [Docker Desktop CLI](https://docs.docker.com/desktop/features/desktop-cli/) でホスト側 TCP サポートを有効化します。
+    
+    例:
+    ```shell
+    docker desktop enable model-runner --tcp <port>
+    ```
+
+    Windows を利用している場合は、GPU 推論サポートも有効化してください。
+    詳細は [Docker Model Runner を有効化する](/ai/model-runner/get-started#docker-desktop-で-dmr-を有効にする) を参照してください。
+
+2. 前のセクションで説明したように、`localhost` と指定ポートを使ってリクエストします。
+
+    ```shell
+    #!/bin/sh
+
+    curl http://localhost:12434/engines/llama.cpp/v1/chat/completions \
+        -H "Content-Type: application/json" \
+        -d '{
+            "model": "ai/smollm2",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant."
+                },
+                {
+                    "role": "user",
+                    "content": "Please write 500 words about the fall of Rome."
+                }
+            ]
+        }'
+    ```
+
+### ホストから Unix ソケットを使ってリクエストする
+
+ホストから Docker ソケット経由で `chat/completions` エンドポイントを呼び出す例：
+
+```shell
+#!/bin/sh
+
+curl --unix-socket $HOME/.docker/run/docker.sock \
+    localhost/exp/vDD4.40/engines/llama.cpp/v1/chat/completions \
+    -H "Content-Type: application/json" \
+    -d '{
+        "model": "ai/smollm2",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": "Please write 500 words about the fall of Rome."
+            }
+        ]
+    }'
+```
