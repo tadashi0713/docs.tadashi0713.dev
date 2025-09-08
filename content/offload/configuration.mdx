@@ -1,0 +1,88 @@
+---
+title: Docker Offload の設定
+description: Docker Offload のビルド設定方法について学びましょう。
+---
+
+# Docker Offload の設定
+
+Docker Offload を使用するには、まず Docker Desktop で起動する必要があります。詳細については、[Docker Offload クイックスタート](/offload/quickstart/) を参照してください。
+
+Docker Offload のダッシュボードにある **Offload settings** から、Organization 全体の設定に加えて、クラウドビルダー用の設定をさらに構成できます。
+
+> [!NOTE]
+> 
+> Docker Offload の利用状況や請求設定を確認・構成するには、[Docker Offload の利用と課金](/offload/usage/) を参照してください。
+
+## Offload 設定
+
+**Offload settings** ページでは、Organization 内のクラウドビルダーに対して ディスク割り当て、プライベートリソースへのアクセス、ファイアウォール設定 を構成できます。
+
+**Offload settings** ページを表示するには：
+
+1. [Docker Home](https://app.docker.com/) にアクセスします。
+
+2. Docker Offload を管理したいアカウントを選択します。
+
+3. **Offload** > **Offload settings** を選択します。
+
+以下のセクションでは利用可能な設定について説明します。
+
+### ディスク割り当て（Disk allocation）
+
+**Disk allocation** 設定では、利用可能なストレージのうち、どれだけをビルドキャッシュ専用に割り当てるかを制御できます。
+割り当てを少なくすると、アクティブなビルドに利用可能なストレージが増えます。
+
+**Disk allocation** スライダーを調整して、ビルドキャッシュに使用するストレージの割合を指定してください。
+
+変更は即座に反映されます。
+
+> [!TIP]
+>
+> 非常に大きなイメージをビルドする場合は、キャッシュへの割り当てを少なくすることを検討してください。
+
+### ビルドキャッシュ容量
+
+ご利用のサブスクリプションには以下のビルドキャッシュ容量が含まれます：
+
+| サブスクリプション | ビルドキャッシュ容量 |
+|-----------------|-------------------|
+| Personal        | 該当なし           |
+| Pro             | 50GB              |
+| Team            | 100GB             |
+| Business        | 200GB             |
+
+より多くのビルドキャッシュ容量が必要な場合は、[サブスクリプションをアップグレード](https://docs.docker.com/subscription/change/) してください。
+
+### プライベートリソースへのアクセス
+
+**Private resource access** を有効化すると、クラウドビルダーがプライベートリソースからイメージやパッケージを取得できるようになります。
+この機能は、セルフホスト型のアーティファクトリポジトリやプライベート OCI レジストリに依存するビルドで役立ちます。
+
+例えば、組織がプライベートネットワーク上にプライベート [PyPI](https://pypi.org/) リポジトリをホストしている場合、クラウドビルダーはデフォルトではそのプライベートネットワークに接続されていないため、Docker Build Cloud はアクセスできません。
+
+#### 認証
+
+内部アーティファクトが認証を必要とする場合は、ビルドの前またはビルド中にリポジトリへ認証する必要があります。
+
+- npm や PyPI の内部パッケージリポジトリの場合は、[ビルドシークレット](https://docs.docker.com/build/building/secrets/) を使用してビルド中に認証します。
+
+- 内部 OCI レジストリの場合は、ビルド前に `docker login` を使用して認証します。
+
+認証が必要なプライベートレジストリを使用する場合、ビルド前に docker login を 2 回 実行する必要がある点に注意してください。
+これは、クラウドビルダーがクラウドビルダー利用のために Docker に対して認証する必要があり、さらにプライベートレジストリに対しても認証する必要があるためです。
+
+```shell
+$ echo $DOCKER_PAT | docker login docker.io -u <username> --password-stdin
+$ echo $REGISTRY_PASSWORD | docker login registry.example.com -u <username> --password-stdin
+$ docker build --builder <cloud-builder> --tag registry.example.com/<image> --push .
+```
+
+### ファイアウォール
+
+Firewall 設定を使うと、クラウドビルダーからの送信（egress）トラフィックを特定の IP アドレスに制限できます。これにより、ビルダーから外部ネットワークへの送信を制限し、セキュリティを強化できます。
+
+1. **Enable firewall: Restrict cloud builder egress to specific public IP address** を選択します。
+
+2. 許可したい IP アドレスを入力します。
+
+3. **Add** を選択して制限を適用します。
