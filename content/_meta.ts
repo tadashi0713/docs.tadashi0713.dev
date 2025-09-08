@@ -17,6 +17,7 @@ export default {
   },
   'ai': 'Docker AI',
   'dhi': 'Docker Hardened Images',
+  'offload': 'Docker Offload',
   'docker-security-ja': 'Docker セキュリティ',
   'scout-ja': 'Docker Scout ドキュメント',
   'build-cloud-ja': 'Docker Build Cloud ドキュメント',
