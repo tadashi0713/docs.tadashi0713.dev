@@ -1,0 +1,77 @@
+---
+title: Docker Offload クイックスタート
+description: Docker Offload を使用して、ローカル環境や CI でコンテナイメージをより速くビルド・実行する方法を学びましょう。
+---
+
+# Docker Offload クイックスタート
+
+このクイックスタートでは Docker Offload の使い方を紹介します。
+Docker Offload を使うと、リソースを大量に消費する処理をクラウドにオフロードすることで、コンテナイメージをより速くビルド・実行できます。
+また、ローカルの Docker Desktop の体験をそのまま反映したクラウドベースの環境を提供します。
+
+## ステップ 1: Docker Offload にアクセスするためにサインアップとサブスクリプションを行う
+
+Docker Offload にアクセスするには、[サインアップ](https://www.docker.com/products/docker-offload/) し、サブスクリプションを契約する必要があります。
+
+## ステップ 2: Docker Offload を起動する
+
+> [!NOTE]
+>
+> Docker Offload をサブスクライブした後、初めて Docker Desktop を起動してサインインすると、Docker Offload を開始するように促される場合があります。
+> そのプロンプトから Docker Offload を開始した場合、以下の手順はスキップできます。
+> なお、以下の手順を使えばいつでも Docker Offload を開始できます。
+
+1. Docker Desktop を起動し、サインインします。
+
+2. ターミナルを開き、次のコマンドを実行して Docker Offload を開始します：
+
+    ```shell
+    $ docker offload start
+    ```
+
+3. プロンプトが表示されたら、Docker Offload に使用するアカウントを選択します。このアカウントが Docker Offload の利用に必要なクレジットを消費します。
+
+4. プロンプトが表示されたら、GPU サポートを有効にするかどうかを選択します。GPU サポートを有効にすると、Docker Offload は NVIDIA L4 GPU を搭載したインスタンスで実行され、機械学習や計算負荷の高いワークロードに役立ちます。
+
+   > [!NOTE]
+   >
+   > GPU サポートを有効にすると、より多くのクレジットを消費します。詳細は [Docker Offload の使用方法](/offload/usage/) を参照してください。
+
+Docker Offload が起動すると、Docker Desktop ダッシュボードのヘッダーにクラウドアイコンが表示され、ダッシュボード全体が紫色に変わります。
+
+また、ターミナルで `docker offload status` を実行すると、Docker Offload のステータスを確認できます。
+
+## ステップ 3: Docker Offload でコンテナを実行する
+
+Docker Offload を起動すると、Docker Desktop はローカル環境を反映した セキュアなクラウド環境に接続します。
+ビルドやコンテナの実行はリモートで行われますが、動作はローカルと同じように振る舞います。
+
+Docker Offload が動作しているかを確認するには、コンテナを実行してみます：
+
+```shell
+$ docker run --rm hello-world
+```
+
+GPU サポートを有効化した場合は、GPU 対応のコンテナも実行できます：
+
+```shell
+$ docker run --rm --gpus all hello-world
+```
+
+Docker Offload が正しく動作していれば、ターミナルに `Hello from Docker!` と表示されます。
+
+## ステップ 4: Docker Offload を停止する
+
+Docker Offload の利用が終わったら、停止できます。停止すると、イメージのビルドやコンテナの実行はローカルで行われます。
+
+```shell
+$ docker offload stop
+```
+
+再度 Docker Offload を開始するには、`docker offload start` コマンドを実行します。
+
+## 次のステップ
+
+- [Docker Offload を設定する](/offload/configuration)
+
+- [Docker Model Runner](/ai/model-runner/) や [Compose](/ai/compose/models-and-compose) を試して、Docker Offload を使って AI モデルを実行してみましょう。
