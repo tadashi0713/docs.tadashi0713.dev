@@ -1,0 +1,58 @@
+---
+title: Docker Offload のトラブルシュート
+description: Docker Offload に関する問題を解決する方法について学びましょう。
+---
+
+# Docker Offload のトラブルシュート
+
+Docker Offload を利用するには以下が必要です：
+
+- 認証済みであること
+
+- アクティブなインターネット接続
+
+- Docker Cloud への通信をブロックしない制限のないプロキシやファイアウォール
+
+- Docker Offload への Beta アクセス
+
+- Docker Desktop 4.43 以降
+
+Docker Desktop は Offload を利用して、クラウド上でビルドとコンテナを実行します。
+もしビルドやコンテナの実行に失敗したり、ローカル実行にフォールバックしたり、セッションエラーが報告される場合は、次の手順で問題解決を試してください。
+
+1. Docker Desktop で Docker Offload が有効になっているか確認
+
+    1. Docker Desktop を開き、サインインします。
+
+    2. **Settings** > **Beta features** に移動します。
+
+    3. **Docker Offload** にチェックが入っていることを確認します。
+
+2. 接続がアクティブかどうか確認するには以下を実行します：
+
+    ```shell
+    $ docker offload status
+    ```
+
+3. 詳細情報を取得するには以下を実行します：
+
+    ```shell
+    $ docker offload diagnose
+    ```
+
+4. 接続されていない場合は、新しいセッションを開始します：
+
+    ```
+    $ docker offload start
+    ```
+
+5. `docker login` で認証を確認します。
+
+6. 必要に応じて、ログアウトして再度ログインします：
+
+    ```shell
+    $ docker logout
+    $ docker login
+    ```
+
+7. 利用状況と課金を確認します。詳細は [Docker Offload の利用状況](/offload/usage/) を参照してください。

@@ -4,4 +4,5 @@ export default {
   'configuration': '設定',
   'usage': '利用状況と課金',
   'optimize': '最適化',
+  'troubleshoot': 'トラブルシュート',
 }
