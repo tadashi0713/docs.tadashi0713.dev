@@ -5,4 +5,5 @@ export default {
   'usage': '利用状況と課金',
   'optimize': '最適化',
   'troubleshoot': 'トラブルシュート',
+  'feedback': 'フィードバック',
 }
