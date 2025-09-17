@@ -3,4 +3,5 @@ export default {
   'about': '概要',
   'configuration': '設定',
   'usage': '利用状況と課金',
+  'optimize': '最適化',
 }
