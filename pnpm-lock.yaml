@@ -53,8 +53,8 @@ importers:
         specifier: 1.13.6
         version: 1.13.6
       linkinator:
-        specifier: 7.4.0
-        version: 7.4.0
+        specifier: 7.4.1
+        version: 7.4.1
       next-sitemap:
         specifier: 4.2.3
         version: 4.2.3(next@15.5.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
@@ -1551,8 +1551,8 @@ packages:
     resolution: {integrity: sha512-ojj4/4IJ29Xn4drd5emqVgilegAPN3Kf0FQM2p/9+lwSTpU+SZ1v4Ig++NF+9MOa99UKY8bElmVrLhnUUNFh5g==}
     hasBin: true
 
-  linkinator@7.4.0:
-    resolution: {integrity: sha512-fqYSwjO023N5dUYCf1jXaCGw2MsaKeskqoSj/tdjLmx2/2rOYnd/NcLvevnvYTK2V2GSqR0sx0WdNZI2ueVtww==}
+  linkinator@7.4.1:
+    resolution: {integrity: sha512-bj6wx9a9YPgl6LXofmJW/uSBMmPS9dzR+aYbEjpj4BKmpWF9pVB6zSmVju0GJDVm9VCG7+XjA2DEVW4kmxLaKQ==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -1579,6 +1579,11 @@ packages:
 
   markdown-table@3.0.4:
     resolution: {integrity: sha512-wiYz4+JrLyb/DqW2hkFJxP7Vd7JuTDm77fvbM8VfEQdmSMqcImWeeRbHwZjBjIFki/VaMK2BhFi7oUUZeM5bqw==}
+
+  marked-gfm-heading-id@4.1.2:
+    resolution: {integrity: sha512-EQ1WiEGHJh0C8viU+hbXbhHyWTDgEia2i96fiSemm2wdYER6YBw/9QI5TB6YFTqFfmMOxBFXPcPJtlgD0fVV2w==}
+    peerDependencies:
+      marked: '>=13 <17'
 
   marked@15.0.12:
     resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
@@ -4000,13 +4005,14 @@ snapshots:
       lefthook-windows-arm64: 1.13.6
       lefthook-windows-x64: 1.13.6
 
-  linkinator@7.4.0:
+  linkinator@7.4.1:
     dependencies:
       chalk: 5.6.2
       escape-html: 1.0.3
       glob: 10.4.5
       htmlparser2: 10.0.0
       marked: 16.3.0
+      marked-gfm-heading-id: 4.1.2(marked@16.3.0)
       meow: 14.0.0
       mime: 4.1.0
       server-destroy: 1.0.1
@@ -4030,6 +4036,11 @@ snapshots:
   markdown-extensions@2.0.0: {}
 
   markdown-table@3.0.4: {}
+
+  marked-gfm-heading-id@4.1.2(marked@16.3.0):
+    dependencies:
+      github-slugger: 2.0.0
+      marked: 16.3.0
 
   marked@15.0.12: {}
 
