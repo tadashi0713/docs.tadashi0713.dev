@@ -53,8 +53,8 @@ importers:
         specifier: 1.13.6
         version: 1.13.6
       linkinator:
-        specifier: 7.4.2
-        version: 7.4.2
+        specifier: 7.5.0
+        version: 7.5.0
       next-sitemap:
         specifier: 4.2.3
         version: 4.2.3(next@15.5.6(react-dom@19.2.0(react@19.2.0))(react@19.2.0))
@@ -1562,8 +1562,8 @@ packages:
     resolution: {integrity: sha512-ojj4/4IJ29Xn4drd5emqVgilegAPN3Kf0FQM2p/9+lwSTpU+SZ1v4Ig++NF+9MOa99UKY8bElmVrLhnUUNFh5g==}
     hasBin: true
 
-  linkinator@7.4.2:
-    resolution: {integrity: sha512-4WOnXmPDK/llw1niyQ9dIHS/LnuLCI0D+WH7Vp6lp8d7O9byBDh7Va4JGUglbFgGBftFx6LLBClUQXzVNVqemA==}
+  linkinator@7.5.0:
+    resolution: {integrity: sha512-dF+bw4OxBAg7EnOKtvwf721uAELg3YSYC2HvOAXgb/vtYklaW+fKQHJTvwoHF9JxVhelRZe9qAPLXl6RDkbrWA==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -4024,7 +4024,7 @@ snapshots:
       lefthook-windows-arm64: 1.13.6
       lefthook-windows-x64: 1.13.6
 
-  linkinator@7.4.2:
+  linkinator@7.5.0:
     dependencies:
       chalk: 5.6.2
       escape-html: 1.0.3
