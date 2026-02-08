@@ -1,0 +1,134 @@
+# cagent
+
+[cagent](https://github.com/docker/cagent) は、専門化されたAIエージェントのチームを構築するためのオープンソースツールです。1つの汎用的なモデルにプロンプトを投げるのではなく、特定の問題を解決するために連携する「特定の役割と指示を持ったエージェント」を定義します。これらのエージェントチームは、任意のLLMプロバイダーを使用してターミナルから実行できます。
+
+## なぜエージェントチームなのか
+
+1つのエージェントで複雑な作業を処理しようとすると、絶え間ないコンテキストの切り替えが発生します。代わりに、作業を特定の役割に特化したエージェントに分割しましょう。各エージェントは自分が最も得意な処理を担当し、cagentがその調整を管理します。
+
+```yaml
+agents:
+  root:
+    model: openai/gpt-5-mini # 使用したいモデルに変更してください
+    description: バグ調査担当
+    instruction: |
+      エラーメッセージ、スタックトレース、コードを分析して、バグの根本原因を特定してください。
+      何が問題で、なぜそれが発生しているのかを説明してください。
+      修正の実装については、fixer（修正担当）エージェントに委任してください。
+    sub_agents: [fixer]
+    toolsets:
+      - type: filesystem
+      - type: mcp
+        ref: docker:duckduckgo
+
+  fixer:
+    model: anthropic/claude-sonnet-4-5 # 使用したいモデルに変更してください
+    description: 修正実装担当
+    instruction: |
+      調査担当が診断したバグの修正プログラムを記述してください。
+      最小限かつ的確な変更を行い、回帰テスト（デグレード防止用）を追加してください。
+    toolsets:
+      - type: filesystem
+      - type: shell
+```
+
+ルート（root）エージェントが問題を調査して説明し、問題を理解した時点で実装のために `fixer` へ引き継ぎます。各エージェントはそれぞれの専門分野に集中し続けることができます。
+
+## インストール
+
+cagent は Docker Desktop 4.49 以降に含まれています。
+
+Docker Engine ユーザーやカスタムインストールの場合は以下を利用してください：
+
+- **Homebrew**: `brew install cagent`
+
+- **Winget**: `winget install Docker.Cagent`
+
+- **プリビルドバイナリ**: [GitHub リリース](https://github.com/docker/cagent/releases)
+
+- **ソースからビルド**: [cagent リポジトリ](https://github.com/docker/cagent)を参照
+
+## クイックスタート
+
+バグ分析チームを試してみましょう：
+
+1. 使用するモデルプロバイダーのAPIキーを設定します：
+
+    ```shell
+    $ export ANTHROPIC_API_KEY=<your_key>  # Claudeモデル用
+    $ export OPENAI_API_KEY=<your_key>     # OpenAIモデル用
+    $ export GOOGLE_API_KEY=<your_key>     # Geminiモデル用
+    ```
+
+2. [エージェントチームの利点](#なぜエージェントチームなのか)にある設定例を `debugger.yaml` として保存します。
+
+3. エージェントチームを実行します：
+
+    ```shell
+    $ cagent run debugger.yaml
+    ```
+
+バグの内容を説明したり、エラーメッセージを貼り付けたりできるプロンプトが表示されます。調査担当（investigator）が問題を分析し、その後、実装のために修正担当（fixer）に引き継がれます。
+
+## 仕組み
+
+ユーザーは ルートエージェント（root agent） とやり取りし、ルートエージェントは定義されたサブエージェントに作業を委任できます。各エージェントの特徴は以下の通りです：
+
+- 独自のモデルとパラメータを使用する
+
+- 独自のコンテキストを持つ（エージェント間で知識は共有されません）
+
+- ToDoリスト、メモリ、タスク委任などの組み込みツールにアクセスできる
+
+- [MCPサーバー](/ai/mcp-catalog-and-toolkit//mcp-gateway/)経由で外部ツールを使用できる
+
+ルートエージェントは、`sub_agents` にリストされているエージェントにタスクを委任します。サブエージェントがさらに独自のサブエージェントを持つことで、より深い階層構造を構築することも可能です。
+
+## 設定オプション
+
+エージェントの設定は YAML ファイルで行います。基本的な構造は以下のようになります：
+
+```yaml
+agents:
+  root:
+    model: claude-sonnet-4-0
+    description: 役割の簡単な要約
+    instruction: |
+      このエージェントに対する詳細な指示...
+    sub_agents: [helper]
+
+  helper:
+    model: gpt-5-mini
+    description: 専門エージェントの役割
+    instruction: |
+      ヘルパーエージェントに対する指示...
+```
+
+また、モデルの設定（コンテキスト制限など）やツール（MCPサーバーを含む）などの設定も可能です。詳細は [設定リファレンス](/ai/cagent/reference/config/) を参照してください。
+
+## エージェントチームの共有
+
+エージェントの設定は OCI アーティファクトとしてパッケージ化されます。コンテナイメージのようにプッシュやプルが可能です：
+
+```yaml
+$ cagent push ./debugger.yaml myusername/debugger
+$ cagent pull myusername/debugger
+```
+
+Docker Hub や、OCI互換のレジストリであればどれでも使用できます。`push` を実行した際、リポジトリが存在しない場合は自動的に作成されます。
+
+## 次のステップ
+
+- [チュートリアル](/ai/cagent/tutorial/)に従って、最初のコーディングエージェントを構築する
+
+- 効果的なエージェントを構築するための[ベストプラクティス](/ai/cagent/best-practices/)を学ぶ
+
+- cagent をお使いの[エディタ](/ai/cagent/integrations/acp/)と統合するか、エージェントを [MCP クライアントのツール](/ai/cagent/integrations/mcp/)として使用する
+
+- [cagent リポジトリ](https://github.com/docker/cagent/tree/main/examples)にある設定例を参照する
+
+- `cagent new` を使用して、AIでエージェントチームを生成する（※詳細はCLIリファレンス等を参照）
+
+- [Docker MCP Gateway](/ai/mcp-catalog-and-toolkit/mcp-gateway/) 経由でエージェントを外部ツールに接続する
+
+- 完全な [設定リファレンス](https://github.com/docker/cagent?tab=readme-ov-file#-configuration-reference) を読む
