@@ -1,0 +1,166 @@
+---
+title: モデルプロバイダー
+description: cagent用のAPIキーを取得し、クラウドモデルプロバイダーを設定する
+---
+
+# モデルプロバイダー
+
+cagentを実行するには、モデルプロバイダーが必要です。APIキーを使用してクラウドプロバイダーを利用するか、[Docker Model Runner](/ai/cagent/local-models/)を使用してモデルをローカルで実行するかのいずれかを選択できます。
+
+このガイドではクラウドプロバイダーについて説明します。ローカルでの実行については、[Docker Model Runnerによるローカルモデル](/ai/cagent/local-models/)をご覧ください。
+
+## サポートされているプロバイダー
+
+cagentは以下のクラウドモデルプロバイダーをサポートしています：
+
+- Anthropic - Claudeモデル
+
+- OpenAI - GPTモデル
+
+- Google - Geminiモデル
+
+## Anthropic
+
+Anthropicは、Claude SonnetやClaude Opusを含むClaudeファミリーのモデルを提供しています。
+
+APIキーの取得方法:
+
+1. [console.anthropic.com](https://console.anthropic.com) にアクセスします。
+
+2. アカウントを登録、またはサインインします。
+
+3. API Keys セクションに移動します。
+
+4. 新しいAPIキーを作成します。
+
+5. キーをコピーします。
+
+環境変数としてAPIキーを設定します：
+
+```shell
+export ANTHROPIC_API_KEY=<your_key>
+```
+
+エージェント設定でAnthropicモデルを使用する例：
+
+```yaml
+agents:
+  root:
+    model: anthropic/claude-sonnet-4-5
+    instruction: あなたは優秀なコーディングアシスタントです
+```
+
+利用可能なモデルには以下が含まれます：
+
+- `anthropic/claude-sonnet-4-5`
+
+- `anthropic/claude-opus-4-5`
+
+- `anthropic/claude-haiku-4-5`
+
+## OpenAI
+
+OpenAIは、GPT-5やGPT-5 miniを含むGPTファミリーのモデルを提供しています。
+
+APIキーの取得方法:
+
+1. [platform.openai.com/api-keys](https://platform.openai.com/api-keys) にアクセスします。
+
+2. アカウントを登録、またはサインインします。
+
+3. API Keys セクションに移動します。
+
+4. 新しいAPIキーを作成します。
+
+5. キーをコピーします。
+
+環境変数としてAPIキーを設定します：
+
+```shell
+$ export OPENAI_API_KEY=your_key_here
+```
+
+エージェント設定でOpenAIモデルを使用する例：
+
+```yaml
+agents:
+  root:
+    model: openai/gpt-5
+    instruction: あなたは優秀なコーディングアシスタントです
+```
+
+利用可能なモデルには以下が含まれます：
+
+- `openai/gpt-5`
+
+- `openai/gpt-5-mini`
+
+## Google Gemini
+
+GoogleはGeminiファミリーのモデルを提供しています。
+
+APIキーの取得方法:
+
+1. [aistudio.google.com/apikey](https://aistudio.google.com/apikey) にアクセスします。
+
+2. Googleアカウントでサインインします。
+
+3. APIキーを作成します。
+
+4. キーをコピーします。
+
+環境変数としてAPIキーを設定します：
+
+```shell
+$ export GOOGLE_API_KEY=your_key_here
+```
+
+エージェント設定でGeminiモデルを使用する例：
+
+```yaml
+agents:
+  root:
+    model: google/gemini-2.5-flash
+    instruction: あなたは優秀なコーディングアシスタントです
+```
+
+利用可能なモデルには以下が含まれます：
+
+- `google/gemini-2.5-flash`
+
+- `google/gemini-2.5-pro`
+
+## OpenAI互換プロバイダー
+
+`openai` プロバイダータイプを使用すると、OpenAI API仕様を実装している任意のモデルやプロバイダーに接続できます。これには、Azure OpenAI、ローカル推論サーバー、その他の互換性のあるエンドポイントが含まれます。
+
+ベースURLを指定して、OpenAI互換プロバイダーを設定します：
+
+```yaml
+agents:
+  root:
+    model: openai/your-model-name
+    instruction: あなたは優秀なコーディングアシスタントです
+    provider:
+      base_url: https://your-provider.example.com/v1
+```
+
+デフォルトでは、cagentは認証に `OPENAI_API_KEY` 環境変数を使用します。プロバイダーが異なる変数を使用する場合は、`token_key` で指定してください：
+
+```yaml
+agents:
+  root:
+    model: openai/your-model-name
+    instruction: あなたは優秀なコーディングアシスタントです
+    provider:
+      base_url: https://your-provider.example.com/v1
+      token_key: YOUR_PROVIDER_API_KEY
+```
+
+## 次のステップ
+
+- [チュートリアル](/ai/cagent/tutorial/)に従って、最初のエージェントを構築しましょう
+
+- クラウドプロバイダーの代替案として、[Docker Model Runnerによるローカルモデル](/ai/cagent/local-models/)について学びましょう
+
+- 高度なモデル設定については、[設定リファレンス](/ai/cagent/reference/config/)を確認してください
