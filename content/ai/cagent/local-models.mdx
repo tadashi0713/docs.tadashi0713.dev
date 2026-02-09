@@ -1,0 +1,192 @@
+---
+title: Docker Model Runner によるローカルモデルの利用
+description: Docker Model Runner でAIモデルをローカルで実行 - APIキー不要
+---
+
+# Docker Model Runner によるローカルモデルの利用
+
+Docker Model Runner (DMR) を使用すると、自分のマシン上で AI モデルをローカルに実行できます。API キーは不要で、追加コストもかからず、データは完全にプライベートな状態に保たれます。
+
+## ローカルモデルを使用する理由
+
+Docker Model Runner を使えば、API キーや継続的な利用料金を気にすることなくモデルを実行できます。データが外部に送信されることはなく、モデルを一度ダウンロードすればオフラインでの作業も可能です。これは、[クラウドプロバイダー](/ai/cagent/model-providers/)を利用する際の代替手段となります。
+
+## 事前準備
+
+Docker Model Runner がインストールされ、実行されている必要があります。
+
+- Docker Desktop (macOS/Windows): **Settings > AI > Enable Docker Model Runner** を有効にします。詳細は [DMR スタートガイド](/ai/model-runner/get-started#docker-model-runner-を有効にする) を参照してください。
+
+- Docker Engine (Linux): `sudo apt-get install docker-model-plugin` または `sudo dnf install docker-model-plugin` でインストールします。詳細は [DMR スタートガイド（Engine版）](/ai/model-runner/get-started#docker-engine-で-dmr-を有効にする) を参照してください。
+
+Docker Model Runner が利用可能か確認するには、以下のコマンドを実行します：
+
+```shell
+$ docker model version
+```
+
+バージョン情報が返ってくれば、ローカルモデルを使用する準備は完了です。
+
+## DMR でのモデル使用
+
+Docker Model Runner は互換性のあるあらゆるモデルを実行できます。モデルのソースには以下が含まれます：
+
+- Docker Hub リポジトリ (`docker.io/namespace/model-name`)
+
+- 任意のレジストリにパッケージ化・プッシュされた独自の OCI アーティファクト
+
+- HuggingFace モデルの直接参照 (`hf.co/org/model-name`)
+
+- Docker Desktop 内の Docker Model カタログ
+
+ローカルの Docker カタログで利用可能なモデルを確認するには、以下のコマンドを実行します：
+
+```shell
+$ docker model list --openai
+```
+
+モデルを使用するには、設定ファイル内でそのモデルを参照するだけです。ローカルに存在しない場合、DMR は初回の実行時に自動的にモデルをプルします。
+
+## 基本設定
+
+`dmr` プロバイダーを使用して、エージェントが Docker Model Runner を使用するように設定します。
+
+```yaml
+agents:
+  root:
+    model: dmr/ai/qwen3
+    instruction: あなたは有能なアシスタントです
+    toolsets:
+      - type: filesystem
+```
+
+エージェントを初めて実行した際、モデルがローカルにない場合はプルするかどうか確認されます：
+
+```shell
+$ cagent run agent.yaml
+Model not found locally. Do you want to pull it now? ([y]es/[n]o)
+```
+
+## 仕組み
+
+エージェントに DMR を使用するよう設定すると、cagent は自動的にローカルの Docker Model Runner に接続し、推論リクエストをそこへルーティングします。モデルがローカルにない場合は初回の使用時にプルを促されます。API キーや認証は一切必要ありません。
+
+## 高度な設定
+
+モデルの動作をより細かく制御するには、`models` セクションで定義を行います。
+
+```yaml
+models:
+  local-qwen:
+    provider: dmr
+    model: ai/qwen3:14B
+    temperature: 0.7
+    max_tokens: 8192
+
+agents:
+  root:
+    model: local-qwen
+    instruction: あなたは有能なコーディングアシスタントです
+```
+
+### 推測デコーディングによる高速化
+
+小型のドラフトモデルを用いた推測デコーディング（Speculative Decoding）を使用して、レスポンスを高速化できます。
+
+```yaml
+models:
+  fast-qwen:
+    provider: dmr
+    model: ai/qwen3:14B
+    provider_opts:
+      speculative_draft_model: ai/qwen3:0.6B-Q4_K_M
+      speculative_num_tokens: 16
+      speculative_acceptance_rate: 0.8
+```
+
+ドラフトモデルがトークンの候補を生成し、メインモデルがそれを検証します。これにより、長い回答の際のスループットを大幅に向上させることができます。
+
+### ランタイムフラグ
+
+パフォーマンスを最適化するために、エンジン固有のフラグを渡すことができます。
+
+```yaml
+models:
+  optimized-qwen:
+    provider: dmr
+    model: ai/qwen3
+    provider_opts:
+      runtime_flags: ["--ngl=33", "--threads=8"]
+```
+
+主なフラグ：
+
+- `--ngl`: GPU にオフロードするレイヤー数
+
+- `--threads`: 使用する CPU スレッド数
+
+- `--repeat-penalty`: 繰り返し抑制のペナルティ
+
+## RAG での DMR 利用
+
+Docker Model Runner は、RAG（検索拡張生成）ワークフローのための埋め込み（Embeddings）とリランキング（Reranking）の両方をサポートしています。\
+
+### DMR による埋め込み
+
+ナレッジベースのインデックス作成にローカルの埋め込みモデルを使用します。
+
+```yaml
+rag:
+  codebase:
+    docs: [./src]
+    strategies:
+      - type: chunked-embeddings
+        embedding_model: dmr/ai/embeddinggemma
+        database: ./code.db
+```
+
+### DMR によるリランキング
+
+DMR は、RAG の精度を向上させるためのネイティブなリランキング機能を提供します。
+
+```yaml
+models:
+  reranker:
+    provider: dmr
+    model: hf.co/ggml-org/qwen3-reranker-0.6b-q8_0-gguf
+
+rag:
+  docs:
+    docs: [./documentation]
+    strategies:
+      - type: chunked-embeddings
+        embedding_model: dmr/ai/embeddinggemma
+        limit: 20
+    results:
+      reranking:
+        model: reranker
+        threshold: 0.5
+      limit: 5
+```
+
+DMR ネイティブのリランキングは、RAG 結果の精度を上げるための最も高速なオプションです。
+
+## トラブルシューティング
+
+cagent が Docker Model Runner を見つけられない場合は、以下を確認してください：
+
+1. DMR のステータスを確認: `docker model status`
+
+2. 利用可能なモデルを確認: `docker model list`
+
+3. モデルのログでエラーを確認: `docker model logs`
+
+4. 設定の確認: Docker Desktop の設定（macOS/Windows）で Model Runner が有効になっているか再確認してください
+
+## 次のステップ
+
+- [チュートリアル](/ai/cagent/tutorial/)に従って、ローカルモデルを使用した最初のエージェントを構築する
+
+- [RAG](ai/cagent/rag/) について学び、エージェントがコードベースやドキュメントにアクセスできるようにする
+
+- [設定リファレンス](/ai/cagent/reference/config/)ですべての DMR オプションを確認する
