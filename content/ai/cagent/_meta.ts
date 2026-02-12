@@ -5,4 +5,5 @@ export default {
   'best-practices': 'ベストプラクティス',
   'sharing-agents': 'エージェントの共有',
   'rag': 'RAG',
+  'evals': 'Evals（評価）',
 }
