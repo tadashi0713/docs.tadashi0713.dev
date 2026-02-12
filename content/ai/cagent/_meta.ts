@@ -4,4 +4,5 @@ export default {
   'tutorial': 'コーディングエージェントの構築',
   'best-practices': 'ベストプラクティス',
   'sharing-agents': 'エージェントの共有',
+  'rag': 'RAG',
 }
