@@ -1,0 +1,99 @@
+---
+title: エージェントの共有
+description: OCIレジストリを介してエージェント設定を配布する
+---
+
+# エージェントの共有
+
+エージェントをレジストリにプッシュし、名前で共有しましょう。チームメンバーは、YAMLファイルをコピーして回ったり、エージェントの設定がどこにあるかを尋ねたりする代わりに、`agentcatalog/security-expert` を参照するだけで済みます。
+
+レジストリ内のエージェントを更新すると、次回クライアントをプルまたは再起動したときに、全員が新しいバージョンを取得できます。
+
+## 前提条件
+
+エージェントをレジストリにプッシュするには、まず認証を行ってください：
+
+```shell
+$ docker login
+```
+
+その他のレジストリについては、それぞれの認証方法を使用してください。
+
+## エージェントの公開
+
+エージェント設定をレジストリにプッシュします：
+
+```shell
+$ cagent push ./agent.yml myusername/agent-name
+```
+
+リポジトリがまだ存在しない場合、プッシュによって作成されます。Docker Hub または任意の OCI互換レジストリを使用してください。
+
+特定のバージョンにタグを付ける：
+
+```shell
+$ cagent push ./agent.yml myusername/agent-name:v1.0.0
+$ cagent push ./agent.yml myusername/agent-name:latest
+```
+
+## 公開されたエージェントの使用
+
+エージェントをプルしてローカルで確認する：
+
+```shell
+$ cagent pull myusername/agent-name
+```
+
+最新バージョンを使用する：
+
+```shell
+$ cagent pull agentcatalog/pirate
+```
+
+これにより、設定がローカルの YAML ファイルとして保存されます。
+
+レジストリから直接エージェントを実行する：
+
+```shell
+$ cagent run agentcatalog/pirate
+```
+
+または、統合機能の中で直接参照します：
+
+### エディタ統合 (ACP)
+
+ACP 設定でレジストリ参照を使用することで、エディタが常に最新バージョンを使用するようにします：
+
+```json
+{
+  "agent_servers": {
+    "myagent": {
+      "command": "cagent",
+      "args": ["acp", "agentcatalog/pirate"]
+    }
+  }
+}
+```
+
+### MCP クライアント統合
+
+エージェントは、MCP クライアント内のツールとして公開できます：
+
+```json
+{
+  "mcpServers": {
+    "myagent": {
+      "command": "/usr/local/bin/cagent",
+      "args": ["mcp", "agentcatalog/pirate"]
+    }
+  }
+}
+```
+
+## 次のステップ
+
+- 共有エージェントを使用した [ACP 統合](/ai/cagent/integrations/acp/) のセットアップ
+
+- 共有エージェントを使用した [MCP 統合](/ai/cagent/integrations/mcp/) の設定
+
+- 例については [エージェントカタログ](https://hub.docker.com/u/agentcatalog) を参照

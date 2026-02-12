@@ -3,4 +3,5 @@ export default {
   'local-models': 'ローカルモデル',
   'tutorial': 'コーディングエージェントの構築',
   'best-practices': 'ベストプラクティス',
+  'sharing-agents': 'エージェントの共有',
 }
