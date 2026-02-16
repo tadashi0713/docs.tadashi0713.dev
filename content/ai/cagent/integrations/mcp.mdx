@@ -1,0 +1,271 @@
+---
+title: MCPモード
+description: cagentエージェントをツールとして、Claude DesktopやClaude CodeなどのMCPクライアントに公開する
+---
+
+# MCPモード
+
+cagentをMCPモードで実行すると、エージェントがClaude Desktopやその他のMCPクライアントに「ツール」として表示されます。セキュリティエージェントを実行するためにターミナルに切り替える代わりに、Claudeにそのエージェントを使うよう依頼すれば、Claudeが代わりにそれを呼び出してくれます。
+
+このガイドでは、Claude DesktopおよびClaude Codeのセットアップについて説明します。エージェントをエディタに組み込みたい場合は、代わりに [ACP統合](/ai/cagent/integrations/acp/) を参照してください。
+
+## 仕組み
+
+Claude Desktop（または他のMCPクライアント）がcagentに接続するように設定します。すると、エージェントがClaudeのツールリストに表示されます。Claudeにそのうちの一つを使うよう依頼すると、MCPプロトコルを通じてそのエージェントが呼び出されます。
+
+例えば、セキュリティエージェントが設定されているとします。Claude Desktopに「この認証コードを監査するためにセキュリティエージェントを使用して」と頼むと、Claudeがそれを呼び出します。エージェントは設定されたツール（ファイルシステム、シェル、その他与えられたもの）を使用して実行され、結果をClaudeに返します。
+
+設定に複数のエージェントが含まれている場合、それぞれが個別のツールになります。`root`、`designer`、`engineer` エージェントを持つ設定であれば、Claudeは3つのツールから選択できるようになります。Claudeはエンジニアを直接呼び出すかもしれませんし、ルートコーディネーターを使用するかもしれません。それはエージェントの説明文や、あなたが何を依頼したかによります。
+
+## MCP Gateway
+
+Dockerは、設定済みのMCPサーバーのカタログへのアクセスをcagentエージェントに提供する [MCP Gateway](/ai/mcp-catalog-and-toolkit/mcp-gateway/) を提供しています。個別のMCPサーバーを設定する代わりに、エージェントはゲートウェイを使用して、Web検索やデータベースクエリなどのツールにアクセスできます。
+
+ゲートウェイのリファレンスを使用したMCPツールセットの設定例：
+
+```yaml
+agents:
+  root:
+    toolsets:
+      - type: mcp
+        ref: docker:duckduckgo # Docker MCP Gatewayを使用
+```
+
+`docker:` プレフィックスは、このサーバーにMCP Gatewayを使用するようcagentに伝えます。利用可能なサーバーと設定オプションについては、[MCP Gateway ドキュメント](/ai/mcp-catalog-and-toolkit/mcp-gateway/) を参照してください。
+
+また、[MCP Toolkit](/ai/mcp-catalog-and-toolkit/toolkit/) を使用して、対話的にMCPサーバーを探索・管理することもできます。
+
+## 前提条件
+
+MCP統合を設定する前に、以下が必要です：
+
+- **cagentがインストールされていること** - [インストールガイド](/ai/cagent#インストール) を参照
+
+- **エージェントの設定** - エージェントを定義する YAML ファイル。[チュートリアル](/ai/cagent/tutorial/) または [設定例](https://github.com/docker/cagent/tree/main/examples) を参照
+
+- **MCPクライアント** - Claude Desktop、Claude Code、またはその他のMCP互換アプリケーション
+
+- **APIキー** - エージェントが使用するモデルプロバイダーの環境変数（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` など）
+
+## MCPクライアントの設定
+
+MCPクライアントは、cagentをどのように起動し、通信するかを知る必要があります。これには通常、クライアントの設定にcagentをMCPサーバーとして追加する作業が含まれます。
+
+### Claude Desktop
+
+Claude DesktopのMCP設定ファイルにcagentを追加します：
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+設定例：
+
+```json
+{
+  "mcpServers": {
+    "myagent": {
+      "command": "/usr/local/bin/cagent",
+      "args": [
+        "mcp",
+        "/path/to/agent.yml",
+        "--working-dir",
+        "/Users/yourname/projects"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "your_anthropic_key_here",
+        "OPENAI_API_KEY": "your_openai_key_here"
+      }
+    }
+  }
+}
+```
+
+設定項目の解説：
+
+- `command`: cagent バイナリへのフルパス（`which cagent` で確認してください）
+
+- `args`: MCPコマンドの引数：
+
+  - `mcp`: cagentをMCPモードで実行するためのサブコマンド
+
+  - `/path/to/agent.yml`: エージェント設定（ローカルファイルのパス、または OCI リファレンス）
+
+  - `--working-dir`: （任意）エージェント実行時の作業ディレクトリ
+
+- `env`: エージェントが必要とする環境変数：
+
+  - モデルプロバイダーのAPIキー（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` など）
+
+  - その他、エージェントが参照する環境変数
+
+設定を更新した後、Claude Desktopを再起動してください。エージェントが利用可能なツールとして表示されます。
+
+### Claude Code
+
+`claude mcp add` コマンドを使用して、cagentをMCPサーバーとして追加します：
+
+```shell
+$ claude mcp add --transport stdio myagent \
+  --env OPENAI_API_KEY=$OPENAI_API_KEY \
+  --env ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY \
+  -- cagent mcp /path/to/agent.yml --working-dir $(pwd)
+```
+
+コマンドの解説：
+
+- `claude mcp add`: MCPサーバーを登録するための Claude Code コマンド
+
+- `--transport stdio`: stdioトランスポートを使用（ローカルMCPサーバーの標準）
+
+- `myagent`: Claude Code内でのこのMCPサーバーの名前
+
+- `--env`: 環境変数を渡す（変数ごとに繰り返す）
+
+- `--`: Claude Codeのオプションと、MCPサーバーのコマンドを区切る
+
+- `cagent mcp /path/to/agent.yml`: エージェント設定へのパスを含む cagent MCP コマンド
+
+- `--working-dir $(pwd)`: エージェント実行時の作業ディレクトリを設定
+
+サーバーを追加した後、Claude Codeのセッションでエージェントがツールとして利用可能になります。
+
+### その他のMCPクライアント
+
+その他のMCP互換クライアントについては、以下の手順が必要です：
+
+-  `cagent mcp /path/to/agent.yml --working-dir /project/path` でcagentを起動する
+
+- stdio経由でcagentと通信するようにクライアントを設定する
+
+- 必要な環境変数（APIキーなど）を渡す
+
+具体的な設定手順については、各MCPクライアントのドキュメントを参照してください。
+
+## エージェントのリファレンス
+
+エージェントの設定は、ローカルファイルのパス、または OCI レジストリのリファレンスとして指定できます：
+
+```shell
+# ローカルファイルのパス
+$ cagent mcp ./agent.yml
+
+# OCI レジストリのリファレンス
+$cagent mcp agentcatalog/pirate$ cagent mcp dockereng/myagent:v1.0.0
+```
+
+MCPクライアントの設定でも同じ構文を使用してください：
+
+```json
+{
+  "mcpServers": {
+    "myagent": {
+      "command": "/usr/local/bin/cagent",
+      "args": ["mcp", "agentcatalog/pirate"]
+    }
+  }
+}
+```
+
+レジストリのリファレンスを使用すると、ローカルファイルを管理することなく、チームで同じエージェント設定を使用できます。詳細は [エージェントの共有](/ai/cagent/sharing-agents/) を参照してください。
+
+## MCP向けのエージェント設計
+
+MCPクライアントは、各エージェントを個別のツールとして認識し、それらを直接呼び出すことができます。これは、`cagent run` でエージェントを実行する場合とは設計の考え方を変える必要があります。
+
+### 良い説明文（description）を書く
+
+`description` フィールドは、エージェントが何をするかをMCPクライアントに伝えます。クライアントはこれを見て、いつ呼び出すかを判断します。「コードのセキュリティ脆弱性とコンプライアンスの問題を分析する」は具体的です。「役に立つセキュリティエージェント」では、実際に何をするのかが分かりません。
+
+```yaml
+agents:
+  security_auditor:
+    description: コードのセキュリティ脆弱性とコンプライアンスの問題を分析する
+    # 非推奨: "役に立つセキュリティエージェント"
+```
+
+### MCPクライアントはエージェントを直接呼び出す
+
+MCPクライアントは、rootだけでなく、どのエージェントも呼び出すことができます。`root`、`designer`、`engineer` エージェントがある場合、クライアントはrootを経由せずにエンジニアを直接呼び出すかもしれません。各エージェントが単体で動作するように設計してください：
+
+```yaml
+agents:
+  engineer:
+    description: 機能を実装し、プロダクションコードを記述する
+    instruction: |
+      提供された要件に基づいてコードを実装してください。
+      コーディネーターがいなくても独立して作業できます。
+    toolsets:
+      - type: filesystem
+      - type: shell
+```
+
+あるエージェントが正常に動作するために他のエージェントを必要とする場合は、説明文にその旨を記載してください：「デザインエージェントとエンジニアリングエージェントを調整して、完全な機能を実装します。」
+
+### 各エージェントを単体でテストする
+
+MCPクライアントはエージェントを個別に呼び出すため、テストも個別に行います：
+
+```shell
+$ cagent run agent.yml --agent engineer
+```
+
+rootを経由しなくてもエージェントが動作することを確認してください。適切なツールを持っており、直接呼び出されたときに指示（instructions）が意味をなすかを確認します。
+
+## セットアップのテスト
+
+MCP統合が機能しているか確認します：
+
+1. 設定変更後、MCPクライアントを再起動する
+
+2. cagentエージェントが利用可能なツールとして表示されることを確認する
+
+3. シンプルなテストプロンプトでエージェントを呼び出す
+
+4. エージェントが設定されたツール（ファイルシステム、シェルなど）にアクセスできることを確認する
+
+エージェントが表示されない、または実行に失敗する場合は、以下を確認してください：
+
+- cagent バイナリのパスが正しく、実行可能であるか
+
+- エージェント設定ファイルが存在し、有効であるか
+
+- 必要なすべてのAPIキーが環境変数に設定されているか
+
+- 作業ディレクトリのパスが存在し、適切な権限があるか
+
+- 接続エラーや実行エラーがないか、MCPクライアントのログを確認する
+
+## 一般的なワークフロー
+
+### 専門エージェントを呼び出す
+
+コンプライアンス規則や一般的な脆弱性に精通したセキュリティエージェントがあるとします。Claude Desktopで、認証コードを貼り付け、「セキュリティエージェントを使用してこれをレビューして」と頼みます。エージェントはコードをチェックし、発見事項を報告します。最初から最後まで、Claudeのインターフェースに留まったまま作業が完結します。
+
+### エージェントチームと協力する
+
+デザイナーエージェントとエンジニアエージェントに委任するコーディネーターの設定があるとします。Claude Codeに「コーディネーターを使用してログインフォームを実装して」と頼むと、コーディネーターがUIの作業をデザイナーに、コードをエンジニアに引き継ぎます。自分自身で `cagent run` を実行することなく、完全な実装を得ることができます。
+
+### ドメイン固有のツールを実行する
+
+カスタムのデプロイスクリプトや監視クエリを持つインフラエージェントを構築したとします。任意のMCPクライアントに「インフラエージェントを使用して本番ステータスを確認して」と頼むと、エージェントがツールを実行して結果を返します。あなたのデプロイに関する知識が、MCPクライアントを使用するあらゆる場所で利用可能になります。
+
+### エージェントを共有する
+
+チームがOCIレジストリでエージェントを管理している場合、全員が `agentcatalog/security-expert` をそれぞれのMCPクライアント設定に追加します。エージェントを更新すると、メンバーは次回の再起動時に新しいバージョンを取得できます。YAMLファイルをやり取りする必要はありません。
+
+## 次のステップ
+
+- [MCP Gateway](/ai/mcp-catalog-and-toolkit/mcp-gateway/) を使用して、設定済みのMCPサーバーへのアクセスをエージェントに提供する
+
+- [MCP Toolkit](/ai/mcp-catalog-and-toolkit/toolkit/) で対話的にMCPサーバーを探索する
+
+- 高度なエージェント設定については [設定リファレンス](/ai/cagent/reference/config/) を確認する
+
+- エージェントが使用できるツールについては [ツールセットリファレンス](/ai/cagent/reference/toolsets/) を確認する
+
+- エージェントに [コードベース検索のための RAG](/ai/cagent/rag/) を追加する
+
+- すべての `cagent mcp` オプションについては [CLIリファレンス](/ai/cagent/reference/cli/) を確認する
+
+- インスピレーションを得るために [設定例](https://github.com/docker/cagent/tree/main/examples) を参照する
