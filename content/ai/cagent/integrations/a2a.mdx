@@ -1,0 +1,195 @@
+---
+title: A2Aモード
+description: Agent-to-Agentプロトコルを介してcagentエージェントを公開する
+---
+
+# A2Aモード
+
+A2Aモードは、cagentエージェントを、他のシステムがAgent-to-Agentプロトコルを使用して呼び出すことができるHTTPサーバーとして実行します。これにより、ネットワーク経由で他のエージェントやアプリケーションが検出し、呼び出すことができるサービスとしてエージェントを公開できます。
+
+他のシステムからHTTP経由でエージェントを呼び出せるようにしたい場合にA2Aを使用してください。エディタ統合については [ACP統合](/ai/cagent/integrations/acp/) を、MCPクライアントでエージェントをツールとして使用する場合は [MCP統合](/ai/cagent/integrations/mcp/) を参照してください。
+
+## 前提条件
+
+- **cagentがインストールされていること** - [インストールガイド](/ai/cagent#インストール) を参照
+
+- **エージェントの設定** - エージェントを定義する YAML ファイル。[チュートリアル](/ai/cagent/tutorial/) または [設定例](https://github.com/docker/cagent/tree/main/examples) を参照
+
+- **APIキー** - エージェントが使用するモデルプロバイダーの環境変数（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` など）
+
+## A2Aサーバーの起動
+
+基本使用法：
+
+```shell
+$ cagent a2a ./agent.yaml
+```
+
+これでエージェントにHTTP経由でアクセスできるようになりました。他のA2Aシステムは、あなたのエージェントの能力を検出し、呼び出すことができます。
+
+カスタムポートの指定：
+
+```shell
+$ cagent a2a ./agent.yaml --port 8080
+```
+
+チーム内の特定のエージェントを指定：
+
+```shell
+$ cagent a2a ./agent.yaml --agent engineer
+```
+
+OCIレジストリから実行：
+
+```shell
+$ cagent a2a agentcatalog/pirate --port 9000
+```
+
+## HTTPエンドポイント
+
+A2Aサーバーを起動すると、2つのHTTPエンドポイントが公開されます：
+
+### エージェントカード：`/.well-known/agent-card`
+
+エージェントカードは、エージェントの能力を記述します：
+
+```shell
+$ curl http://localhost:8080/.well-known/agent-card
+```
+
+```json
+{
+  "name": "agent",
+  "description": "A helpful coding assistant",
+  "skills": [
+    {
+      "id": "agent_root",
+      "name": "root",
+      "description": "A helpful coding assistant",
+      "tags": ["llm", "cagent"]
+    }
+  ],
+  "preferredTransport": "jsonrpc",
+  "url": "http://localhost:8080/invoke",
+  "capabilities": {
+    "streaming": true
+  },
+  "version": "0.1.0"
+}
+```
+
+### 呼び出しエンドポイント：`/invoke`
+
+JSON-RPCリクエストを送信してエージェントを呼び出します：
+
+```shell
+$ curl -X POST http://localhost:8080/invoke \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": "req-1",
+    "method": "message/send",
+    "params": {
+      "message": {
+        "role": "user",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "2+2は？"
+          }
+        ]
+      }
+    }
+  }'
+```
+
+レスポンスにはエージェントの返答が含まれます：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "req-1",
+  "result": {
+    "artifacts": [
+      {
+        "parts": [
+          {
+            "kind": "text",
+            "text": "2+2は4です。"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 例：マルチエージェントワークフロー
+
+A2Aが役立つ具体的なシナリオを挙げます。2つのエージェントがあるとします：
+
+1. ユーザーと対話する汎用エージェント
+
+2. コードベースへのアクセス権を持つ専門のコードレビューエージェント
+
+専門エージェントをA2Aサーバーとして実行します：
+
+```shell
+$ cagent a2a ./code-reviewer.yaml --port 8080
+Listening on 127.0.0.1:8080
+```
+
+メインエージェントがそれを呼び出すように設定します：
+
+```yaml
+agents:
+  root:
+    model: anthropic/claude-sonnet-4-5
+    instruction: あなたは有能なアシスタントです
+    toolsets:
+      - type: a2a
+        url: http://localhost:8080
+        name: code-reviewer
+```
+
+これで、ユーザーがメインエージェントにコードの品質について尋ねると、メインエージェントは専門エージェントにタスクを委任できるようになります。メインエージェントは `code-reviewer` を呼び出し可能なツールとして認識し、専門エージェントは必要なコードベースツールにアクセスして作業を遂行します。
+
+## 他のA2Aエージェントを呼び出す
+
+cagentエージェントは、リモートのA2Aエージェントをツールとして呼び出すことができます。リモートエージェントのURLを指定してA2Aツールセットを設定します：
+
+```yaml
+agents:
+  root:
+    toolsets:
+      - type: a2a
+        url: http://localhost:8080
+        name: specialist
+```
+
+`url` はリモートエージェントが稼働している場所を指定し、`name` はそのツールのオプションの識別子です。これで、エージェントはリモートの専門エージェントにタスクを委任できるようになります。
+
+リモートエージェントに認証やカスタムヘッダーが必要な場合：
+
+```yaml
+agents:
+  root:
+    toolsets:
+      - type: a2a
+        url: http://localhost:8080
+        name: specialist
+        remote:
+          headers:
+            Authorization: Bearer token123
+            X-Custom-Header: value
+```
+
+## 次のステップ
+
+- すべての cagent a2a オプションについては [CLIリファレンス](/ai/cagent/reference/cli/) を確認する
+
+- エージェントをMCPクライアントのツールとして公開する [MCPモード](/ai/cagent/integrations/mcp/) について学ぶ
+
+- エディタ統合のための [ACPモード](/ai/cagent/integrations/acp/) について学ぶ
+
+- [OCIレジストリ](/ai/cagent/sharing-agents/) でエージェントを共有する
