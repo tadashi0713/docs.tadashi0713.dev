@@ -1,0 +1,158 @@
+---
+title: ACP統合
+description: cagentエージェントをコーディングアシスタントとして使用するために、エディタやIDEを設定する
+---
+
+# ACP統合
+
+Agent Client Protocol (ACP) を使用して、cagentエージェントをエディタ内で直接実行します。エージェントはエディタのファイルシステムのコンテキストにアクセスできるようになり、作業中にファイルを読み取ったり修正したりできます。ファイル操作はエディタが担当し、cagentはAI機能を提供します。
+
+このガイドでは、cagentエージェントを実行するために Neovim または Zed を設定する方法を説明します。cagentエージェントをツールとして Claude Desktop や Claude Code などの MCP クライアントに公開したい場合は、代わりに [MCP統合](/ai/cagent/integrations/mcp/) を参照してください。
+
+## 仕組み
+
+ACP を使用して cagent を実行すると、エージェントはエディタ環境の一部になります。コードを選択したり、関数をハイライトしたり、ファイルを参照したりすると、エージェントはあなたが今見ているものと同じものを認識します。ファイルパスをコピーしたり、ターミナルに切り替えたりする必要はありません。
+
+「この関数を説明して」と頼めば、エージェントは表示中のファイルを読み取ります。「エラーハンドリングを追加して」と頼めば、エディタ内で直接コードを編集します。エージェントは、エージェント自身がナビゲートしなければならない外部のファイルシステムではなく、あなたのエディタが捉えているプロジェクトのビュー（視点）に基づいて作業します。
+
+ターミナルで cagent を実行する場合との違いは、ファイル操作がエージェントによるファイルシステムへの直接アクセスではなく、エディタを経由して行われる点にあります。エージェントがファイルを読み書きする必要がある場合、エディタに対してリクエストを送信します。これにより、エージェントが見ているコードの状態が、あなたが見ているもの（同じ作業ディレクトリ、同じファイル、同じ状態）と常に同期されます。
+
+## 前提条件
+
+エディタを設定する前に、以下が必要です：
+
+- **cagentがインストールされていること** - [インストールガイド](/ai/cagent#インストール) を参照
+- **エージェントの設定** - エージェントを定義する YAML ファイル。[チュートリアル](/ai/cagent/tutorial/) または [設定例](https://github.com/docker/cagent/tree/main/examples) を参照
+- **ACPをサポートするエディタ** - Neovim、IntelliJ、Zed など
+
+エージェントは、シェル環境のモデルプロバイダーAPIキー（`ANTHROPIC_API_KEY`、`OPENAI_API_KEY` など）を使用します。エディタを起動する前に、これらが設定されていることを確認してください。
+
+## エディタの設定
+
+### Zed
+
+Zed には ACP サポートが組み込まれています。
+
+1. `settings.json` の `agent_servers` に cagent を追加します：
+
+   ```json
+   {
+     "agent_servers": {
+       "my-cagent-team": {
+         "command": "cagent",
+         "args": ["acp", "agent.yml"]
+       }
+     }
+   }
+   ```
+
+    置き換える箇所：
+
+    `my-cagent-team`: エージェントに使用したい名前
+
+    `agent.yml`: エージェント設定ファイルへのパス
+
+    別々に実行したい複数のエージェントファイルがある場合は、`agent_servers` の下に各エージェントのエントリを複数作成できます。
+
+2. 新しい「外部エージェントスレッド（external agent thread）」を開始します。ドロップダウンリストからエージェントを選択してください。
+
+    ![Zed の外部エージェントスレッド](/ai/cagent-acp-zed.png)
+
+### Neovim
+
+ビルトインアダプターを介して cagent をネイティブにサポートしている [CodeCompanion](https://github.com/olimorris/codecompanion.nvim) プラグインを使用します：
+
+1. プラグインマネージャーを使用して [CodeCompanion をインストール]https://codecompanion.olimorris.dev/installation) します。
+
+2. CodeCompanion の設定で `cagent` アダプターを拡張します：
+
+    ```lua
+    require("codecompanion").setup({
+        adapters = {
+            acp = {
+            cagent = function()
+                return require("codecompanion.adapters").extend("cagent", {
+                commands = {
+                    default = {
+                    "cagent",
+                    "acp",
+                    "agent.yml",
+                    },
+                },
+                })
+            end,
+            },
+        },
+    })
+    ```
+
+    `agent.yml` をエージェント設定ファイルへのパスに置き換えてください。別々に実行したい複数のエージェントファイルがある場合は、各エージェントに対して複数のコマンドを作成できます。
+
+3. Neovim を再起動し、CodeCompanion を起動します：
+
+    ```plaintext
+    :CodeCompanion
+    ```
+
+4. cagent アダプターに切り替えます（デフォルトでは CodeCompanion バッファ内でキーマップ `ga`）
+
+CodeCompanion における ACP サポートの詳細は、[CodeCompanion ACP ドキュメント](https://codecompanion.olimorris.dev/usage/acp-protocol) を参照してください。なお、ターミナル操作はサポートされていないため、`shell` や `script_shell` といった [ツールセット](/ai/cagent/reference/toolsets/) は CodeCompanion 経由では使用できません。
+
+## エージェントの参照
+
+エージェントの設定は、ローカルファイルのパス、または OCI レジストリのリファレンスとして指定できます：
+
+```shell
+# ローカルファイルのパス
+$ cagent acp ./agent.yml
+
+# OCI レジストリのリファレンス
+$cagent acp agentcatalog/pirate$ cagent acp dockereng/myagent:v1.0.0
+```
+
+エディタの設定でも同じ構文を使用してください：
+
+```json
+{
+  "agent_servers": {
+    "myagent": {
+      "command": "cagent",
+      "args": ["acp", "agentcatalog/pirate"]
+    }
+  }
+}
+```
+
+レジストリのリファレンスを使用すると、ローカルのファイルパスを意識することなく、チームでの共有、バージョン管理、クリーンな設定が可能になります。OCI レジストリの使用に関する詳細は、[エージェントの共有](/ai/cagent/sharing-agents/) を参照してください。
+
+## 設定のテスト
+
+設定が機能しているか確認します：
+
+1. エディタの設定に沿った方法で、cagent ACP サーバーを開始します
+
+2. エディタのインターフェースからテストプロンプトを送信します
+
+3. エージェントが応答することを確認します
+
+4. エージェントにファイルを読み取るよう依頼し、ファイルシステム操作が機能することを確認します
+
+エージェントは起動するがファイルにアクセスできない、または他のアクションを実行できない場合は、以下を確認してください：
+
+- エディタの作業ディレクトリがプロジェクトルートに正しく設定されているか
+
+- エージェント設定ファイルのパスが絶対パスであるか、または作業ディレクトリからの相対パスであるか
+
+- エディタまたはプラグインが ACP プロトコルの機能を適切に実装しているか
+
+## 次のステップ
+
+- 高度なエージェント設定については 設定リファレンス を確認する
+
+- どのようなツールが利用可能か [ツールセットリファレンス](/ai/cagent/reference/toolsets/) を探索する
+
+- エージェントに [コードベース検索のための RAG](/ai/cagent/rag/) を追加する
+
+- すべての cagent acp オプションについては [CLIリファレンス](/ai/cagent/reference/cli/) を確認する
+
+- インスピレーションを得るために [設定例](https://github.com/docker/cagent/tree/main/examples) を参照する
