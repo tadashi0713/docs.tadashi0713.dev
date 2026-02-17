@@ -4,4 +4,5 @@ export default {
   'mcp-catalog-and-toolkit': 'MCP Catalog and Toolkit',
   'compose': 'AI と Docker Compose',
   'cagent': 'cagent',
+  'sandboxes': 'Docker Sandboxes',
 }
