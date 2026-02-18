@@ -1,0 +1,135 @@
+---
+title: Docker Sandboxesをはじめよう
+description: 隔離されたサンドボックスでClaude Codeを実行する。前提条件と基本コマンドを含むクイックセットアップガイド。
+---
+
+# Docker Sandboxesをはじめよう
+
+このガイドでは、初めて隔離されたサンドボックスでClaude Codeを実行する方法を説明します。
+
+> [!NOTE]
+>
+> 以前のバージョンのDocker Desktopからアップグレードする場合、新しいmicroVMアーキテクチャについては[移行ガイド](/ai/sandboxes/migration/)を参照してください。
+
+## 前提条件
+
+開始する前に、以下が準備されていることを確認してください：
+
+- Docker Desktop 4.58 以降
+- macOS、または Windows
+- Claude APIキー（環境変数、または対話形式で提供可能）
+
+## 最初のサンドボックスを実行する
+
+以下の手順でClaude Codeを実行します：
+
+1. （任意ですが推奨）Anthropic APIキーを環境変数として設定します。
+
+   シェル設定ファイルにAPIキーを追加します：
+
+   ```shell
+   export ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+   ```
+
+   Docker Sandboxesは、現在のシェルセッションとは独立して動作するデーモンプロセスを使用します。そのため、現在のセッション内やインラインで環境変数を設定しても機能しません。デーモンがアクセスできるように、シェル設定ファイルでグローバルに設定する必要があります。
+
+   変更を適用する：
+
+   1. シェル設定を source コマンドなどで読み込みます。
+
+   2. Docker Desktopを再起動して、デーモンに新しい環境変数を認識させます。
+
+   あるいは、この手順をスキップして、Claude Codeの起動時に対話形式で認証することも可能です。資格情報が見つからない場合はログインを求められます。ただし、対話型認証の場合はワークスペースごとに個別に認証する必要があることに注意してください。
+
+2. ワークスペース用にClaude Codeのサンドボックスを作成して実行します：
+
+   ```shell
+   $ docker sandbox run claude ~/my-project
+   ```
+
+   これによりmicroVMサンドボックスが作成されます。Dockerは自動的に名前を割り当てます。
+
+3. Claude Codeが起動し、作業を開始できます。初回実行時は、DockerがmicroVMを初期化してテンプレートイメージをプルするため、通常より時間がかかります。
+
+## 何が起きたのか？
+
+`docker sandbox run` を実行した際、以下の処理が行われました：
+
+- DockerがプライベートDockerデーモンを備えた軽量なmicroVMを作成した
+
+- ワークスペースのパスに基づいてサンドボックスに名前が割り当てられた
+
+- ワークスペースがVM内に同期された
+
+- DockerがサンドボックスVM内のコンテナとしてClaude Codeエージェントを起動した
+
+サンドボックスは削除するまで保持されます。インストールされたパッケージや設定はそのまま残ります。再度接続するには、`docker sandbox run <sandbox-name>` を実行してください。
+
+> [!NOTE]
+>
+> エージェントはワークスペース内のファイルを変更する可能性があります。コードの実行やスクリプトの自動実行を伴うアクションを行う前に、変更内容を確認してください。詳細は[セキュリティに関する考慮事項](workflows.md#security-considerations)を参照してください。
+
+## 基本コマンド
+
+サンドボックスを管理するための主要なコマンドは以下の通りです：
+
+### サンドボックスの一覧表示
+
+```shell
+$ docker sandbox ls
+```
+
+すべてのサンドボックスのID、名前、ステータス、作成時間が表示されます。
+
+> [!NOTE]
+>
+> サンドボックスはコンテナではなくmicroVMであるため、`docker ps` には表示されません。確認するには `docker sandbox ls` を使用してください。
+
+### 実行中のサンドボックスへのアクセス
+
+```shell
+$ docker sandbox exec -it <sandbox-name> bash
+```
+
+サンドボックス内のコンテナでコマンドを実行します。デバッグや追加ツールのインストールのためにインタラクティブなシェルを開くには、`-it` を使用します。
+
+### サンドボックスの削除
+
+```shell
+$ docker sandbox rm <sandbox-name>
+```
+
+サンドボックスVMと、その中にインストールされたすべてのパッケージを削除します。複数の名前を指定することで、一度に複数のサンドボックスを削除できます。
+
+```shell
+$ docker sandbox rm <sandbox-1> <sandbox-2>
+```
+
+## サンドボックスの再作成
+
+クリーンな環境でやり直すには、サンドボックスを削除してから再作成します：
+
+```shell
+$ docker sandbox rm <sandbox-name>
+$ docker sandbox run claude ~/project
+```
+
+カスタムテンプレートやワークスペースパスなどの設定は、サンドボックス作成時にセットされます。これらの設定を変更したい場合は、一度削除して再作成してください。
+
+コマンドとオプションの完全なリストについては、[CLIリファレンス](https://docs.docker.com/reference/cli/docker/sandbox/)を参照してください。
+
+## 次のステップ
+
+サンドボックスでClaudeを動かせるようになったら、以下のトピックについて詳しく学びましょう：
+
+- [Claude Codeの設定](/ai/sandboxes/claude-code/)
+
+- [サポートされているエージェント](/ai/sandboxes/agents/)
+
+- [サンドボックスを効果的に活用する](/ai/sandboxes/workflows/)
+
+- [カスタムテンプレート](/ai/sandboxes/templates/)
+
+- [ネットワークポリシー](/ai/sandboxes/network-policies/)
+
+- [トラブルシューティング](/ai/sandboxes/troubleshooting/)
