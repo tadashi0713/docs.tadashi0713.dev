@@ -1,0 +1,123 @@
+---
+title: Claude Codeの設定
+description: Claude Codeの認証設定、CLIオプションの渡し方、Dockerでのサンドボックス化されたエージェント環境のカスタマイズ方法について説明します。
+---
+
+# Claude Codeの設定
+
+このガイドでは、サンドボックス環境でClaude Codeを実行するための認証、設定ファイル、および一般的なオプションについて説明します。
+
+## クイックスタート
+
+プロジェクトディレクトリに対してサンドボックスを作成し、Claude Codeを実行するには：
+
+```shell
+$ docker sandbox run claude ~/my-project
+```
+
+### プロンプトを直接渡す
+
+特定のプロンプトを指定してClaudeを起動します：
+
+```shell
+$ docker sandbox run <sandbox-name> -- "ログイン関数にエラーハンドリングを追加して"
+```
+
+または：
+
+```shell
+$ docker sandbox run <sandbox-name> -- "$(cat prompt.txt)"
+```
+
+これにより、Claudeが起動し、即座にプロンプトの処理を開始します。
+
+## 認証
+
+Claude CodeにはAnthropicのAPIキーが必要です。環境変数を使用する方法（推奨）、または対話型ログインによる認証が可能です。
+
+### 環境変数（推奨）
+
+推奨される方法は、シェルの設定ファイルに `ANTHROPIC_API_KEY` 環境変数を設定することです。
+
+Docker Sandboxesは、現在のシェルセッションから環境変数を継承しないデーモンプロセスを使用します。サンドボックスでAPIキーを利用可能にするには、シェルの設定ファイルでグローバルに設定する必要があります。
+
+シェルの設定ファイルにAPIキーを追加します：
+
+```shell
+export ANTHROPIC_API_KEY=sk-ant-api03-xxxxx
+```
+
+変更を適用する：
+
+1. シェル設定を読み込む： `source ~/.bashrc` （または `~/.zshrc`）
+
+2. Docker Desktopを再起動して、デーモンに新しい環境変数を認識させる
+
+3. サンドボックスを作成して実行する：
+
+```shell
+$ docker sandbox create claude ~/project/
+$ docker sandbox run <sandbox-name>
+```
+
+サンドボックスは環境変数を検出し、自動的に使用します。
+
+### 対話型認証
+
+資格情報が見つからない場合、Claude Codeの起動時に対話形式で認証を求められます。また、Claude Code内で `/login` コマンドを使用して手動でログインフローを開始することもできます。
+
+対話型認証を使用する場合：
+
+- ワークスペース／サンドボックスごとに個別に認証する必要があります。
+
+- サンドボックスを削除または破棄した場合、再作成時に再度認証が必要になります。
+
+- 認証セッションはサンドボックスの外には保持されません。
+
+繰り返しの認証を避けるには、前述の `ANTHROPIC_API_KEY` 環境変数を使用する方法を推奨します。
+
+## 設定
+
+Claude CodeはCLIオプションを通じて設定できます。サンドボックス名と `--` セパレーターの後に渡す引数は、すべてClaude Codeに直接渡されます。
+
+サンドボックス名の後にオプションを記述します：
+
+```shell
+$ docker sandbox run <sandbox-name> -- [claude-options]
+```
+
+例：
+
+```shell
+$ docker sandbox run <sandbox-name> -- --continue
+```
+
+利用可能なオプションについては、[Claude Code CLIリファレンス（英語）](https://code.claude.com/docs/en/cli-reference)を参照してください。
+
+## ベースイメージ
+
+Claude Codeサンドボックスのテンプレートは、サンドボックスVM内で動作するコンテナイメージです。これには以下が含まれます：
+
+- Ubuntuベースの環境とClaude Code
+
+- 開発ツール：Docker CLI, GitHub CLI, Node.js, Go, Python 3, Git, ripgrep, jq
+
+- sudo権限を持つ非ルートユーザー `agent`
+
+- 追加のコンテナを実行するためのプライベートDockerデーモン
+
+サンドボックス内のClaudeは、デフォルトで `--dangerously-skip-permissions` フラグが付与された状態で起動します。
+
+`docker/sandbox-templates:claude-code` をベースにしてカスタムテンプレートを構築することも可能です。詳細は [カスタムテンプレート](/ai/sandboxes/templates) を参照してください。
+
+## 次のステップ
+
+- [サンドボックスを効果的に活用する](/ai/sandboxes/workflows)
+
+- [カスタムテンプレート](/ai/sandboxes/templates)
+
+- [ネットワークポリシー](/ai/sandboxes/network-policies)
+
+- [トラブルシューティング](/ai/sandboxes/troubleshooting)
+
+- [CLIリファレンス](https://docs.docker.com/reference/cli/docker/sandbox/)
