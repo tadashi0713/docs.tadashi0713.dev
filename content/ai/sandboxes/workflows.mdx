@@ -1,0 +1,266 @@
+---
+title: サンドボックスを効果的に活用する
+description: 依存関係の管理、テスト、複数プロジェクトのセットアップなど、Docker Sandboxesを使用する際のベストプラクティスと一般的なワークフロー。
+---
+
+## サンドボックスを効果的に活用する
+
+このガイドでは、サンドボックス化されたエージェントを操作するための実践的なパターンについて説明します。
+
+## 基本的なワークフロー
+
+プロジェクト用のサンドボックスを作成します：
+
+```shell
+$ cd ~/my-project
+$ docker sandbox run AGENT
+```
+
+`AGENT` は、使用したいエージェント（`claude`, `codex`, `copilot` など）に置き換えてください。ワークスペースの指定を省略した場合は、現在のディレクトリがデフォルトになります。明示的にパスを指定することも可能です：
+
+```shell
+$ docker sandbox run AGENT ~/my-project
+```
+
+`docker sandbox run` コマンドはべき等（idempotent）です。同じコマンドを複数回実行しても、新しいサンドボックスを作成するのではなく、既存のサンドボックスを再利用します：
+
+```shell
+$ docker sandbox run AGENT ~/my-project  # サンドボックスを作成
+$ docker sandbox run AGENT ~/my-project  # 同じサンドボックスを再利用
+```
+
+これはワークスペースのパス（絶対パスまたは相対パス）を指定した場合でも、省略した場合でも同様です。サンドボックスは永続的であるため、インストールしたパッケージや設定を失うことなく、停止や再起動が可能です：
+
+```shell
+$ docker sandbox run <sandbox-name>  # 名前を指定して再接続
+```
+
+`--name` フラグを使用した場合も、名前に基づいて同様のべき等な動作をします：
+
+```shell
+$ docker sandbox run --name dev AGENT  # "dev" という名前でサンドボックスを作成
+$ docker sandbox run --name dev AGENT  # "dev" サンドボックスを再利用
+```
+
+## 依存関係のインストール
+
+エージェントに必要なものをインストールするよう依頼するだけです：
+
+```plaintext
+ユーザー: "pytestとblackをインストールして"
+エージェント: [pip経由でパッケージをインストール]
+
+ユーザー: "build-essentialをインストールして"
+エージェント: [apt経由でインストール]
+```
+
+エージェントは sudo 権限を持っています。インストールされたパッケージは、サンドボックスが削除されるまで保持されます。これはシステムパッケージ、言語パッケージ、開発ツールすべてに適用されます。
+
+チームでの利用や、繰り返しセットアップを行う場合は、ツールをあらかじめインストールした[カスタムテンプレート](/ai/sandboxes/templates)の使用を検討してください。
+
+## サンドボックス内での Docker 利用
+
+エージェントはイメージのビルド、コンテナの実行、Docker Compose の使用が可能です。すべてはサンドボックス内のプライベート Docker デーモン上で実行されます。
+
+### コンテナ化されたアプリのテスト
+
+```plaintext
+ユーザー: "Dockerイメージをビルドしてテストを実行して"
+
+エージェント: *実行内容*
+  docker build -t myapp:test .
+  docker run myapp:test npm test
+```
+
+エージェントが起動したコンテナは、ホストマシンではなくサンドボックス内で動作します。そのため、ホスト側の `docker ps` には表示されません。
+
+### マルチコンテナ・スタック
+
+```plaintext
+ユーザー: "docker-composeでアプリケーションを起動し、結合テストを実行して"
+
+エージェント: *実行内容*
+  docker-compose up -d
+  docker-compose exec api pytest tests/integration
+  docker-compose down
+```
+
+サンドボックスを削除すると、それに関連するすべてのイメージ、コンテナ、ボリュームも削除されます。
+
+## 何が保持されるか
+
+サンドボックスが存在する限り、以下が保持されます：
+
+- インストールされたパッケージ（apt, pip, npm など）
+
+- サンドボックス内の Docker イメージとコンテナ
+
+- 設定の変更
+
+- コマンド履歴
+
+サンドボックスを削除すると：
+
+- 内部のすべてが削除される
+
+- ワークスペースのファイルはホスト側に残り（同期されているため）、失われない
+
+構成済みの環境を保存しておきたい場合は、[カスタムテンプレート](/ai/sandboxes/templates)を作成してください。/
+
+## セキュリティに関する考慮事項
+
+サンドボックス内で実行されるエージェントは、マウントされたワークスペースディレクトリを自動的に信頼（trust）します。これにより、エージェントは隔離された環境内で自由に作業を行うことができます。
+
+エージェントは、スクリプト、設定ファイル、隠しファイルを含む、ワークスペース内のあらゆるファイルを作成・変更できます。
+
+エージェントが作業を終えた後は、コードを実行する可能性のあるアクションをホスト側で行う前に、必ず変更内容を確認してください：
+
+- 変更のコミット（Git フックが実行される可能性があります）
+
+- IDE でワークスペースを開く（スクリプトや拡張機能が自動実行される可能性があります）
+
+- エージェントが作成・変更したスクリプトや実行ファイルの実行
+
+変更内容の確認方法：
+
+```shell
+$ git status                        # 変更・新規ファイルを確認
+$ git diff                          # 追跡対象ファイルの変更内容を確認
+```
+
+追跡されていないファイルもチェックしてください。また、`.git/hooks/` 内の Git フックなどの変更は、通常の `git diff` には表示されないことに注意してください。
+
+これは、Visual Studio Code などのエディタが新しいワークスペースを開く際に警告を表示するのと同様の信頼モデルに基づいています。
+
+## 複数プロジェクトの管理
+
+プロジェクトごとに異なるサンドボックスを作成できます：
+
+```shell
+$ docker sandbox create claude ~/project-a
+$ docker sandbox create codex ~/project-b
+$ docker sandbox create copilot ~/work/client-project
+```
+
+各サンドボックスは完全に隔離されています。適切なサンドボックス名を指定して実行することで、環境を切り替えることができます。
+
+ディスク容量を節約するため、使わなくなったサンドボックスは削除しましょう：
+
+```shell
+$ docker sandbox rm <sandbox-name>
+```
+
+## サンドボックスの名前付け
+
+Docker はエージェント名とワークスペースディレクトリに基づき、名前（例：`claude-my-project`）を自動生成します。`--name` フラグを使用してカスタム名を指定することも可能です：
+
+```shell
+$ docker sandbox run --name myproject AGENT ~/project
+```
+
+同じワークスペースに対して複数のサンドボックスを作成することもできます：
+
+```shell
+$ docker sandbox create --name dev claude ~/project
+$ docker sandbox create --name staging codex ~/project
+$ docker sandbox run dev
+```
+
+それぞれで別々のパッケージや Docker イメージ、状態を保持しつつ、ワークスペース内のファイルだけを共有します。
+
+## 複数のワークスペース
+
+関連するプロジェクトで作業する場合や、エージェントがドキュメントや共有ライブラリにアクセスする必要がある場合、単一のサンドボックスに複数のディレクトリをマウントできます。
+
+```shell
+$ docker sandbox run AGENT ~/my-project ~/shared-docs
+```
+
+最初の引数として指定した「プライマリ・ワークスペース」は常に読み書き可能（read-write）でマウントされます。追加のワークスペースもデフォルトでは読み書き可能です。
+
+### 読み取り専用マウント
+
+追加のワークスペースに `:ro` または `:readonly` を付加することで、読み取り専用としてマウントできます：
+
+```shell
+$ docker sandbox run AGENT . /path/to/docs:ro /path/to/lib:readonly
+```
+
+プライマリ・ワークスペースへの書き込み権限を維持しつつ、追加したディレクトリを書き換えから保護できます。
+
+### パス解決
+
+ワークスペースは、サンドボックス内の絶対パスと同じ場所にマウントされます。相対パスはマウント前に絶対パスに変換されます。
+
+例：
+
+```shell
+$ cd /Users/bob/projects
+$ docker sandbox run AGENT ./app ~/docs:ro
+```
+
+サンドボックス内部のパス：
+
+- `/Users/bob/projects/app` - プライマリ・ワークスペース（読み書き可能）
+
+- `/Users/bob/docs` - 追加ワークスペース（読み取り専用）
+
+`/Users/bob/projects/app` への変更はホストに同期されますが、`/Users/bob/docs` は変更から保護されます。
+
+### サンドボックス間でのワークスペース共有
+
+単一のパスを複数のサンドボックスに同時に含めることができます：
+
+```shell
+$ docker sandbox create --name sb1 claude ./project-a
+$ docker sandbox create --name sb2 claude ./project-a ./project-b
+$ docker sandbox create --name sb3 cagent ./project-a
+$ docker sandbox ls
+SANDBOX   AGENT    STATUS    WORKSPACE
+sb1       claude   running   /Users/bob/src/project-a
+sb2       claude   running   /Users/bob/src/project-a, /Users/bob/src/project-b
+sb3       cagent   running   /Users/bob/src/project-a
+```
+
+各サンドボックスは独立した構成で動作しつつ、同じワークスペースファイルを共有します。
+
+## 状態のリセット
+
+サンドボックスの状態に問題が発生した場合は、リセットコマンドを使用してすべての VM とレジストリをクリーンアップできます：
+
+```shell
+$ docker sandbox reset
+```
+
+このコマンドは以下の処理を行います：
+
+- 実行中のすべてのサンドボックス VM を停止
+
+- すべての VM の状態とレジストリを削除
+
+- サンドボックスデーモン自体は実行を継続（終了させない）
+
+- 削除できなかったディレクトリがある場合は警告を表示
+
+リセット後、新しいサンドボックスを再度作成できるようになります。トラブルが解決しない場合や、すべてのサンドボックスをまとめて削除してディスク容量を確保したい場合に使用してください。
+
+## デバッグ
+
+対話型シェルを使用して、サンドボックスに直接アクセスできます：
+
+```shell
+$ docker sandbox exec -it <sandbox-name> bash
+```
+
+シェル内では、環境の確認、手動でのパッケージインストール、Docker コンテナのチェックなどが可能です：
+
+```shell
+agent@sandbox:~$ docker ps
+agent@sandbox:~$ docker images
+```
+
+すべてのサンドボックスを確認するには：
+
+```shell
+$ docker sandbox ls
+```
