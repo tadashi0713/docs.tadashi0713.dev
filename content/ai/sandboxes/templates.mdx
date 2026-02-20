@@ -1,0 +1,176 @@
+---
+title: カスタムテンプレート
+description: ツールや設定をプリインストールしたカスタムサンドボックスを作成し、開発環境を標準化します。
+---
+
+# カスタムテンプレート
+
+カスタムテンプレートを使用すると、必要なツールや設定があらかじめ組み込まれた、再利用可能なサンドボックス環境を作成できます。毎回エージェントにパッケージのインストールを依頼する代わりに、すべてが整ったテンプレートを構築して効率化しましょう。
+
+## カスタムテンプレートを使用すべきケース
+
+以下のような場合にカスタムテンプレートが威力を発揮します：
+
+- チームの複数のメンバーが同じ環境を必要としている
+- 同一のツールセットを持つサンドボックスを頻繁に作成する
+- セットアップ手順が複雑で、繰り返すのが面倒である
+- 特定のバージョンのツールやライブラリを固定して使用したい
+
+単発の作業やシンプルな構成の場合は、デフォルトのテンプレートを使用し、必要に応じてエージェントにインストールを依頼するだけで十分です。
+
+## Dockerfileによるテンプレートの構築
+
+Docker公式のサンドボックス用テンプレートをベースに作成します：
+
+```dockerfile
+FROM docker/sandbox-templates:claude-code
+
+USER root
+
+# システムパッケージのインストール
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# 開発ツールのインストール
+RUN pip3 install --no-cache-dir \
+    pytest \
+    black \
+    pylint
+
+USER agent
+```
+
+公式テンプレートには、エージェントのバイナリ、Ubuntuベース、およびGit、Docker CLI、Node.js、Python、Goなどの開発ツールが含まれています。これらはsudo権限を持つ非ルートユーザー `agent` として実行されます。
+
+### USERパターンの重要性
+
+システムレベルのインストールを行う際は `root` に切り替え、最後に必ず `agent` に戻してください。ベーステンプレートはデフォルトで `USER agent` になっているため、パッケージのインストールには明示的な切り替えが必要です。エージェントが正しい権限で動作するように、Dockerfileの最後で `agent` に戻すのが鉄則です。
+
+### 作成したテンプレートの使用
+
+テンプレートをビルドします：
+
+```shell
+$ docker build -t my-template:v1 .
+```
+
+ローカルのDockerデーモンから直接使用できます：
+
+```shell
+$ docker sandbox run -t my-template:v1 claude [PATH]
+```
+
+デフォルトの `--pull-template missing` ポリシーにより、レジストリからプルすることなく、ローカルのDockerデーモン内のイメージが自動的に使用されます。
+
+チームで共有する場合は、レジストリにプッシュします：
+
+```shell
+$ docker tag my-template:v1 myorg/my-template:v1
+$ docker push myorg/my-template:v1
+$ docker sandbox run -t myorg/my-template:v1 claude [PATH]
+```
+
+レジストリ上のイメージを使用する場合も、`missing` ポリシーにより、キャッシュがない場合のみプルが実行されます。
+
+## テンプレートのキャッシュとプルポリシー
+
+Docker Sandboxesは、サンドボックス作成を高速化するためにテンプレートイメージをキャッシュします。`--pull-template` フラグで、レジストリからイメージを取得するタイミングを制御できます。
+
+- `--pull-template missing` (デフォルト) ローカルにイメージがあればそれを使用し、なければプルします。ローカルビルドとレジストリイメージの両方に適しています。
+
+- `--pull-template always` 常にレジストリから最新イメージをプルし、キャッシュを更新します。速度は落ちますが、常に最新バージョンを使用できることが保証されます（レジストリイメージが必要）。
+
+- `--pull-template never` ホストのキャッシュを使用しません。サンドボックス起動のたびにレジストリから直接プルします。
+
+キャッシュはホストのDockerイメージとは別に保存されます。これらは `docker sandbox reset` を実行すると削除されます。
+
+## 既存のサンドボックスからテンプレートを作成する
+
+Dockerfileを書く代わりに、既存のサンドボックスをカスタマイズしてテンプレートとして保存することも可能です。エージェントが構築した環境をそのまま使い回したい場合に非常に便利です。
+
+まず、サンドボックスを起動してエージェントに環境構築をさせます：
+
+```shell
+$ docker sandbox run claude ~/project
+```
+
+ツールや設定が完了したら、サンドボックスを抜けて以下のコマンドで保存します：
+
+```shell
+$ docker sandbox save claude-project my-template:v1
+✓ Saved sandbox as my-template:v1
+```
+
+これでローカルのDockerデーモンにイメージが保存されます。あとは同様に呼び出すだけです：
+
+```shell
+$ docker sandbox run -t my-template:v1 claude ~/other-project
+```
+
+別のマシンに移すためにtarファイルとして保存することもできます：
+
+```shell
+$ docker sandbox save -o template.tar claude-project my-template:v1
+```
+
+環境構築の工程を記録に残したい場合はDockerfileを、今の「動いている状態」をサクッと再利用したい場合は `save` を使うのがおすすめです。
+
+## 例：Node.jsテンプレート
+
+Node.js 20と一般的な開発ツールを追加する例です：
+
+```dockerfile
+FROM docker/sandbox-templates:claude-code
+
+USER root
+
+RUN apt-get update && apt-get install -y curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node.js 20 LTS のインストール
+RUN curl -fsSL [https://deb.nodesource.com/setup_20.x](https://deb.nodesource.com/setup_20.x) | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# 一般的なツールのインストール
+RUN npm install -g \
+    typescript@5.7.2 \
+    eslint@9.17.0 \
+    prettier@3.4.2
+
+USER agent
+```
+
+チーム全体で再現性を保つため、バージョンは固定（ピン留め）することをお勧めします。
+
+## 標準イメージの使用について
+
+`python:3.11` や `node:20` などの標準的なDockerイメージをベースにすることも可能ですが、それらにはエージェントのバイナリやサンドボックス用の設定が含まれていません。
+
+標準イメージをそのまま使用しようとすると、作成はできても実行時にエラーになります：
+
+```shell
+$ docker sandbox run claude-project
+agent binary "claude" not found in sandbox: verify this is the correct sandbox type
+```
+
+標準イメージを使う場合は、エージェントバイナリのインストールやユーザー設定、シェル構成などを手動で行う必要があります。そのため、`docker/sandbox-templates:claude-code` をベースにするのが最も近道です。
+
+## チームでの共有
+
+テンプレートを共有するには、バージョンタグを付けてレジストリにプッシュします：
+
+```shell
+$ docker build -t myorg/sandbox-templates:python-v1.0 .
+$ docker push myorg/sandbox-templates:python-v1.0
+```
+
+チームメンバーは、そのレジストリイメージを参照するだけで同じ環境を使用できます：
+
+```shell
+$ docker sandbox run -t myorg/sandbox-templates:python-v1.0 claude [PATH]
+```
+
+一貫性を保つため、`:latest` ではなく `:v1.0` のような具体的なタグを使用するようにしましょう。
