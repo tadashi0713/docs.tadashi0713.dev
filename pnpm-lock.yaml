@@ -62,8 +62,8 @@ importers:
         specifier: 1.4.0
         version: 1.4.0
       sitemapper:
-        specifier: 4.0.2
-        version: 4.0.2
+        specifier: 4.1.2
+        version: 4.1.2
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -1319,8 +1319,8 @@ packages:
     resolution: {integrity: sha512-7MptL8U0cqcFdzIzwOTHoilX9x5BrNqye7Z/LuC7kCMRio1EMSyqRK3BEAUD7sXRq4iT4AzTVuZdhgQ2TCvYLg==}
     engines: {node: '>=8.6.0'}
 
-  fast-xml-parser@5.3.4:
-    resolution: {integrity: sha512-EFd6afGmXlCx8H8WTZHhAoDaWaGyuIBoZJ2mknrNxug+aZKjkp0a0dlars9Izl+jF+7Gu1/5f/2h68cQpe0IiA==}
+  fast-xml-parser@5.3.7:
+    resolution: {integrity: sha512-JzVLro9NQv92pOM/jTCR6mHlJh2FGwtomH8ZQjhFj/R29P2Fnj38OgPJVtcvYw6SuKClhgYuwUZf5b3rd8u2mA==}
     hasBin: true
 
   fastq@1.19.1:
@@ -2219,8 +2219,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  sitemapper@4.0.2:
-    resolution: {integrity: sha512-4gZXv12AvcJKEnxRrk+bU/kfyBgbNqoHE2u5hFKKO04hjSZQogAVppwNl+VXP71CXDW4VxpAQwPPz357aIHT6w==}
+  sitemapper@4.1.2:
+    resolution: {integrity: sha512-9EvSeSbe5lVdmfH0sRZ41my8SqkyWIPv+glQVk2XBXgf8JNoPdrD32mnaaVjt+LT3Wn9hFCh6KHy/kVb2sataA==}
     engines: {node: '>= 18.0.0'}
     hasBin: true
 
@@ -3735,7 +3735,7 @@ snapshots:
       merge2: 1.4.1
       micromatch: 4.0.8
 
-  fast-xml-parser@5.3.4:
+  fast-xml-parser@5.3.7:
     dependencies:
       strnum: 2.1.2
 
@@ -5192,9 +5192,9 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  sitemapper@4.0.2:
+  sitemapper@4.1.2:
     dependencies:
-      fast-xml-parser: 5.3.4
+      fast-xml-parser: 5.3.7
       got: 11.8.6
       is-gzip: 2.0.0
       p-limit: 6.2.0
