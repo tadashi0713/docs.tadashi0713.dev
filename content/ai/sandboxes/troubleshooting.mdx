@@ -1,0 +1,127 @@
+---
+title: トラブルシューティング
+description: ローカルでエージェントをサンドボックス化する際に発生する一般的な問題を解決します。
+---
+
+# トラブルシューティング
+
+このガイドでは、AIコーディングエージェントでDocker Sandboxesを使用する際に発生する一般的な問題の解決方法を説明します。
+
+## 'sandbox' is not a docker command
+
+`docker sandbox` を実行した際に、コマンドが存在しないというエラーが表示される場合。
+
+これは CLI プラグインがインストールされていないか、正しい場所に配置されていないことを意味します。修正するには：
+
+1. プラグインが存在するか確認します：
+
+    ```shell
+    $ ls -la ~/.docker/cli-plugins/docker-sandbox
+    ```
+
+    ファイルが存在し、実行権限がある必要があります。
+
+2. Docker Desktopを使用している場合は、再起動してプラグインを検出させます。
+
+## "Experimental Features" needs to be enabled by your administrator
+
+サンドボックスを使用しようとした際に、ベータ機能が無効化されているというエラーが表示される場合。
+
+これは、Docker Desktopの設定が管理者によってロックされている場合に発生します。組織で [設定管理（Settings Management）](/docker-security-ja/for-admins/hardened-desktop/settings-management) を使用している場合は、管理者に [ベータ機能の許可](/docker-security-ja/for-admins/hardened-desktop/settings-management/configure-json-file#開発中の機能) を依頼してください：
+
+```json
+{
+  "configurationFileVersion": 2,
+  "allowBetaFeatures": {
+    "locked": false,
+    "value": true
+  }
+}
+```
+
+## 認証の失敗
+
+Claudeが認証できない、またはAPIキーのエラーが表示される場合。
+
+APIキーが無効であるか、期限切れ、あるいは正しく設定されていない可能性があります。
+
+## ワークスペースに API キーの設定が含まれている
+
+サンドボックスの起動時に、認証情報の競合に関する警告が表示される場合。
+
+これは、ワークスペース内に `primaryApiKey` フィールドを含む `.claude.json` ファイルが存在する場合に発生します。以下のいずれかの方法を選択してください：
+
+- `.claude.json` から `primaryApiKey` フィールドを削除する：
+
+    ```json
+    {
+    "apiKeyHelper": "/path/to/script",
+    "env": {
+        "ANTHROPIC_BASE_URL": "[https://api.anthropic.com](https://api.anthropic.com)"
+    }
+    }
+    ```
+
+- または、警告を無視して続行する：ワークスペース内の認証情報は無視され、サンドボックス側の認証情報が優先されます。
+
+## ワークスペースファイルへのアクセス権限エラー（Permission denied）
+
+ファイルアクセス時に Claude やコマンドが "Permission denied" エラーで失敗する場合。
+
+通常、これはワークスペースのパスが Docker からアクセスできないか、ファイル権限が厳しすぎることを意味します。
+
+Docker Desktopを使用している場合：
+
+1. Docker Desktopの **Settings** → **Resources** → **File Sharing** でファイル共有設定を確認します。
+
+2. ワークスペースのパス（またはその親ディレクトリ）が「Virtual file shares」の一覧に含まれていることを確認してください。
+
+3. 含まれていない場合は、「+」をクリックしてワークスペースを含むディレクトリを追加します。
+
+4. Docker Desktopを再起動します。
+
+すべてのプラットフォーム共通の確認事項として、ファイル権限を確認してください：
+
+```shell
+$ ls -la <workspace>
+```
+
+ファイルが読み取り可能であることを確認します。必要に応じて以下を実行してください：
+
+```shell
+$ chmod -R u+r <workspace>
+```
+
+また、ワークスペースのパスが実際に存在することも確認してください：
+
+```shell
+$cd <workspace>$ pwd
+```
+
+## Windows で複数のサンドボックスを起動するとクラッシュする
+
+Windowsでは、多数のサンドボックスを同時に起動するとクラッシュが発生することがあります。
+
+これが発生した場合は、OpenVMM プロセスを終了させることで回復できます：
+
+- タスクマネージャー（Ctrl+Shift+Esc）を開きます。
+
+- すべての `docker.openvmm.exe` プロセスを探します。
+
+- 各プロセスを終了させます。
+
+- 必要に応じて Docker Desktop を再起動します。
+
+この問題を回避するには、複数のサンドボックスを同時に作成するのではなく、一つずつ順番に起動するようにしてください。
+
+## 解決しない問題や状態の破損
+
+サンドボックスが予期しない動作をしたり、起動に失敗したりし続ける場合は、すべてのサンドボックスの状態をリセットしてください：
+
+```shell
+$ docker sandbox reset
+```
+
+これにより、実行中のすべての VM が停止し、すべてのサンドボックスデータが削除されます。デーモン自体は実行を継続します。リセット後、必要に応じて新しいサンドボックスを作成してください。
+
+トラブルが解決しない場合や、すべてのサンドボックスを一括削除してディスク容量を確保したい場合にこのコマンドを使用してください。
