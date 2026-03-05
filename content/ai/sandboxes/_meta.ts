@@ -5,4 +5,5 @@ export default {
   'templates': 'テンプレート',
   'troubleshooting': 'トラブルシューティング',
   'network-policies': 'ネットワークポリシー',
+  'architecture': 'アーキテクチャ',
 }
