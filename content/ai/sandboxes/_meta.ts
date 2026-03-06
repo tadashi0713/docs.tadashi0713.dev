@@ -1,8 +1,8 @@
 export default {
   'get-started': 'スタートガイド',
-  'claude-code': 'Claude Codeの設定',
   'workflows': 'ワークフロー',
   'templates': 'テンプレート',
+  'agents': 'エージェント',
   'troubleshooting': 'トラブルシューティング',
   'network-policies': 'ネットワークポリシー',
   'architecture': 'アーキテクチャ',

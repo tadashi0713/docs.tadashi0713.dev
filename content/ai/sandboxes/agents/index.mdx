@@ -1,0 +1,93 @@
+---
+title: サポートされているエージェント
+description: Docker SandboxesでサポートされているAIコーディングエージェントの一覧、試験運用ステータス、および設定の詳細について。
+asIndexPage: true
+---
+
+# サポートされているエージェント
+
+Docker Sandboxesは、複数のAIコーディングエージェントをサポートしています。すべてのエージェントは、プライベートDockerデーモンを備えたmicroVM内で隔離されて実行されます。
+
+## サポートされているエージェント
+
+| エージェント | コマンド | ステータス | 備考 |
+| :--- | :--- | :--- | :--- |
+| Claude Code | `claude` | 試験運用版 | 最もテストされている実装 |
+| Codex | `codex` | 試験運用版 | 開発中 |
+| Copilot | `copilot` | 試験運用版 | 開発中 |
+| Gemini | `gemini` | 試験運用版 | 開発中 |
+| cagent | `cagent` | 試験運用版 | 開発中 |
+| Kiro | `kiro` | 試験運用版 | 開発中 |
+| OpenCode | `opencode` | 試験運用版 | 開発中 |
+| カスタムシェル | `shell` | 試験運用版 | 手動セットアップ用の最小限の環境 |
+
+## 試験運用（Experimental）ステータスについて
+
+すべてのエージェントは試験運用機能です。これは以下のことを意味します：
+
+- Docker Desktopのバージョン間で、破壊的変更が発生する可能性があります。
+- 機能が不完全であったり、大幅に変更されたりする場合があります。
+- 安定性とパフォーマンスは本番環境レベルではありません。
+- サポートとドキュメントは限定的です。
+
+サンドボックスは開発およびテスト目的で使用し、本番環境のワークロードには使用しないでください。
+
+## 異なるエージェントの使用
+
+サンドボックス作成時にエージェントの種類を指定します：
+
+```shell
+$ docker sandbox create AGENT [PATH] [PATH...]
+```
+
+各エージェントは、それぞれ隔離された専用のサンドボックスで実行されます。エージェントの種類は作成時にサンドボックスに紐付けられ、後から変更することはできません。
+
+## テンプレート環境
+
+すべてのエージェントテンプレートは、以下の共通のベース環境を共有しています：
+
+- Ubuntu 25.10 ベース
+
+- 開発ツール: Docker CLI（BuildxおよびComposeを含む）, Git, GitHub CLI, Node.js, Go, Python 3, uv, make, jq, ripgrep
+
+- sudo 権限を持つ非ルート `agent` ユーザー
+
+- 追加コンテナ実行用のプライベート Docker デーモン
+
+- パッケージマネージャー: apt, pip, npm
+
+各エージェントは、このベース環境の上に固有のCLIツールを追加しています。独自のイメージを構築したい場合は、[カスタムテンプレート](/ai/sandboxes/templates)を参照してください。
+
+## エージェント固有の設定
+
+各エージェントには、独自の認証情報の要件とフローがあります。認証情報はエージェントごとにスコープされており、そのエージェント専用に提供する必要があります（フォールバック認証は使用されません）。
+
+エージェントごとのドキュメントを参照してください：
+
+- [Claude Code](/ai/sandboxes/agents/claude-code)
+
+- [cagent](/ai/sandboxes/agents/cagent)
+
+- [Codex](/ai/sandboxes/agents/codex)
+
+- [Copilot](/ai/sandboxes/agents/copilot)
+
+- [Gemini](/ai/sandboxes/agents/gemini)
+
+- [Kiro](/ai/sandboxes/agents/kiro)
+
+- [OpenCode](/ai/sandboxes/agents/opencode)
+
+- [カスタムシェル](/ai/sandboxes/agents/shell)
+ 
+## 要件
+
+- Docker Desktop 4.58 以降
+
+- プラットフォームのサポート：
+
+    - macOS (virtualization.framework を使用)
+
+    - Windows (Hyper-V を使用)
+
+- 選択したエージェントのAPIキーまたは認証情報
