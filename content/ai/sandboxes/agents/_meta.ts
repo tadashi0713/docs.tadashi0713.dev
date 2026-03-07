@@ -1,3 +1,3 @@
 export default {
-  'claude-code': 'Claude Code',
+  'claude-code': 'Claude Code サンドボックス',
 }

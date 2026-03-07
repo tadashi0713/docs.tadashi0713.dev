@@ -1,11 +1,13 @@
 ---
-title: Claude Codeの設定
-description: Claude Codeの認証設定、CLIオプションの渡し方、Dockerでのサンドボックス化されたエージェント環境のカスタマイズ方法について説明します。
+title: Claude Code サンドボックス
+description: 認証、設定、AI支援開発のためのYOLOモードを備えた Docker Sandboxes で Claude Code を使用します。
 ---
 
-# Claude Codeの設定
+# Claude Code サンドボックス
 
 このガイドでは、サンドボックス環境でClaude Codeを実行するための認証、設定ファイル、および一般的なオプションについて説明します。
+
+公式ドキュメント（英語）: [Claude Code](https://code.claude.com/docs)
 
 ## クイックスタート
 
@@ -13,6 +15,13 @@ description: Claude Codeの認証設定、CLIオプションの渡し方、Docke
 
 ```shell
 $ docker sandbox run claude ~/my-project
+```
+
+ワークスペースのパラメータは任意です。省略した場合は現在のディレクトリがデフォルトになります：
+
+```shell
+$ cd ~/my-project
+$ docker sandbox run claude
 ```
 
 ### プロンプトを直接渡す
@@ -96,28 +105,8 @@ $ docker sandbox run <sandbox-name> -- --continue
 
 ## ベースイメージ
 
-Claude Codeサンドボックスのテンプレートは、サンドボックスVM内で動作するコンテナイメージです。これには以下が含まれます：
+テンプレート: `docker/sandbox-templates:claude-code`
 
-- Ubuntuベースの環境とClaude Code
+サンドボックス内の Claude は、デフォルトで `--dangerously-skip-permissions` が付与された状態で起動します。
 
-- 開発ツール：Docker CLI, GitHub CLI, Node.js, Go, Python 3, Git, ripgrep, jq
-
-- sudo権限を持つ非ルートユーザー `agent`
-
-- 追加のコンテナを実行するためのプライベートDockerデーモン
-
-サンドボックス内のClaudeは、デフォルトで `--dangerously-skip-permissions` フラグが付与された状態で起動します。
-
-`docker/sandbox-templates:claude-code` をベースにしてカスタムテンプレートを構築することも可能です。詳細は [カスタムテンプレート](/ai/sandboxes/templates) を参照してください。
-
-## 次のステップ
-
-- [サンドボックスを効果的に活用する](/ai/sandboxes/workflows)
-
-- [カスタムテンプレート](/ai/sandboxes/templates)
-
-- [ネットワークポリシー](/ai/sandboxes/network-policies)
-
-- [トラブルシューティング](/ai/sandboxes/troubleshooting)
-
-- [CLIリファレンス](https://docs.docker.com/reference/cli/docker/sandbox/)
+独自のイメージを構築したい場合は、[カスタムテンプレート](/ai/sandboxes/templates)を参照してください。
