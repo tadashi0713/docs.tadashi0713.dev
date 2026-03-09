@@ -1,0 +1,83 @@
+---
+title: Codex サンドボックス
+description: APIキー認証とYOLOモード設定を備えた Docker Sandboxes で OpenAI Codex を使用します。
+---
+
+このガイドでは、サンドボックス環境での Codex の認証、設定、および使用方法について説明します。
+
+公式ドキュメント（英語）: [Codex CLI](https://developers.openai.com/codex/cli)
+
+## クイックスタート
+
+プロジェクトディレクトリに対してサンドボックスを作成し、Codex を実行するには：
+
+```shell
+$ docker sandbox run codex ~/my-project
+```
+
+ワークスペースのパラメータは任意です。省略した場合は現在のディレクトリがデフォルトになります：
+
+```shell
+$ cd ~/my-project
+$ docker sandbox run codex
+```
+
+# 認証
+
+Codex には OpenAI の API キーが必要です。認証情報はサンドボックスごとにスコープされます。
+
+シェルの設定ファイルに `OPENAI_API_KEY` 環境変数を設定してください。
+
+Docker Sandboxes は、現在のシェルセッションから環境変数を継承しないデーモンプロセスを使用します。サンドボックスで API キーを利用可能にするには、シェルの設定ファイルでグローバルに設定する必要があります。
+
+シェルの設定ファイルに API キーを追加します：
+
+```shell
+export OPENAI_API_KEY=sk-xxxxx
+```
+
+変更を適用する：
+
+1. シェル設定を読み込む： `source ~/.bashrc` （または `~/.zshrc`）
+
+2. Docker Desktop を再起動して、デーモンに新しい環境変数を認識させる
+
+3. サンドボックスを作成して実行する：
+
+```shell
+$ docker sandbox create codex ~/project
+$ docker sandbox run <sandbox-name>
+```
+
+サンドボックスは環境変数を検出し、自動的に使用します。
+
+## 設定
+
+Codex は、安全性のチェックや承認のプロンプトを無効にする「YOLOモード」をサポートしています。このモードでは、対話型の確認なしに、エージェントにサンドボックス環境へのフルアクセス権を付与します。
+
+`~/.codex/config.toml` で YOLO モードを設定します：
+
+```toml
+approval_policy = "never"
+sandbox_mode = "danger-full-access"
+```
+
+これらの設定により、Codex は承認プロンプトなしで実行されます。
+
+### 実行時にオプションを渡す
+
+サンドボックス名と -- セパレーターの後に Codex CLI オプションを記述します：
+
+```shell
+$ docker sandbox run <sandbox-name> -- --dangerously-bypass-approvals-and-sandbox
+```
+
+このフラグを使用すると、設定ファイルを変更することなく、そのセッションのみ YOLO モードを有効にできます。
+
+## ベースイメージ
+
+テンプレート: `docker/sandbox-templates:codex`
+
+YOLO モードが設定されている場合、Codex はデフォルトで `--dangerously-bypass-approvals-and-sandbox` が付与された状態で起動します。
+
+独自のイメージを構築したい場合は、[カスタムテンプレート](/ai/sandboxes/templates)を参照してください。
