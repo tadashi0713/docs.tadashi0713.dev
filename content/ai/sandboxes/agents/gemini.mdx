@@ -1,0 +1,110 @@
+---
+title: Gemini サンドボックス
+description: |
+  プロキシ管理の認証とAPIキー設定を使用して、Docker Sandboxes で Google Gemini を利用します。
+---
+
+# Gemini サンドボックス
+
+このガイドでは、サンドボックス環境での Google Gemini の認証、設定、および使用方法について説明します。
+
+公式ドキュメント（英語）: [Google Gemini CLI](https://developers.google.com/gemini/api/docs/gemini-cli)
+
+## クイックスタート
+
+プロジェクトディレクトリに対してサンドボックスを作成し、Gemini を実行するには：
+
+```shell
+$ docker sandbox run gemini ~/my-project
+```
+
+ワークスペースのパラメータは任意です。省略した場合は現在のディレクトリがデフォルトになります：
+
+```shell
+$ cd ~/my-project
+$ docker sandbox run gemini
+```
+
+## 認証
+
+Gemini はプロキシ管理の認証を使用します。Docker Sandboxes が API リクエストをインターセプトし、認証情報を透過的に注入（インジェクション）します。ユーザーはホスト側の環境変数を通じて API キーを提供し、サンドボックス側でその認証情報を管理する仕組みです。
+
+### 環境変数（推奨）
+
+シェルの設定ファイルに `GEMINI_API_KEY` または `GOOGLE_API_KEY` 環境変数を設定してください。
+
+Docker Sandboxes は、現在のシェルセッションから環境変数を継承しないデーモンプロセスを使用します。サンドボックスで API キーを利用可能にするには、シェルの設定ファイルでグローバルに設定する必要があります。
+
+シェルの設定ファイルに API キーを追加します：
+
+```shell
+export GEMINI_API_KEY=AIzaSyCxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+または `GOOGLE_API_KEY` を使用します：
+
+```shell
+export GOOGLE_API_KEY=AIzaSyCxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+変更を適用する：
+
+1. シェル設定を読み込む： `source ~/.bashrc` （または `~/.zshrc`）
+
+2. Docker Desktop を再起動して、デーモンに新しい環境変数を認識させる
+
+3. サンドボックスを作成して実行する：
+
+```shell
+$ docker sandbox create gemini ~/project
+$ docker sandbox run <sandbox-name>
+```
+
+サンドボックスは環境変数を検出し、自動的に使用します。
+
+### 対話型認証
+
+`GEMINI_API_KEY` も `GOOGLE_API_KEY` も設定されていない場合、Gemini は起動時にサインインを求めます。
+
+対話型認証を使用する場合：
+
+- 各サンドボックスを個別に認証する必要があります
+
+- サンドボックスを削除または破棄した場合、再作成時に再度認証が必要になります
+
+- 認証セッションはサンドボックスの外には保持されません
+
+- フォールバック（予備）の認証方法は使用されません
+
+繰り返しの認証を避けるには、`GEMINI_API_KEY` または `GOOGLE_API_KEY` 環境変数を設定してください。
+
+## 設定
+
+`~/.gemini/settings.json` で Gemini の動作を設定します：
+
+```json
+{
+  "disable_sandbox_tool": true,
+  "trusted_folders": ["/workspace"]
+}
+```
+
+これらの設定により、安全性のチェックが無効化され、ワークスペース内のファイルに対して繰り返しの確認なしで Gemini が操作できるようになります。
+
+### 実行時にオプションを渡す
+
+サンドボックス名と `--` セパレーターの後に Gemini CLI オプションを記述します：
+
+```shell
+$ docker sandbox run <sandbox-name> -- --yolo
+```
+
+`--yolo` フラグを使用すると、設定ファイルを変更することなく、そのセッションのみ承認プロンプトを無効にできます。
+
+## ベースイメージ
+
+テンプレート: `docker/sandbox-templates:gemini`
+
+Gemini は、組み込みの OAuth フローを無効にするように設定されています。認証は Docker Sandbox プロキシを通じて API キーで管理されます。
+
+独自のイメージを構築したい場合は、[カスタムテンプレート](/ai/sandboxes/templates)を参照してください。
