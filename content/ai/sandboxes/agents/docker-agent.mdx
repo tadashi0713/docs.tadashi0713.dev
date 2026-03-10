@@ -1,0 +1,84 @@
+---
+title: Docker Agent サンドボックス
+description: |
+  OpenAI、Anthropic などをサポートするマルチプロバイダー認証を備えた Docker Sandboxes で、Docker Agent を使用します。
+---
+
+# Docker Agent サンドボックス
+
+このページでは、Docker Sandboxes 内で [Docker Agent](/ai/docker-agent/) を実行する方法について説明します。Docker Agent は、スタンドアロンの CLI ツールとしても利用可能です。スタンドアロンでの使用方法、設定リファレンス、およびエージェントチームの構築については、フルドキュメントを参照してください。
+
+## クイックスタート
+
+プロジェクトディレクトリに対してサンドボックスを作成し、Docker Agent を実行するには：
+
+```shell
+$ docker sandbox run cagent ~/my-project
+```
+
+ワークスペースのパラメータは任意です。省略した場合は現在のディレクトリがデフォルトになります：
+
+```shell
+$ cd ~/my-project
+$ docker sandbox run cagent
+```
+
+## 認証
+
+Docker Agent は、サポートされているすべてのプロバイダーに対してプロキシ管理の認証を使用します。Docker Sandboxes が API リクエストをインターセプトし、認証情報を透過的に注入（インジェクション）します。ユーザーは環境変数を通じて API キーを提供し、サンドボックス側でその認証情報を管理する仕組みです。
+
+### サポートされているプロバイダー
+
+環境変数を設定することで、1つ以上のプロバイダーを構成できます：
+
+```shell
+export OPENAI_API_KEY=sk-xxxxx
+export ANTHROPIC_API_KEY=sk-ant-xxxxx
+export GOOGLE_API_KEY=AIzaSyxxxxx
+export XAI_API_KEY=xai-xxxxx
+export NEBIUS_API_KEY=xxxxx
+export MISTRAL_API_KEY=xxxxx
+```
+
+使用したいプロバイダーのみを設定すれば問題ありません。Docker Agent は利用可能な認証情報を検出し、リクエストを適切なプロバイダーにルーティングします。
+
+### 環境変数のセットアップ
+
+Docker Sandboxes は、現在のシェルセッションから環境変数を継承しないデーモンプロセスを使用します。サンドボックスで API キーを利用可能にするには、シェルの設定ファイルでグローバルに設定する必要があります。
+
+変更を適用する：
+
+1. シェル設定を読み込む： `source ~/.bashrc` （または `~/.zshrc`）
+
+2. Docker Desktop を再起動して、デーモンに新しい環境変数を認識させる
+
+3. サンドボックスを作成して実行する：
+
+```shell
+$ docker sandbox create cagent ~/project
+$ docker sandbox run <sandbox-name>
+```
+
+サンドボックスは環境変数を検出し、自動的に使用します。
+
+## 設定
+
+Docker Agent は、安全性のチェックや承認のプロンプトを無効にする「YOLOモード」をサポートしています。このモードでは、対話型の確認なしに、エージェントにサンドボックス環境へのフルアクセス権を付与します。
+
+### 実行時にオプションを渡す
+
+サンドボックス名と `--` セパレーターの後に Docker Agent CLI オプションを記述します：
+
+```shell
+$ docker sandbox run <sandbox-name> -- run --yolo
+```
+
+`run --yolo` コマンドにより、承認プロンプトが無効化された状態で Docker Agent が起動します。
+
+## ベースイメージ
+
+テンプレート: `docker/sandbox-templates:cagent`
+
+Docker Agent は、サンドボックスプロキシを通じた自動的な認証情報注入により、複数の LLM プロバイダーをサポートしています。デフォルトで run --yolo フラグが付与された状態で起動します。
+
+独自のイメージを構築したい場合は、[カスタムテンプレート](/ai/sandboxes/templates)を参照してください。
