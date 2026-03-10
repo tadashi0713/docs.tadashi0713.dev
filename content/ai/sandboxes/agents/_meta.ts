@@ -5,4 +5,5 @@ export default {
   'gemini': 'Gemini サンドボックス',
   'opencode': 'OpenCode サンドボックス',
   'docker-agent': 'Docker Agent サンドボックス',
+  'kiro': 'Kiro サンドボックス',
 }
