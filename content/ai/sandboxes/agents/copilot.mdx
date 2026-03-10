@@ -1,0 +1,93 @@
+---
+title: Copilot サンドボックス
+description: |
+  GitHub トークン認証と信頼済みフォルダ設定を使用して、Docker Sandboxes で GitHub Copilot を利用します。
+---
+
+# Copilot サンドボックス
+
+このガイドでは、サンドボックス環境での GitHub Copilot の認証、設定、および使用方法について説明します。
+
+公式ドキュメント（英語）: [GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli)
+
+## クイックスタート
+
+プロジェクトディレクトリに対してサンドボックスを作成し、Copilot を実行するには：
+
+```shell
+$ docker sandbox run copilot ~/my-project
+```
+
+ワークスペースのパラメータは任意です。省略した場合は現在のディレクトリがデフォルトになります：
+
+```shell
+$ cd ~/my-project
+$ docker sandbox run copilot
+```
+
+## 認証
+
+Copilot には Copilot アクセス権限を持つ GitHub トークンが必要です。認証情報はサンドボックスごとにスコープされ、ホスト側の環境変数を通じて提供する必要があります。
+
+### 環境変数（推奨）
+
+シェルの設定ファイルに `GH_TOKEN` または `GITHUB_TOKEN` 環境変数を設定してください。
+
+Docker Sandboxes は、現在のシェルセッションから環境変数を継承しないデーモンプロセスを使用します。サンドボックスでトークンを利用可能にするには、シェルの設定ファイルでグローバルに設定する必要があります。
+
+シェルの設定ファイルにトークンを追加します：
+
+```shell
+export GH_TOKEN=ghp_xxxxx
+```
+
+または `GITHUB_TOKEN` を使用します：
+
+```shell
+export GITHUB_TOKEN=ghp_xxxxx
+```
+
+変更を適用する：
+
+1. シェル設定を読み込む： `source ~/.bashrc` （または `~/.zshrc`）
+
+2. Docker Desktop を再起動して、デーモンに新しい環境変数を認識させる
+
+3. サンドボックスを作成して実行する：
+
+```shell
+$ docker sandbox create copilot ~/project
+$ docker sandbox run <sandbox-name>
+```
+
+サンドボックスは環境変数を検出し、自動的に使用します。
+
+## 設定
+
+Copilot では特定のフォルダを「信頼済み」として設定し、それらの場所での安全確認プロンプトを無効にすることができます。`~/.copilot/config.json` で信頼済みフォルダを設定します：
+
+```json
+{
+  "trusted_folders": ["/workspace", "/home/agent/projects"]
+}
+```
+
+ワークスペースはデフォルトで `/workspace` にマウントされるため、このパスを信頼するように設定することで、繰り返しの確認なしで Copilot を操作できるようになります。
+
+### 実行時にオプションを渡す
+
+サンドボックス名と `--` セパレーターの後に Copilot CLI オプションを記述します：
+
+```shell
+$ docker sandbox run <sandbox-name> -- --yolo
+```
+
+`--yolo` フラグを使用すると、設定ファイルを変更することなく、そのセッションのみ承認プロンプトを無効にできます。
+
+## ベースイメージ
+
+テンプレート: `docker/sandbox-templates:copilot`
+
+信頼済みフォルダが設定されている場合、Copilot はデフォルトで `--yolo` が付与された状態で起動します。
+
+独自のイメージを構築したい場合は、[カスタムテンプレート](/ai/sandboxes/templates)を参照してください。
