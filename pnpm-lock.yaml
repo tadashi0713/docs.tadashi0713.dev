@@ -62,8 +62,8 @@ importers:
         specifier: 1.4.0
         version: 1.4.0
       sitemapper:
-        specifier: 4.1.4
-        version: 4.1.4
+        specifier: 4.1.5
+        version: 4.1.5
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -2198,8 +2198,8 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  sitemapper@4.1.4:
-    resolution: {integrity: sha512-eY7Rczd/X4LizpL6T1+iYVuVEsYU1Be+Q17d9ZyeWHZ1tIIzjkHzI/I4cBQKJJHCOyEctvWgYDp/U5cDWJ32IQ==}
+  sitemapper@4.1.5:
+    resolution: {integrity: sha512-1JOI0W9tC9MHPG/VmN4HwOmVsFazBRKmtLBdNDBTqZ7dfXRXeYafvdSnA4FcsVMAMLe9DGg6J2OnKRHPLL0Ebw==}
     engines: {node: '>= 18.0.0'}
     hasBin: true
 
@@ -5131,7 +5131,7 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  sitemapper@4.1.4:
+  sitemapper@4.1.5:
     dependencies:
       fast-xml-parser: 5.3.7
       got: 13.0.0
